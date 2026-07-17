@@ -1,0 +1,19 @@
+# OS
+.DS_Store
+
+# R
+.Rhistory
+.Rdata
+.Ruserdata
+.Rproj.user/
+.Renviron
+
+# Local project data
+# Flood shapefiles too large for github, >100mb
+test/flood_shp/
+
+# targets cache
+_targets/
+
+# Local scratch
+.positai
