@@ -8,12 +8,28 @@
 .Rproj.user/
 .Renviron
 
+# Python
+__pycache__
+
 # Local project data
-# Flood shapefiles too large for github, >100mb
-test/flood_shp/
+# Tier-1 sources are fetched by the pipeline; Tier-2 mirrors come from a data-v* Release.
+# Neither belongs in git.
+data/source/
+data/prepared/*
+
+# data/processed/ is NOT ignored — it is written and committed by CI.
 
 # targets cache
 _targets/
 
+# Local scratch — dataset research, prototypes, throwaway downloads.
+# Nothing in here is a pipeline input.
+test/
+
+# Queens Nonprofit Directory scrape stays local for now
+non-profit-directory/
+
 # Local scratch
 .positai
+/.uvr/library/
+/.uvr/activate*
