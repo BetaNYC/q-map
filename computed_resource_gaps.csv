@@ -1,0 +1,34 @@
+Resource gap number,Derived resource-gap indicator,How to calculate / interpret
+1,% of residents >15-minute walk from a cooling center,Population-weighted walking-distance analysis between residential areas and cooling centers.
+2,"Cooling center coverage per 10,000 residents","Number of cooling centers ÷ Community District population × 10,000."
+3,Cooling-center access in high-HVI areas,% of high/very-high HVI population within 15 minutes of a cooling center.
+4,Park access gap in high-HVI areas,% of residents in high-HVI areas living >10/15 minutes from a park.
+5,Compound heat–air risk: overlap of high-HVI districts with elevated respiratory illness rates,Vulnerability Index + DOH Respiratory Illness Data
+6,Heat vulnerability–resource mismatch score,"Combine HVI, population density, land cover/impervious surface, and cooling-center access to identify high-vulnerability/low-resource areas."
+7,% of flood-zone population,Population within FEMA/NYC stormwater flood area
+8,% of flood-zone population without nearby evacuation resources,Population within FEMA/NYC stormwater flood areas that is >X minutes from an evacuation center.
+9,Average distance from flood-exposed residents to evacuation centers,Population-weighted average distance to the nearest evacuation center.
+10,% of population in stormwater flood areas with limited nearby public resources,"Overlay flood maps with parks, libraries, nonprofits, SNAP centers, and other resources."
+11,Critical-resource flood exposure,"% of hospitals, trauma centers, libraries, nonprofit facilities, parks, etc. located within FEMA or NYC stormwater flood areas."
+12,Sewage backup compounding risk: overlap of stormwater flood zones with proximity to wastewater treatment plants,NYC Stormwater Flood Maps + DEP Wastewater Treatment Centers
+13,Average distance to hurricane evacuation center,Population-weighted distance from residential areas to the nearest evacuation center.
+14,% of evacuation-zone residents >15/30 minutes from an evacuation center,Identify geographic access gaps within evacuation zones.
+15,"Evacuation center capacity per 10,000 evacuation-zone residents",Evacuation-center capacity ÷ evacuation-zone population.
+16,Evacuation resource deficit,Evacuation-zone population relative to available evacuation-center capacity.
+17,Evacuation-zone resource concentration,% of evacuation resources located inside/outside the zones they primarily serve.
+18,Multilingual alert reach gap: LEP population within evacuation zones vs. Notify NYC language coverage,Hurricane Evacuation Zones + Community Health Profiles + Notify NYC RSS Feed
+19,Vulnerable-population evacuation burden: trauma/surge capacity located inside vs. outside evacuation zones,Hurricane Evacuation Zones + Trauma Center Directory + Hospital Surge Capacity Sites
+20,Respiratory illness burden per public-health resource,"Respiratory illness rate/cases relative to nearby hospitals, trauma centers, or other health resources."
+21,Hospital/trauma-center accessibility gap,Average distance/travel distance from residents to the nearest trauma center or hospital surge site.
+22,High respiratory illness + low healthcare access areas,Identify CDs simultaneously above a respiratory illness threshold and below a healthcare-access threshold.
+23,"Hospital surge capacity per 10,000 residents",Surge beds/capacity relative to CD population.
+24,Surge capacity relative to respiratory disease burden,Compare surge capacity with respiratory illness burden to identify potential demand-capacity mismatches.
+25,% of residents with poor air-monitor coverage,Identify high-vulnerability populations that are far from NYCCAS monitors.
+26,Average distance to nearest air-quality monitor,Population-weighted distance to the nearest NYCCAS monitor.
+27,Population within X miles of solid-waste facilities,Overlay residential population with NYS DEC solid-waste facilities and report exposed population by CD.
+28,Population within X miles of wastewater treatment facilities,"Measure residential population near DEP wastewater treatment facilities, particularly in combination with flood risk."
+29,Green space offset ratio: park/tree canopy acreage vs. environmental burden score,Land Cover Raster + Parks Properties + Environmental Burden Score
+30,Hazardous-facility proximity + healthcare access gap,Population near solid-waste/wastewater facilities that is also far from hospitals/trauma centers.
+31,Environmental hazard + flood-risk overlap,Population/land area where solid-waste or wastewater facilities overlap FEMA/NYC flood zones.
+32,Environmental hazard exposure + air-monitoring gap,Population near environmental facilities that also lacks nearby NYCCAS monitoring.
+33,Emergency communication resource gap,"% of CD population in high-hazard areas with comparatively few libraries, nonprofits, cultural organizations, or other communication channels."
