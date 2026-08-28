@@ -1,0 +1,44 @@
+# The Rockaways — coastal storm override.
+#
+# The motivating case for per-district hazard content. QN14 is the only Queens
+# district where every resident lives in a present-day storm surge tract, it is
+# a barrier peninsula with limited egress, and it is the only district served by
+# a COAD (FRANC). Citywide coastal-storm guidance does not cover any of that.
+#
+# Overlays replace whole top-level keys. Anything that varies only numerically
+# should be templated from the district payload instead of overridden here.
+
+sections:
+  - id: preparedness
+    title: Before a coastal storm
+    items:
+      - label: Know your evacuation zone
+        url: https://www.nyc.gov/site/em/ready/know-your-zone.page
+      - label: Get prepared for emergencies in NYC
+        url: https://www.nyc.gov/site/em/ready/get-prepared.page
+
+  - id: response
+    title: During a coastal storm
+    items:
+      - label: Find your evacuation zone and centre
+        url: https://maps.nyc.gov/hurricane/
+      - label: Current watches and warnings
+        url: https://www.weather.gov/okx/
+
+  - id: general
+    title: General information
+    items:
+      - label: Coastal storms and hurricanes
+        url: https://www.nyc.gov/site/em/ready/coastal-storms-hurricanes.page
+
+  - id: evacuation
+    title: Leaving the peninsula
+    body: >
+      The Rockaways is a barrier peninsula reached by a small number of bridges
+      and one subway line that crosses open water. Evacuation routes fill early
+      and the A train is suspended before landfall. If you are told to leave,
+      leave on the first notice rather than the last.
+
+map_layers:
+  - hurricane_evac_zones
+  - surge_current

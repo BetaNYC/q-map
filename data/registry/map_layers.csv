@@ -1,0 +1,18 @@
+layer_id,label,kind,geometry,delivery,status,blocked_on,source,notes
+hvi_choropleth,Heat Vulnerability Index,context,polygon,inline,available,,DOHMH HVI feature service,Joins to cdta.geojson by cdta2020; no separate geometry needed
+stormwater_moderate,Stormwater flooding (moderate rain),context,polygon,pmtiles,available,,DEP stormwater flood map 2.13 in/hr current,Mirrored in data-v1; needs tiling
+stormwater_limited,Stormwater flooding (limited rain),context,polygon,pmtiles,available,,DEP stormwater flood map 1.77 in/hr current,Mirrored in data-v1; needs tiling
+surge_current,Storm surge (present day),context,polygon,pmtiles,blocked_on_data,fvi_tract_geometry,NYC Flood Vulnerability Index ss_cur,Tract-level index; needs tiling from the FVI service
+surge_2080s,Storm surge (2080s projection),context,polygon,pmtiles,blocked_on_data,coastal_surge_layer,Coastal Surge Flooding 2080s 100-Year,Single citywide multipart polygon; forward-looking context only
+hurricane_evac_zones,Hurricane evacuation zones,context,polygon,pmtiles,blocked_on_data,epne-qv9x,NYC Open Data epne-qv9x,Not yet fetched
+chem_businesses,Chemically intensive businesses,context,polygon,inline,available,,DOHMH Chemically Intensive Small Businesses,CD-level count; joins to cdta.geojson by cdta2020
+pivi_choropleth,Pandemic influenza vulnerability,context,polygon,inline,available,,DOHMH PIVI feature service,Joins to cdta.geojson by cdta2020
+tree_canopy,Tree canopy,context,raster,cog,deferred,land_cover_processing,NYC 2017 LiDAR Land Cover,121 GB source; needs local crop + reclassify. See PIPELINE_DESIGN.md section 9 item 5
+permeable_surface,Permeable surface,context,raster,cog,deferred,land_cover_processing,NYC 2017 LiDAR Land Cover,Same source and blocker as tree_canopy
+fema_100yr,FEMA 100-year floodplain,context,polygon,pmtiles,deferred,,FEMA NFHL,Reusable from d26 get_nfhl(); not yet in scope
+fema_500yr,FEMA 500-year floodplain,context,polygon,pmtiles,deferred,,FEMA NFHL,Reusable from d26 get_nfhl(); not yet in scope
+cooling_centers,Cooling centers,resource,point,geojson,blocked_on_data,cooling_centers_dataset,NYC OEM / Cool Options,Seasonal. NOT the cooling TOWER registry - see DATA_SOURCES.md
+evacuation_centers,Hurricane evacuation centers,resource,point,geojson,blocked_on_data,ayer-cga7,NYC Open Data ayer-cga7,Not yet fetched
+nonprofits,Community organisations,resource,point,geojson,blocked_on_data,resource_model,Queens Nonprofit Directory,Ungeocoded; needs the step-4 resource model
+franc_members,FRANC members,resource,point,geojson,blocked_on_data,resource_model,FRANC Resource Map,Rockaways only; QN14 has the only COAD
+libraries,Libraries,resource,point,geojson,blocked_on_data,ji82-xba5,DCP Facilities Database,qpl_libraries datasource

@@ -1,0 +1,20 @@
+# Extreme Cold — STUB. Schema-valid but unwritten; sections carry no items yet.
+# Authored content: the pipeline validates and copies, never generates.
+
+slug: extreme-cold
+label: Extreme Cold
+jra_category: temperature-extremes
+status: stub
+
+summary: >
+  Cold waves and loss of heat. Risk concentrates in buildings with failing heating systems.
+
+sections:
+  - id: preparedness
+    title: Before
+  - id: response
+    title: During
+  - id: general
+    title: General information
+
+map_layers: []

@@ -26,7 +26,8 @@ stat <- function(value, unit, reference_frame = NULL, ...) {
 # written only for what ships.
 DISPLAY_BORO_CODE <- 4L
 
-build_district_payloads <- function(crosswalk, hazards, measures, chp, lep) {
+build_district_payloads <- function(crosswalk, hazards, measures, chp, lep,
+                                   overlay_index = NULL) {
   chp_d <- chp_districts(chp)
   chp_city <- chp_citywide(chp)
 
@@ -107,6 +108,11 @@ build_district_payloads <- function(crosswalk, hazards, measures, chp, lep) {
         languages_shared_puma = isTRUE(row$puma_shared)
       ),
 
+      # Which hazards have district-specific guidance. The frontend reads this
+      # instead of probing for a 404 on districts/<slug>/hazards/<hazard>.json.
+      hazard_overrides = if (is.null(overlay_index)) character() else
+        sort(overlay_index$hazard[overlay_index$district == row$slug]),
+
       meta = list(
         hazard_model = "severity_x_exposure",
         hazard_model_status = "provisional_pending_expert_review",
@@ -124,15 +130,43 @@ num_or_null <- function(x) {
   if (length(v) == 0 || is.na(v)) NULL else round(v, 1)
 }
 
+# Fields that must serialise as a JSON array even with one element. Same trap
+# as the hazard catalog: auto_unbox collapses a 1-element list into a bare
+# value, so a district with a single language would emit an object where every
+# other district emits an array. Not currently reachable - every district has
+# five languages - but lep_for_district() takes head(n), so it is one config
+# change away from being reachable, and it fails silently on one district.
+DISTRICT_ARRAY_FIELDS <- c("hazards", "languages", "hazard_overrides")
+
 write_district_payloads <- function(payloads, dir) {
   dir.create(dir, showWarnings = FALSE, recursive = TRUE)
   paths <- vapply(names(payloads), function(slug) {
     p <- file.path(dir, paste0(slug, ".json"))
-    jsonlite::write_json(payloads[[slug]], p, auto_unbox = TRUE,
-                         digits = NA, null = "null", na = "null")
+    jsonlite::write_json(
+      force_arrays(payloads[[slug]], DISTRICT_ARRAY_FIELDS), p,
+      auto_unbox = TRUE, digits = NA, null = "null", na = "null"
+    )
     p
   }, character(1))
   unname(paths)
+}
+
+# Assert the shape on disk, not just in memory - the unboxing happens at
+# serialisation, so an in-memory check would miss it entirely.
+validate_district_output <- function(paths) {
+  for (p in paths) {
+    j <- jsonlite::fromJSON(p, simplifyVector = FALSE)
+    for (f in c("hazards")) {
+      if (!is.list(j[[f]]) || !is.null(names(j[[f]]))) {
+        stop(basename(p), ": ", f, " is not a JSON array")
+      }
+    }
+    L <- j$population$languages
+    if (!is.list(L) || (length(L) > 0 && !is.null(names(L)))) {
+      stop(basename(p), ": population.languages is not a JSON array")
+    }
+  }
+  TRUE
 }
 
 # --- validation -------------------------------------------------------------

@@ -19,7 +19,7 @@ library(tarchetypes)
 tar_option_set(
   packages = c(
     "sf", "dplyr", "httr", "readr", "readxl", "tidyr",
-    "rmapshaper", "jsonlite", "tibble", "purrr", "stats"
+    "rmapshaper", "jsonlite", "tibble", "purrr", "stats", "yaml"
   ),
   format = "qs"
 )
@@ -220,12 +220,18 @@ list(
 
   tar_target(
     district_payloads,
-    build_district_payloads(cdta_crosswalk, hazards, hazard_measures, chp, lep)
+    build_district_payloads(cdta_crosswalk, hazards, hazard_measures, chp, lep,
+                            overlay_index = hazard_override_index(hazard_overlays))
   ),
 
   tar_target(
     district_payloads_checks,
     validate_district_payloads(district_payloads, cdta_crosswalk)
+  ),
+
+  tar_target(
+    district_output_checks,
+    validate_district_output(district_payload_paths)
   ),
 
   tar_target(
@@ -237,5 +243,73 @@ list(
     district_payload_paths,
     write_district_payloads(district_payloads, "data/processed/districts"),
     format = "file"
+  ),
+
+  ## Hazard content ----------------------------------------------------------
+  # Authored YAML, validated and copied - never generated. Tracked as a
+  # directory-level file target so editing any file invalidates the check.
+
+  tar_target(
+    hazard_content_dir,
+    HAZARD_CONTENT_DIR,
+    format = "file"
+  ),
+
+  tar_target(
+    hazard_content,
+    read_hazard_content(hazard_content_dir)
+  ),
+
+  tar_target(map_layer_registry_path, "data/registry/map_layers.csv", format = "file"),
+  tar_target(map_layer_registry, read_layer_registry(map_layer_registry_path)),
+  tar_target(map_layer_registry_checks, validate_layer_registry(map_layer_registry)),
+
+  tar_target(
+    hazard_content_checks,
+    validate_hazard_content(
+      hazard_content,
+      model_slugs = c(names(HAZARD_SEVERITY), HAZARD_PINNED),
+      registry_ids = map_layer_registry$layer_id
+    )
+  ),
+
+  ## Per-district hazard overrides -------------------------------------------
+  # Rare by design: only where citywide guidance is genuinely wrong for a
+  # district. Everything that varies numerically is templated instead.
+
+  tar_target(hazard_overlays, read_hazard_overlays(hazard_content_dir)),
+
+  tar_target(
+    hazard_overlay_checks,
+    validate_hazard_overlays(
+      hazard_overlays, hazard_content,
+      district_slugs = filter(cdta_crosswalk, boro_code == 4)$slug
+    )
+  ),
+
+  tar_target(
+    hazard_overlay_paths,
+    write_hazard_overlays(hazard_content, hazard_overlays,
+                          "data/processed/districts"),
+    format = "file"
+  ),
+
+  # Separate from the schema check: it is the only target that needs the
+  # network, and it is the one most likely to fail for reasons unrelated to the
+  # content. Keeping it its own node makes that attributable.
+  tar_target(
+    hazard_link_checks,
+    validate_hazard_links(hazard_content, hazard_overlays)
+  ),
+
+  tar_target(
+    hazard_content_paths,
+    write_hazard_content(hazard_content, "data/processed/hazards"),
+    format = "file"
+  ),
+
+  tar_target(
+    hazard_output_checks,
+    validate_hazard_output(hazard_content_paths)
   )
 )

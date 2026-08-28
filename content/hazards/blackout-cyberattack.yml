@@ -1,0 +1,20 @@
+# Blackout & Cyberattack — STUB. Schema-valid but unwritten; sections carry no items yet.
+# Authored content: the pipeline validates and copies, never generates.
+
+slug: blackout-cyberattack
+label: Blackout & Cyberattack
+jra_category: utility-interruption
+status: stub
+
+summary: >
+  Loss of electricity, whether from grid failure, storm damage, or an attack on utility systems.
+
+sections:
+  - id: preparedness
+    title: Before
+  - id: response
+    title: During
+  - id: general
+    title: General information
+
+map_layers: []
