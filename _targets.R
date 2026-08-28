@@ -19,7 +19,7 @@ library(tarchetypes)
 tar_option_set(
   packages = c(
     "sf", "dplyr", "httr", "readr", "readxl", "tidyr",
-    "rmapshaper", "jsonlite", "tibble"
+    "rmapshaper", "jsonlite", "tibble", "purrr", "stats"
   ),
   format = "qs"
 )
@@ -156,6 +156,86 @@ list(
   tar_target(
     districts_json_path,
     write_districts_json(districts, "data/processed/districts.json"),
+    format = "file"
+  ),
+
+  ## Hazard inputs -----------------------------------------------------------
+  # All Tier-1 feature services. Static in practice - PIVI and the chemical
+  # business counts are published per JRA cycle, the FVI per climate
+  # assessment - so plain targets, invalidated by hand.
+
+  tar_target(pivi, get_pivi()),
+  tar_target(chem_businesses, get_chem_businesses()),
+  tar_target(fvi, get_fvi()),
+
+  # Census tract population, used only to population-weight the FVI onto
+  # districts per PIPELINE_DESIGN.md 2. Requires CENSUS_API_KEY.
+  tar_target(tract_pop, get_tract_population()),
+
+  tar_target(tract_cdta, tract_to_cdta(fvi, cdta_boundaries)),
+
+  tar_target(
+    tract_cdta_checks,
+    validate_tract_cdta(tract_cdta, tract_pop)
+  ),
+
+  tar_target(
+    coastal_exposure,
+    coastal_per_cdta(st_drop_geometry(fvi),
+                     filter(tract_cdta, !is.na(cdta2020)), tract_pop)
+  ),
+
+  tar_target(
+    stormwater_pct,
+    stormwater_pct_per_cdta(cdta_boundaries, stormwater_moderate)
+  ),
+
+  ## Hazard ranking ----------------------------------------------------------
+
+  tar_target(
+    hazard_measures,
+    build_hazard_measures(cdta_crosswalk, hvi, pivi, chem_businesses,
+                          stormwater_pct, coastal_exposure)
+  ),
+
+  tar_target(
+    hazard_measures_checks,
+    validate_hazard_measures(hazard_measures)
+  ),
+
+  tar_target(
+    hazards,
+    build_hazards(hazard_measures)
+  ),
+
+  ## District payloads -------------------------------------------------------
+
+  tar_target(chp_path, "data/prepared/chp_by_cd.csv", format = "file"),
+  tar_target(lep_path, "data/prepared/lep_languages_puma.csv", format = "file"),
+
+  tar_target(chp, read_chp(chp_path)),
+  tar_target(lep, read_lep(lep_path)),
+  tar_target(chp_checks, validate_chp(chp)),
+  tar_target(lep_checks, validate_lep(lep)),
+
+  tar_target(
+    district_payloads,
+    build_district_payloads(cdta_crosswalk, hazards, hazard_measures, chp, lep)
+  ),
+
+  tar_target(
+    district_payloads_checks,
+    validate_district_payloads(district_payloads, cdta_crosswalk)
+  ),
+
+  tar_target(
+    hazard_calibration_checks,
+    validate_hazard_calibration(district_payloads)
+  ),
+
+  tar_target(
+    district_payload_paths,
+    write_district_payloads(district_payloads, "data/processed/districts"),
     format = "file"
   )
 )

@@ -63,6 +63,12 @@ validate_stormwater <- function(x, label) {
 # a district with no flooding must appear as 0, not be dropped, or it silently
 # becomes NA in the district payload. Same reasoning as d26's swf_per_zcta().
 stormwater_pct_per_cdta <- function(cdta, stormwater) {
+  # Boundaries arrive in EPSG:4326 for delivery; area and intersection work
+  # happens in the analysis CRS, per d26's "analytical work in EPSG:2263,
+  # reproject only at the delivery boundary" agreement.
+  cdta <- st_transform(cdta, 2263)
+  stormwater <- st_transform(stormwater, 2263)
+
   u <- st_union(stormwater)
   area <- as.numeric(st_area(cdta))
 
