@@ -33,3 +33,4 @@ non-profit-directory/
 .positai
 /.uvr/library/
 /.uvr/activate*
+.vscode/settings.json
