@@ -8,14 +8,14 @@
 # deliberate: 59 rows of judgment about how five geographies reconcile belong
 # in a reviewable file, not in a runtime derivation.
 #
-# Usage:  Rscript scripts/00_build_crosswalk.R
+# Usage:  uvr run scripts/00_build_crosswalk.R
 #
 # Inputs:
 #   - NYC DCP CDTA 2020 feature service (fetched)
 #   - data/source/dcp-top-LEP-lang-spk-at-home-puma_2024acs5yr-PUMS.xlsx
-#   - data/source/hvi_cdta2020.csv
+#   - DOHMH Heat Vulnerability Index feature service (fetched)
 #
-# Both local inputs are gitignored Tier-2 mirrors. See DATA_SOURCES.md.
+# The LEP workbook is a gitignored Tier-2 mirror. See DATA_SOURCES.md.
 
 library(sf)
 library(dplyr)
@@ -28,7 +28,7 @@ source("R/validate.R")
 source("R/crosswalk.R")
 
 LEP_PATH <- "data/source/dcp-top-LEP-lang-spk-at-home-puma_2024acs5yr-PUMS.xlsx"
-HVI_PATH <- "data/source/hvi_cdta2020.csv"
+
 OUT_PATH <- "data/crosswalk/cdta_crosswalk.csv"
 
 message("Fetching CDTA 2020 boundaries (CDTAType = 0, citywide) ...")
@@ -36,10 +36,12 @@ cdta <- get_cdta()
 message("  ", nrow(cdta), " features")
 
 message("Building crosswalk ...")
-crosswalk <- build_cdta_crosswalk(cdta, lep_path = LEP_PATH, hvi_path = HVI_PATH)
+crosswalk <- build_cdta_crosswalk(cdta, lep_path = LEP_PATH)
 
 message("Validating ...")
-invisible(validate_cdta_crosswalk(crosswalk, hvi_path = HVI_PATH))
+message("Fetching HVI (for validation) ...")
+hvi <- get_hvi()
+invisible(validate_cdta_crosswalk(crosswalk, hvi = hvi))
 
 invisible(write_cdta_crosswalk(crosswalk, OUT_PATH))
 message("Wrote ", OUT_PATH, " (", nrow(crosswalk), " rows)")

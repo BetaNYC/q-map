@@ -11,6 +11,17 @@ CDTA_SERVICE_URL <- paste0(
   "NYC_Community_District_Tabulation_Areas_2020/FeatureServer/0/query"
 )
 
+# DOHMH's Heat Vulnerability Index, published as a feature service keyed on
+# CommDist (a BoroCD). Tier 1 - fetched, not mirrored.
+#
+# Despite "2024" in the service name this is the 2023 vintage: Year_Description
+# is 2023 on every row, and all 59 scores match the NYC EH Data Portal's manual
+# CDTA export exactly. The service simply removes the manual export step.
+HVI_SERVICE_URL <- paste0(
+  "https://services1.arcgis.com/8cuieNI8NbqQZQVJ/ArcGIS/rest/services/",
+  "HVI_by_CDTA_CRAD_2024/FeatureServer/0/query"
+)
+
 # Borough abbreviations as they appear in CDTA2020 codes and in the DCP LEP
 # workbook's "Community District" column.
 BORO_ABBREV <- c("MN" = 1L, "BX" = 2L, "BK" = 3L, "QN" = 4L, "SI" = 5L)
@@ -71,6 +82,14 @@ cdta_core <- function(cdta) {
       # PIPELINE_DESIGN.md 2 called this join "identity"; it is not.
       hvi_geoid = as.integer(county_fips) * 100L + cd_num,
       cd_label = paste("Community District", cd_num),
+      # "QN01 Astoria-Queensbridge (CD 1 Equivalent)" -> "Astoria-Queensbridge".
+      # Derived from CDTAName rather than taken from an external source: the HVI
+      # feature service spells the same district "Long Island City and Astoria
+      # (CD1)", a different naming scheme entirely, so it cannot supply this.
+      display_name = sub(
+        paste0(" ", CDTA_NAME_PATTERN), "",
+        sub("^[A-Z]{2}[0-9]{2} ", "", CDTAName)
+      ),
       # The URL segment. Stored, not derived at runtime, so it can never drift
       # from what has been linked. Queens ships as q01..q14 per the wireframes;
       # other boroughs get the lowercased CDTA code as a stable placeholder.
@@ -129,34 +148,50 @@ get_lep_puma_crosswalk <- function(path) {
     select(borocd, puma2020)
 }
 
-# Read the NYC EH Data Portal HVI export, keyed on the DOHMH GeoID.
+# Fetch the Heat Vulnerability Index, keyed on CommDist (BoroCD).
 #
-# Used here only for display_name: its Geography strings are already clean
-# ("Astoria-Queensbridge (CD 1)"), which beats regex-stripping the longer
-# " (CD 1 Equivalent)" suffix off CDTAName. The HVI score itself is consumed
-# later, by the district payload.
-get_hvi_names <- function(path) {
-  readr::read_csv(path, col_types = readr::cols(
-    GeoType = readr::col_character(),
-    GeoID = readr::col_integer(),
-    Geography = readr::col_character(),
-    .default = readr::col_guess()
-  )) |>
-    filter(GeoType == "CDTA2020") |>
+# The service returns 70 rows: the 59 community districts plus 11 Joint
+# Interest Areas. Filtering on "has an HVI value" is WRONG and returns 60 -
+# ten JIAs are null but BX28 Pelham Bay Park carries a score of 1, so a park
+# would silently enter any per-capita denominator. Filter on the JIA name
+# pattern instead, which yields exactly 59 and leaves no nulls behind.
+HVI_JIA_PATTERN <- "\\(JIA [0-9]+"
+
+get_hvi <- function(url = HVI_SERVICE_URL) {
+  parsed <- httr::parse_url(url)
+  parsed$query <- list(
+    where = "1=1",
+    outFields = "CommDist,Neighborhood_CD,HVI,Year_Description",
+    returnGeometry = "false",
+    f = "json"
+  )
+  raw <- jsonlite::fromJSON(httr::build_url(parsed))$features$attributes
+
+  out <- raw |>
+    filter(!grepl(HVI_JIA_PATTERN, Neighborhood_CD)) |>
     transmute(
-      hvi_geoid = GeoID,
-      display_name = sub(" \\(CD [0-9]+\\)$", "", Geography)
-    )
+      borocd = as.integer(CommDist),
+      hvi = as.integer(HVI),
+      hvi_year = as.integer(Year_Description)
+    ) |>
+    arrange(borocd)
+
+  # The JIA filter leans on a name convention; assert the result rather than
+  # trusting it, so a rename upstream fails here instead of downstream.
+  if (nrow(out) != 59) {
+    stop(paste0("HVI service: expected 59 community districts after removing ",
+                "JIAs, got ", nrow(out)))
+  }
+  assert_no_na(out, c("borocd", "hvi"))
+  out
 }
 
-build_cdta_crosswalk <- function(cdta, lep_path, hvi_path) {
+build_cdta_crosswalk <- function(cdta, lep_path) {
   core <- cdta_core(cdta)
   puma <- get_lep_puma_crosswalk(lep_path)
-  names_hvi <- get_hvi_names(hvi_path)
 
   core |>
     left_join(puma, by = "borocd") |>
-    left_join(names_hvi, by = "hvi_geoid") |>
     mutate(puma_shared = puma2020 %in% PUMA_SHARED_ALLOWLIST) |>
     select(
       cdta2020, slug, borocd, puma2020, puma_shared, hvi_geoid,
@@ -192,7 +227,7 @@ read_cdta_crosswalk <- function(path) {
 # Every assertion here is a claim PIPELINE_DESIGN.md's Verification section
 # makes, except where a claim turned out to be wrong about the real data - see
 # the puma2020 and hvi_geoid notes.
-validate_cdta_crosswalk <- function(crosswalk, hvi_path) {
+validate_cdta_crosswalk <- function(crosswalk, hvi) {
   # 59 community districts citywide, 14 in Queens. The count is corroborated
   # independently by the HVI export also having exactly 59 rows.
   assert_row_count(crosswalk, min = 59, max = 59)
@@ -233,26 +268,27 @@ validate_cdta_crosswalk <- function(crosswalk, hvi_path) {
   assert_unique(filter(crosswalk, boro_code == 4L), "puma2020")
   assert_unique_except(crosswalk, "puma2020", PUMA_SHARED_ALLOWLIST)
 
-  # The HVI GeoID formula round-trips against the real export, both directions.
-  # Fails if we derive a code the portal doesn't publish, and if the portal
-  # publishes one we don't derive.
-  hvi <- get_hvi_names(hvi_path)
+  # The crosswalk's district set must match DOHMH's, both directions. Fails if
+  # we carry a district DOHMH does not publish, and if DOHMH publishes one we
+  # do not carry - the second direction being what catches silent upstream
+  # change. This is also what keeps BX28 Pelham Bay Park out: it is a JIA that
+  # nonetheless carries an HVI score, and only the crosswalk join excludes it.
   assert_keys_match(
-    crosswalk, hvi, by = "hvi_geoid",
-    label_x = "crosswalk", label_y = "HVI export"
+    crosswalk, hvi, by = "borocd",
+    label_x = "crosswalk", label_y = "HVI service"
   )
 
-  # display_name comes from HVI; cross-check it against the independent
-  # CDTAName spelling so a mismatch surfaces here rather than on a district page.
-  from_cdta_name <- sub(
-    " \\(CD [0-9]+ (Equivalent|Approximation)\\)$", "",
-    sub("^[A-Z]{2}[0-9]{2} ", "", crosswalk$cdta_name)
-  )
-  disagree <- crosswalk$cdta2020[from_cdta_name != crosswalk$display_name]
-  if (length(disagree) > 0) {
+  # hvi_geoid is no longer HVI's join key - the service uses borocd - but it
+  # remains the key for other NYC EH Data Portal exports, so its derivation is
+  # still asserted to be well-formed rather than silently rotting.
+  bad_geoid <- crosswalk$cdta2020[
+    crosswalk$hvi_geoid != as.integer(crosswalk$county_fips) * 100L +
+      (crosswalk$borocd %% 100L)
+  ]
+  if (length(bad_geoid) > 0) {
     stop(paste0(
-      length(disagree), " display_name(s) disagree with CDTAName: ",
-      paste(disagree, collapse = ", ")
+      length(bad_geoid), " hvi_geoid value(s) do not match the county-FIPS ",
+      "formula: ", paste(bad_geoid, collapse = ", ")
     ))
   }
 

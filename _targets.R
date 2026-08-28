@@ -45,17 +45,63 @@ list(
     read_cdta_crosswalk(cdta_crosswalk_path)
   ),
 
-  # The HVI export is one of the crosswalk's two-way key checks, so the
-  # validator needs it. Tracked as a file target for the same reason.
   tar_target(
-    hvi_cdta_path,
-    "data/source/hvi_cdta2020.csv",
+    cdta_crosswalk_checks,
+    validate_cdta_crosswalk(cdta_crosswalk, hvi)
+  ),
+
+  ## Heat --------------------------------------------------------------------
+  # DOHMH Heat Vulnerability Index, keyed on CommDist. Tier 1 - fetched, not
+  # mirrored, since DOHMH publishes it as a feature service. Static in
+  # practice: the 2023 vintage has been current since publication, so a plain
+  # tar_target rather than tar_age().
+  #
+  # get_hvi() filters out Joint Interest Areas by name and asserts 59 rows.
+  # Filtering on "has an HVI score" instead would return 60 - BX28 Pelham Bay
+  # Park is a JIA that carries a score - so a park would enter the district set.
+
+  tar_target(
+    hvi,
+    get_hvi()
+  ),
+
+  ## Heavy rain --------------------------------------------------------------
+  # DEP stormwater flood extents. Tier 2: no API, so they are mirrored to
+  # data/prepared/ by scripts/01_mirror_stormwater.R and published in the
+  # data-v* Release. In CI the Release is rehydrated into data/prepared/ before
+  # tar_make(); locally the mirror script puts them there. Either way the DAG
+  # sees a plain file path whose hash it tracks.
+
+  tar_target(
+    stormwater_limited_path,
+    "data/prepared/stormwater_limited_1_77.geojson",
     format = "file"
   ),
 
   tar_target(
-    cdta_crosswalk_checks,
-    validate_cdta_crosswalk(cdta_crosswalk, hvi_path = hvi_cdta_path)
+    stormwater_moderate_path,
+    "data/prepared/stormwater_moderate_2_13.geojson",
+    format = "file"
+  ),
+
+  tar_target(
+    stormwater_limited,
+    get_stormwater(stormwater_limited_path)
+  ),
+
+  tar_target(
+    stormwater_moderate,
+    get_stormwater(stormwater_moderate_path)
+  ),
+
+  tar_target(
+    stormwater_limited_checks,
+    validate_stormwater(stormwater_limited, "stormwater_limited_1_77")
+  ),
+
+  tar_target(
+    stormwater_moderate_checks,
+    validate_stormwater(stormwater_moderate, "stormwater_moderate_2_13")
   ),
 
   ## Boundaries ------------------------------------------------------------
