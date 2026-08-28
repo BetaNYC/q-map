@@ -43,6 +43,20 @@ url = "https://cran.r-project.org/src/contrib/Rcpp_1.1.2.tar.gz"
 checksum = "md5:353d35176db9c570705a0a324c06fdca"
 
 [[package]]
+name = "V8"
+version = "8.2.0"
+source = "cran"
+raw_version = "8.2.0"
+url = "https://cran.r-project.org/src/contrib/V8_8.2.0.tar.gz"
+checksum = "md5:c8d926eb2f59ebe63debc864fa6a5096"
+requires = [
+    "Rcpp",
+    "jsonlite",
+    "curl",
+    "Rcpp",
+]
+
+[[package]]
 name = "askpass"
 version = "1.2.1"
 source = "cran"
@@ -245,6 +259,34 @@ url = "https://cran.r-project.org/src/contrib/generics_0.1.4.tar.gz"
 checksum = "md5:dda54b65216fe3c53571d2adaddc7461"
 
 [[package]]
+name = "geojsonsf"
+version = "2.0.5"
+source = "cran"
+raw_version = "2.0.5"
+url = "https://cran.r-project.org/src/contrib/geojsonsf_2.0.5.tar.gz"
+checksum = "md5:47ac88f9ef8a3a99df362eba4d012c95"
+requires = [
+    "Rcpp",
+    "geometries",
+    "jsonify",
+    "rapidjsonr",
+    "Rcpp",
+    "sfheaders",
+]
+
+[[package]]
+name = "geometries"
+version = "0.2.5"
+source = "cran"
+raw_version = "0.2.5"
+url = "https://cran.r-project.org/src/contrib/geometries_0.2.5.tar.gz"
+checksum = "md5:b3c162277bc55acb7a7e0162f07e0b80"
+requires = [
+    "Rcpp",
+    "Rcpp",
+]
+
+[[package]]
 name = "glue"
 version = "1.8.1"
 source = "cran"
@@ -307,6 +349,19 @@ requires = [
     "rlang",
     "vctrs",
     "cpp11",
+]
+
+[[package]]
+name = "jsonify"
+version = "1.2.3"
+source = "cran"
+raw_version = "1.2.3"
+url = "https://cran.r-project.org/src/contrib/jsonify_1.2.3.tar.gz"
+checksum = "md5:559c4431cf6d6d3c0b0fdfa5e85a3dd6"
+requires = [
+    "Rcpp",
+    "rapidjsonr",
+    "Rcpp",
 ]
 
 [[package]]
@@ -475,6 +530,14 @@ requires = [
 ]
 
 [[package]]
+name = "rapidjsonr"
+version = "1.2.1"
+source = "cran"
+raw_version = "1.2.1"
+url = "https://cran.r-project.org/src/contrib/rapidjsonr_1.2.1.tar.gz"
+checksum = "md5:aefd169bd6f987c34377dea30de10b4e"
+
+[[package]]
 name = "readr"
 version = "2.2.0"
 source = "cran"
@@ -528,6 +591,22 @@ url = "https://cran.r-project.org/src/contrib/rlang_1.3.0.tar.gz"
 checksum = "md5:b52c165e43f4d7fe5cfa15c5c9467ff4"
 
 [[package]]
+name = "rmapshaper"
+version = "0.6.1"
+source = "cran"
+raw_version = "0.6.1"
+url = "https://cran.r-project.org/src/contrib/rmapshaper_0.6.1.tar.gz"
+checksum = "md5:f96dfadd2b271164d79be49f6340e6ac"
+requires = [
+    "geojsonsf",
+    "jsonify",
+    "readr",
+    "sf",
+    "sp",
+    "V8",
+]
+
+[[package]]
 name = "s2"
 version = "1.1.11"
 source = "cran"
@@ -563,6 +642,28 @@ requires = [
     "units",
     "Rcpp",
 ]
+
+[[package]]
+name = "sfheaders"
+version = "0.4.5"
+source = "cran"
+raw_version = "0.4.5"
+url = "https://cran.r-project.org/src/contrib/sfheaders_0.4.5.tar.gz"
+checksum = "md5:c408dea4599aeaa5403382d927344164"
+requires = [
+    "Rcpp",
+    "geometries",
+    "Rcpp",
+]
+
+[[package]]
+name = "sp"
+version = "2.2.3"
+source = "cran"
+raw_version = "2.2-3"
+url = "https://cran.r-project.org/src/contrib/sp_2.2-3.tar.gz"
+checksum = "md5:727d54966fbfdd2a644748a1a733f483"
+requires = ["lattice"]
 
 [[package]]
 name = "stringi"

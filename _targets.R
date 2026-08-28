@@ -18,7 +18,8 @@ library(tarchetypes)
 
 tar_option_set(
   packages = c(
-    "sf", "dplyr", "httr", "readr", "readxl", "tidyr"
+    "sf", "dplyr", "httr", "readr", "readxl", "tidyr",
+    "rmapshaper", "jsonlite", "tibble"
   ),
   format = "qs"
 )
@@ -55,5 +56,60 @@ list(
   tar_target(
     cdta_crosswalk_checks,
     validate_cdta_crosswalk(cdta_crosswalk, hvi_path = hvi_cdta_path)
+  ),
+
+  ## Boundaries ------------------------------------------------------------
+  # Static tier: CDTA boundaries change on the decennial cycle. Fetched with a
+  # plain tar_target rather than tar_age() - invalidate by hand when DCP
+  # revises the layer, the same treatment d26 gave the FEMA NFHL fetch.
+
+  tar_target(
+    cdta_boundaries,
+    get_cdta()
+  ),
+
+  tar_target(
+    cdta_boundaries_checks,
+    validate_cdta_boundaries(cdta_boundaries)
+  ),
+
+  tar_target(
+    cdta_simplified,
+    simplify_cdta(cdta_boundaries)
+  ),
+
+  tar_target(
+    cdta_simplified_checks,
+    validate_cdta_simplified(cdta_simplified, cdta_boundaries)
+  ),
+
+  ## Output ----------------------------------------------------------------
+
+  tar_target(
+    cdta_geojson_path,
+    write_cdta_geojson(cdta_simplified, cdta_crosswalk,
+                       "data/processed/cdta.geojson"),
+    format = "file"
+  ),
+
+  tar_target(
+    cdta_geojson_checks,
+    validate_cdta_geojson(cdta_geojson_path)
+  ),
+
+  tar_target(
+    districts,
+    build_districts_index(cdta_simplified, cdta_crosswalk)
+  ),
+
+  tar_target(
+    districts_checks,
+    validate_districts(districts, cdta_crosswalk, cdta_simplified)
+  ),
+
+  tar_target(
+    districts_json_path,
+    write_districts_json(districts, "data/processed/districts.json"),
+    format = "file"
   )
 )
