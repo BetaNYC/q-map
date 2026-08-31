@@ -420,5 +420,21 @@ list(
     gap_matrix_paths,
     write_gap_matrices(gap_values, gap_registry, cdta_crosswalk, "data/processed/gaps"),
     format = "file"
+  ),
+
+  ## Current conditions ------------------------------------------------------
+  # Computed from the committed ARCHIVE, not the live feed. DOHMH publishes a
+  # 12-week rolling window; scripts/06_archive_respiratory.R appends to the
+  # archive weekly, and the archive is the only record of anything older.
+
+  tar_target(respiratory_archive_path, ARCHIVE_PATH, format = "file"),
+  tar_target(respiratory_archive, read_respiratory_archive(respiratory_archive_path)),
+  tar_target(respiratory_checks, validate_respiratory(respiratory_archive)),
+
+  tar_target(conditions, build_conditions(respiratory_archive)),
+  tar_target(
+    conditions_path,
+    write_conditions(conditions, "data/processed/conditions.json"),
+    format = "file"
   )
 )
