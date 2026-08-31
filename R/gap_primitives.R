@@ -457,3 +457,92 @@ validate_gap_selection <- function(sel, hazards, crosswalk, n_target = 3) {
   }
   TRUE
 }
+
+# --- access measures contract -----------------------------------------------
+#
+# Produced OUTSIDE the DAG by scripts/04_access_measures.R and published in a
+# data-v* release. See ACCESS_MEASURES.md for the full brief.
+#
+# The DAG never routes. It reads this file as a format = "file" target, exactly
+# as d26 read its zonal statistics, which keeps r5r, a JVM and a
+# multi-hundred-MB OSM extract out of CI.
+
+ACCESS_FACILITY_SETS <- c("cool_options_indoor", "parks",
+                          "evacuation_centers", "hospitals")
+ACCESS_THRESHOLDS <- c(10, 15, 20, 30)
+# Only the small sets get a full travel-time matrix; the large ones are
+# isochrone unions, so minutes_to_nearest is legitimately absent for them.
+ACCESS_SETS_WITH_MINUTES <- c("evacuation_centers", "hospitals")
+
+read_access_stats <- function(path) {
+  readr::read_csv(path, show_col_types = FALSE, col_types = readr::cols(
+    geoid = readr::col_character(),
+    facility_set = readr::col_character(),
+    minutes_to_nearest = readr::col_double(),
+    .default = readr::col_logical()
+  ))
+}
+
+validate_access_stats <- function(acc) {
+  within_cols <- paste0("within_", ACCESS_THRESHOLDS)
+  required <- c("geoid", "facility_set", "minutes_to_nearest", within_cols)
+  missing <- setdiff(required, names(acc))
+  if (length(missing) > 0) {
+    stop("access_stats.csv: missing column(s) ", paste(missing, collapse = ", "),
+         " - see ACCESS_MEASURES.md")
+  }
+  assert_no_na(acc, c("geoid", "facility_set"))
+
+  bad_set <- setdiff(acc$facility_set, ACCESS_FACILITY_SETS)
+  if (length(bad_set) > 0) {
+    stop("access_stats.csv: unknown facility_set(s) ",
+         paste(bad_set, collapse = ", "))
+  }
+  absent <- setdiff(ACCESS_FACILITY_SETS, acc$facility_set)
+  if (length(absent) > 0) {
+    stop("access_stats.csv: no rows for facility_set(s) ",
+         paste(absent, collapse = ", "), " - all four are needed")
+  }
+
+  # 15-digit 2020 block GEOIDs. A tract geoid is 11 digits, and silently
+  # accepting one would collapse ~40 blocks into a single origin.
+  bad_geoid <- unique(acc$geoid[nchar(acc$geoid) != 15])
+  if (length(bad_geoid) > 0) {
+    stop("access_stats.csv: ", length(bad_geoid), " geoid(s) are not 15-digit ",
+         "block ids - a tract geoid is 11 digits. e.g. ", bad_geoid[1])
+  }
+  dupes <- acc |> count(geoid, facility_set) |> filter(n > 1)
+  if (nrow(dupes) > 0) {
+    stop("access_stats.csv: ", nrow(dupes), " duplicate (geoid, facility_set) rows")
+  }
+
+  # The sets that feed access_mean must actually carry minutes.
+  for (fs in ACCESS_SETS_WITH_MINUTES) {
+    rows <- acc |> filter(facility_set == fs)
+    if (all(is.na(rows$minutes_to_nearest))) {
+      stop("access_stats.csv: facility_set '", fs, "' has no ",
+           "minutes_to_nearest, but access_mean gaps need it")
+    }
+  }
+
+  # Monotonicity. A block within 10 minutes must be within 15, 20 and 30. A
+  # violation means the isochrones were unioned inconsistently, which produces
+  # plausible numbers rather than an error.
+  for (i in seq_len(length(ACCESS_THRESHOLDS) - 1)) {
+    lo <- within_cols[i]; hi <- within_cols[i + 1]
+    bad <- sum(acc[[lo]] & !acc[[hi]], na.rm = TRUE)
+    if (bad > 0) {
+      stop("access_stats.csv: ", bad, " row(s) are ", lo, " but not ", hi,
+           " - the isochrone unions are inconsistent")
+    }
+  }
+
+  # A walk time at or below the straight-line equivalent means a broken network
+  # graph, which is the failure mode ACCESS_MEASURES.md calls out as most likely
+  # to pass unnoticed. Only checkable where minutes are present.
+  neg <- acc |> filter(!is.na(minutes_to_nearest), minutes_to_nearest < 0)
+  if (nrow(neg) > 0) {
+    stop("access_stats.csv: ", nrow(neg), " negative walk time(s)")
+  }
+  TRUE
+}
