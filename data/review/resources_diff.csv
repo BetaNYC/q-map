@@ -1,0 +1,5 @@
+resource_id,source,source_id,provenance,verified_on,name,canonical_category,subcategory,is_critical,address,lon,lat,geocode_boro,geocode_match,in_queens,serves_queens,is_coad_member,mission,contact,contact_name,email,phone,website,social,languages,accepts_referrals,fees,capacity,review_note,.change,name.new,subcategory.new,address.new,lon.new,lat.new,capacity.new,name.old,subcategory.old,address.old,lon.old,lat.old,capacity.old
+franc:far-rockaway-arverne,franc,,franc_resource_map,2026-08-31,"Far Rockaway/Arverne
+",unassigned,Resources,FALSE,,-73.7692883534573,40.5973434,Queens,,TRUE,TRUE,FALSE,"Includes communities of Bayswater, Wave Crest, and Edgemere",,,,,,,,,,,category needs per-record review,added,,,,,,,,,,,,
+franc:point-15,franc,,franc_resource_map,2026-08-31,Point 15,unassigned,Resources,FALSE,,-73.7618581,40.5967703,Queens,,TRUE,TRUE,FALSE,,,,,,,,,,,,category needs per-record review,added,,,,,,,,,,,,
+franc:assembly-member-khaleel-anderson,,,,,,,,,,,,,,,,,,,,,,,,,,,,,changed,Assembly Member Khaleel Anderson ,Elected Officials Offices,,-73.7526994,40.6039898,,Assembly Member Khaleel Anderson,Elected Officials Offices,,-73.7526994,40.6039898,

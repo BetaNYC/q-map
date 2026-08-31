@@ -381,6 +381,12 @@ paste_na <- function(...) {
 
 build_resource_candidates <- function(facdb, qnpd, qnpd_geo, franc, cx,
                                       verified_on = as.character(Sys.Date())) {
+  # Trim whitespace on ingest. FRANC carries names with trailing spaces, and
+  # without this every review cycle re-proposes a cosmetic diff - the first run
+  # of the reconcile loop reported exactly one "change", and it was a trailing
+  # space on an assembly member's name.
+  trim <- function(x) if (is.character(x)) trimws(x) else x
+
   all <- bind_rows(
     candidates_facdb(facdb, cx, verified_on),
     candidates_qnpd(qnpd, cx, qnpd_geo, verified_on),
@@ -412,6 +418,7 @@ build_resource_candidates <- function(facdb, qnpd, qnpd_geo, franc, cx,
         TRUE ~ NA_character_
       )
     ) |>
+    mutate(across(where(is.character), trim)) |>
     select(any_of(CANONICAL_COLUMNS)) |>
     arrange(source, resource_id)
 }

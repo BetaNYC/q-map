@@ -436,5 +436,23 @@ list(
     conditions_path,
     write_conditions(conditions, "data/processed/conditions.json"),
     format = "file"
-  )
+  ),
+
+  ## Map layers --------------------------------------------------------------
+  # Vector tiles built by scripts/01_mirror_stormwater.R and published in the
+  # data-v* release. The DAG copies them through; it never runs tippecanoe.
+
+  tar_target(stormwater_moderate_tiles_src,
+             "data/prepared/stormwater_moderate_2_13.pmtiles", format = "file"),
+  tar_target(stormwater_limited_tiles_src,
+             "data/prepared/stormwater_limited_1_77.pmtiles", format = "file"),
+
+  tar_target(
+    layer_tile_paths,
+    c(copy_layer(stormwater_moderate_tiles_src, "data/processed/layers"),
+      copy_layer(stormwater_limited_tiles_src, "data/processed/layers")),
+    format = "file"
+  ),
+
+  tar_target(layer_tile_checks, validate_layer_tiles(layer_tile_paths, map_layer_registry))
 )

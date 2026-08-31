@@ -16,8 +16,8 @@
 #
 # Inputs:
 #   DCP Facilities Database (Socrata, fetched)
-#   data/source/qnpd_nonprofits.csv
-#   data/source/franc_resource_map.geojson
+#   data/prepared/qnpd_nonprofits.csv
+#   data/prepared/franc_resource_map.geojson
 #   data/crosswalk/resource_categories.csv
 
 library(sf)
@@ -46,7 +46,7 @@ facdb <- get_facdb(cx)
 message("  ", nrow(facdb), " facilities")
 
 message("Reading Queens Nonprofit Directory ...")
-qnpd <- read_qnpd("data/source/qnpd_nonprofits.csv")
+qnpd <- read_qnpd("data/prepared/qnpd_nonprofits.csv")
 message("  ", nrow(qnpd), " organisations")
 
 message("Geocoding nonprofit addresses via NYC GeoSearch ...")
@@ -55,7 +55,7 @@ message("  ", sum(!is.na(qnpd_geo$lon)), " of ", nrow(qnpd), " geocoded; ",
         sum(qnpd_geo$geocode_boro == "Queens", na.rm = TRUE), " in Queens")
 
 message("Reading FRANC resource map ...")
-franc <- read_franc("data/source/franc_resource_map.geojson")
+franc <- read_franc("data/prepared/franc_resource_map.geojson")
 message("  ", nrow(franc), " features")
 
 # FacDB publishes 0/0 for records it could not place. Geocode those from their
@@ -98,19 +98,38 @@ if (!file.exists(CANONICAL) || force) {
 
   # Changed: compare only source-derived fields. Anything a human may have
   # edited by hand must not be reported as drift, or every review cycle
-  # re-proposes undoing the last one.
-  source_fields <- c("name", "canonical_category", "subcategory", "address",
-                     "lon", "lat", "capacity")
-  changed <- inner_join(
+  # re-proposes undoing the last one. canonical_category is deliberately NOT in
+  # this list - recategorising is exactly the hand edit the loop exists to
+  # protect, and reporting it would ask the reviewer to undo their own work.
+  source_fields <- c("name", "subcategory", "address", "lon", "lat", "capacity")
+
+  joined <- inner_join(
     select(cand_chr, resource_id, all_of(source_fields)),
     select(existing, resource_id, all_of(source_fields)),
     by = "resource_id", suffix = c(".new", ".old")
-  ) |>
-    filter(if_any(ends_with(".new"), function(v) {
-      old <- get(sub("\\.new$", ".old", dplyr::cur_column()))
-      !identical(as.character(v), as.character(old))
-    })) |>
-    mutate(.change = "changed")
+  )
+
+  # Compared pairwise rather than with if_any(): cur_column() is only defined
+  # inside across(), and using it in if_any() aborts.
+  #
+  # Numeric fields are compared with a tolerance. A CSV round-trip can change
+  # the printed form of a coordinate without changing the value, and reporting
+  # that as drift would fill the review file with noise.
+  differs <- function(a, b, numeric = FALSE) {
+    na_a <- is.na(a); na_b <- is.na(b)
+    if (numeric) {
+      an <- suppressWarnings(as.numeric(a)); bn <- suppressWarnings(as.numeric(b))
+      (na_a != na_b) | (!na_a & !na_b & abs(an - bn) > 1e-6)
+    } else {
+      (na_a != na_b) | (!na_a & !na_b & as.character(a) != as.character(b))
+    }
+  }
+  numeric_fields <- c("lon", "lat", "capacity")
+  flags <- lapply(source_fields, function(f) {
+    differs(joined[[paste0(f, ".new")]], joined[[paste0(f, ".old")]],
+            numeric = f %in% numeric_fields)
+  })
+  changed <- joined[Reduce(`|`, flags), ] |> mutate(.change = "changed")
 
   diff <- bind_rows(added, removed, changed)
   dir.create(dirname(DIFF_OUT), showWarnings = FALSE, recursive = TRUE)

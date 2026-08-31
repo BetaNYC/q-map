@@ -141,6 +141,7 @@ file_row(file.path(PROCESSED, "resources/q*.json"), "Per-district resource lists
 file_row(file.path(PROCESSED, "gaps/q*.json"), "The full gap matrix per district."),
 file_row(file.path(PROCESSED, "hazards/*.json"), "Authored hazard guidance, citywide."),
 file_row(file.path(PROCESSED, "districts/q*/hazards/*.json"), "District-specific hazard overrides. Rare."),
+file_row(file.path(PROCESSED, "layers/*.pmtiles"), "Vector tiles for hazard-page overlays. PMTiles v3, MVT, z10-16, EPSG:4326."),
 "",
 sprintf("`districts.json` covers all %d CDTAs citywide; every per-district file covers the 14 in Queens.", n_districts),
 "",
@@ -230,6 +231,7 @@ sprintf("%d hazards. A district-specific override lives at `districts/<slug>/haz
 "- **`resource_categories` is per-district.** Two wireframe screens show different lists because they render different districts. Both are right.",
 "- **Arrays stay arrays.** `map_layers`, `hazards`, `languages`, `gaps_displayed` and `resources` are always arrays, even with one element. Asserted in the pipeline.",
 "- **`coad` is `null` in 13 of 14 districts.** That is the common case.",
+"- **Layer ids are permalink surface.** They appear in map URLs. `data/registry/map_layers.csv` is the vocabulary; only rows with `status: available` have an artifact. `delivery: inline` means the values already ship in the district payload and join to `cdta.geojson` by `cdta2020` - there is no separate file.",
 "- **Language estimates carry `cv`.** Above 30, DCP treats the figure as unreliable; `facts.reliable` says so. One district's top result has a CV of 49.",
 ""
 )

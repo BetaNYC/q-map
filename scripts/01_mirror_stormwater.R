@@ -104,3 +104,65 @@ for (nm in names(LAYERS)) {
 }
 
 message("\nMirrored ", length(LAYERS), " stormwater layers to ", OUT)
+
+## --- vector tiles -----------------------------------------------------------
+#
+# PMTiles for the hazard-page map layers (PIPELINE_DESIGN.md §3, `layers/`).
+#
+# Built HERE rather than in the DAG. The tiles depend only on the flood
+# geometry, never on the district boundaries - unlike the flood percentages,
+# which do - so precomputing them cannot break invalidation. That keeps
+# tippecanoe out of CI entirely, which was the last awkward system dependency
+# after the container was dropped.
+#
+# Two transformations are mandatory and neither is optional styling:
+#
+#   st_cast("POLYGON") before tiling. d26 lost time to polygon fills that
+#   appeared and disappeared across zoom levels; root cause was tippecanoe
+#   mis-winding MULTIPOLYGON parts during per-tile clipping, producing exterior
+#   rings with negative signed area that MapLibre renders inverted. Exploding to
+#   single-part polygons first is the verified fix. These layers are two
+#   MULTIPOLYGONs each, so they are precisely the shape that triggers it.
+#
+#   st_transform(4326). tippecanoe assumes lon/lat input. Handing it EPSG:2263
+#   State Plane feet produces tiles somewhere off the coast of Africa.
+
+TILE_MIN_ZOOM <- 10   # citywide view
+TILE_MAX_ZOOM <- 16   # block level; flood extents carry no detail below this
+
+if (nchar(Sys.which("tippecanoe")) == 0) {
+  message("\ntippecanoe not found - skipping tile generation. ",
+          "Install it and re-run to produce data/prepared/*.pmtiles")
+} else {
+  for (nm in names(LAYERS)) {
+    src <- file.path(OUT, paste0("stormwater_", nm, ".geojson"))
+    dst <- file.path(OUT, paste0("stormwater_", nm, ".pmtiles"))
+
+    x <- st_read(src, quiet = TRUE) |>
+      st_make_valid() |>
+      st_cast("POLYGON") |>      # see above - not cosmetic
+      st_transform(4326)
+
+    tmp <- tempfile(fileext = ".geojson")
+    st_write(x, tmp, driver = "GeoJSON", quiet = TRUE)
+
+    if (file.exists(dst)) file.remove(dst)
+    status <- system2("tippecanoe", c(
+      "-o", shQuote(dst),
+      "-Z", TILE_MIN_ZOOM, "-z", TILE_MAX_ZOOM,
+      "-l", shQuote(paste0("stormwater_", nm)),
+      # Flood extents are the data, not decoration. Dropping features or
+      # shrinking tiny polygons would remove real flooded blocks.
+      "--no-feature-limit", "--no-tile-size-limit",
+      "--no-tiny-polygon-reduction",
+      shQuote(tmp)
+    ), stdout = FALSE, stderr = FALSE)
+
+    if (status != 0 || !file.exists(dst)) {
+      stop("tippecanoe failed for ", nm)
+    }
+    message(sprintf("%-16s %5.1f MB geojson -> %5.2f MB pmtiles  (%d parts)",
+                    nm, file.info(src)$size / 1024^2,
+                    file.info(dst)$size / 1024^2, nrow(x)))
+  }
+}

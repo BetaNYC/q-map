@@ -79,3 +79,47 @@ stormwater_pct_per_cdta <- function(cdta, stormwater) {
 
   tibble::tibble(cdta2020 = cdta$CDTA2020, pct_area = pct)
 }
+
+# Copy a mirrored tile set into the deployable output directory.
+#
+# The tiles are built by scripts/01_mirror_stormwater.R and published in the
+# data-v* release; the DAG only moves them into data/processed/ so everything
+# the frontend needs sits under one root. Same reason d26 copied its COGs
+# through rather than serving them from the release: release asset URLs
+# redirect, which breaks the range requests a tiled format depends on.
+copy_layer <- function(src, dest_dir) {
+  dir.create(dest_dir, showWarnings = FALSE, recursive = TRUE)
+  dst <- file.path(dest_dir, basename(src))
+  file.copy(src, dst, overwrite = TRUE)
+  dst
+}
+
+validate_layer_tiles <- function(paths, registry) {
+  for (p in paths) {
+    if (!file.exists(p)) stop("Layer tile missing: ", p)
+    # PMTiles v3 files begin with the ASCII magic "PMTiles". A truncated or
+    # half-written file is otherwise indistinguishable from a valid one until
+    # MapLibre fails at runtime.
+    magic <- readBin(p, "raw", n = 7)
+    if (!identical(rawToChar(magic), "PMTiles")) {
+      stop(basename(p), " is not a PMTiles file - magic bytes are ",
+           paste(magic, collapse = " "))
+    }
+    if (file.info(p)$size < 1024) {
+      stop(basename(p), " is suspiciously small (", file.info(p)$size, " bytes)")
+    }
+  }
+
+  # Every layer the registry marks available with pmtiles delivery must have a
+  # file, or the hazard pages reference a layer that cannot load.
+  expected <- registry |>
+    filter(status == "available", delivery == "pmtiles") |>
+    pull(layer_id)
+  produced <- sub("\\.pmtiles$", "", basename(paths))
+  missing <- setdiff(expected, produced)
+  if (length(missing) > 0) {
+    stop("Registry marks these pmtiles layers available but no tile exists: ",
+         paste(missing, collapse = ", "))
+  }
+  TRUE
+}

@@ -1,7 +1,7 @@
 layer_id,label,kind,geometry,delivery,status,blocked_on,source,notes
 hvi_choropleth,Heat Vulnerability Index,context,polygon,inline,available,,DOHMH HVI feature service,Joins to cdta.geojson by cdta2020; no separate geometry needed
-stormwater_moderate,Stormwater flooding (moderate rain),context,polygon,pmtiles,available,,DEP stormwater flood map 2.13 in/hr current,Mirrored in data-v1; needs tiling
-stormwater_limited,Stormwater flooding (limited rain),context,polygon,pmtiles,available,,DEP stormwater flood map 1.77 in/hr current,Mirrored in data-v1; needs tiling
+stormwater_moderate_2_13,Stormwater flooding (moderate rain),context,polygon,pmtiles,available,,DEP stormwater flood map 2.13 in/hr current,Tiled by scripts/01_mirror_stormwater.R; published in data-v* and copied to data/processed/layers/
+stormwater_limited_1_77,Stormwater flooding (limited rain),context,polygon,pmtiles,available,,DEP stormwater flood map 1.77 in/hr current,Tiled by scripts/01_mirror_stormwater.R; published in data-v* and copied to data/processed/layers/
 surge_current,Storm surge (present day),context,polygon,pmtiles,blocked_on_data,fvi_tract_geometry,NYC Flood Vulnerability Index ss_cur,Tract-level index; needs tiling from the FVI service
 surge_2080s,Storm surge (2080s projection),context,polygon,pmtiles,blocked_on_data,coastal_surge_layer,Coastal Surge Flooding 2080s 100-Year,Single citywide multipart polygon; forward-looking context only
 hurricane_evac_zones,Hurricane evacuation zones,context,polygon,pmtiles,blocked_on_data,epne-qv9x,NYC Open Data epne-qv9x,Not yet fetched
