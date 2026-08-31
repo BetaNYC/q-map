@@ -1,0 +1,66 @@
+source,source_field,source_category,canonical_category,canonical_label,is_critical,notes
+facdb,facsubgrp,SOUP KITCHENS AND FOOD PANTRIES,food-assistance,Food assistance,TRUE,
+facdb,facsubgrp,SENIOR SERVICES,older-adults,Older adults,TRUE,
+facdb,facsubgrp,LEGAL AND INTERVENTION SERVICES,benefits-and-legal,Benefits and legal help,FALSE,
+facdb,facsubgrp,PROGRAMS FOR PEOPLE WITH DISABILITIES,disability-and-access,Disability and access,TRUE,
+facdb,facsubgrp,WORKFORCE DEVELOPMENT,education-and-jobs,Education and jobs,FALSE,
+facdb,facsubgrp,IMMIGRANT SERVICES,immigration-and-language,Immigration and language,FALSE,
+facdb,facsubgrp,COMMUNITY CENTERS AND COMMUNITY PROGRAMS,libraries-and-community,Libraries and community,TRUE,
+facdb,facsubgrp,NON-RESIDENTIAL HOUSING AND HOMELESS SERVICES,housing-and-shelter,Housing and shelter,TRUE,
+facdb,facsubgrp,FINANCIAL ASSISTANCE AND SOCIAL SERVICES,benefits-and-legal,Benefits and legal help,FALSE,
+facdb,facsubgrp,MENTAL HEALTH,mental-health-and-recovery,Mental health and recovery,FALSE,
+facdb,facsubgrp,HOSPITALS AND CLINICS,health-care,Health care,TRUE,
+facdb,facsubgrp,RESIDENTIAL HEALTH CARE,health-care,Health care,TRUE,
+facdb,facsubgrp,OTHER HEALTH CARE,health-care,Health care,TRUE,
+facdb,facsubgrp,SUBSTANCE USE DISORDER TREATMENT PROGRAMS,mental-health-and-recovery,Mental health and recovery,FALSE,
+facdb,facgroup,LIBRARIES,libraries-and-community,Libraries and community,TRUE,
+facdb,facgroup,CULTURAL INSTITUTIONS,libraries-and-community,Libraries and community,TRUE,
+facdb,facgroup,EMERGENCY SERVICES,emergency-services,Emergency services,TRUE,
+facdb,facgroup,PUBLIC SAFETY,emergency-services,Emergency services,TRUE,
+facdb,facgroup,SCHOOLS (K-12),children-and-youth,Children and youth,FALSE,Schools double as evacuation shelters; revisit is_critical when evacuation centres are wired in
+facdb,facgroup,YOUTH SERVICES,children-and-youth,Children and youth,FALSE,
+facdb,facgroup,DAY CARE AND PRE-KINDERGARTEN,children-and-youth,Children and youth,FALSE,
+facdb,facgroup,CHILD SERVICES AND WELFARE,children-and-youth,Children and youth,FALSE,
+facdb,facgroup,CAMPS,children-and-youth,Children and youth,FALSE,
+facdb,facgroup,ADULT SERVICES,education-and-jobs,Education and jobs,FALSE,Adult and immigrant literacy
+facdb,facgroup,VOCATIONAL AND PROPRIETARY SCHOOLS,education-and-jobs,Education and jobs,FALSE,
+facdb,facgroup,HIGHER EDUCATION,education-and-jobs,Education and jobs,FALSE,
+facdb,facgroup,PARKS AND PLAZAS,parks-and-environment,Parks and environment,FALSE,
+facdb,facgroup,HISTORICAL SITES,parks-and-environment,Parks and environment,FALSE,
+facdb,facgroup,"OFFICES, TRAINING, AND TESTING",government-offices,Government offices,FALSE,
+facdb,facgroup,TRANSPORTATION,exclude,,FALSE,Parking lots and garages; not a resident resource
+facdb,facgroup,SOLID WASTE,exclude,,FALSE,Infrastructure; scoped for the hazard side not the resource side
+facdb,facgroup,WATER AND WASTEWATER,exclude,,FALSE,Infrastructure
+facdb,facgroup,MATERIAL SUPPLIES AND MARKETS,exclude,,FALSE,
+facdb,facgroup,"CITY AGENCY PARKING, MAINTENANCE, AND STORAGE",exclude,,FALSE,
+facdb,facgroup,OTHER PROPERTY,exclude,,FALSE,
+facdb,facgroup,JUSTICE AND CORRECTIONS,exclude,,FALSE,Courts and correctional facilities
+qnpd,organization_type,Food Insecurity,food-assistance,Food assistance,TRUE,
+qnpd,organization_type,Healthcare,health-care,Health care,TRUE,
+qnpd,organization_type,Senior Services,older-adults,Older adults,TRUE,
+qnpd,organization_type,Housing Rights,housing-and-shelter,Housing and shelter,TRUE,
+qnpd,organization_type,Mental Health Services & Recovery Support,mental-health-and-recovery,Mental health and recovery,FALSE,
+qnpd,organization_type,Substance Abuse,mental-health-and-recovery,Mental health and recovery,FALSE,
+qnpd,organization_type,Youth Development & Empowerment,children-and-youth,Children and youth,FALSE,
+qnpd,organization_type,Education,education-and-jobs,Education and jobs,FALSE,
+qnpd,organization_type,Workforce Development,education-and-jobs,Education and jobs,FALSE,
+qnpd,organization_type,Immigration Integration,immigration-and-language,Immigration and language,FALSE,
+qnpd,organization_type,Environmental Issues,parks-and-environment,Parks and environment,FALSE,
+qnpd,organization_type,Civic Engagement,government-offices,Government offices,FALSE,
+qnpd,organization_type,Arts & Culture,libraries-and-community,Libraries and community,TRUE,Largest single QNPD type at 35 orgs; folded in per the agreed 14-category vocabulary
+qnpd,organization_type,Spiritual Services,libraries-and-community,Libraries and community,TRUE,Congregations often function as informal shelters and distribution points
+qnpd,organization_type,Human Services & Social Services,benefits-and-legal,Benefits and legal help,FALSE,
+qnpd,organization_type,Legal Services,benefits-and-legal,Benefits and legal help,FALSE,
+qnpd,organization_type,Economic Justice,benefits-and-legal,Benefits and legal help,FALSE,
+qnpd,organization_type,Domestic Violence Prevention & Intervention,benefits-and-legal,Benefits and legal help,FALSE,
+qnpd,organization_type,Gender Justice,benefits-and-legal,Benefits and legal help,FALSE,
+qnpd,organization_type,Racial Equity,benefits-and-legal,Benefits and legal help,FALSE,
+qnpd,organization_type,Veterans Services,benefits-and-legal,Benefits and legal help,FALSE,
+franc,source_layer,Food Pantry Services,food-assistance,Food assistance,TRUE,
+franc,source_layer,Hospital/Health Care,health-care,Health care,TRUE,
+franc,source_layer,Emergency Services,emergency-services,Emergency services,TRUE,
+franc,source_layer,"DAFN - Disability, Access, and Functional Needs",disability-and-access,Disability and access,TRUE,
+franc,source_layer,Elected Officials Offices,government-offices,Government offices,FALSE,
+franc,source_layer,Transportation,emergency-services,Emergency services,TRUE,FRANC transportation is evacuation and mobility support; the canonical vocabulary has no transportation category
+franc,source_layer,FRANC Members,unassigned,Unassigned,FALSE,Membership not a category - sets is_coad_member and needs per-record review
+franc,source_layer,Resources,unassigned,Unassigned,FALSE,Catch-all layer - needs per-record review

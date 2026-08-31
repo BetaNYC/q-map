@@ -221,7 +221,8 @@ list(
   tar_target(
     district_payloads,
     build_district_payloads(cdta_crosswalk, hazards, hazard_measures, chp, lep,
-                            overlay_index = hazard_override_index(hazard_overlays))
+                            overlay_index = hazard_override_index(hazard_overlays),
+                            resource_categories = district_resource_categories)
   ),
 
   tar_target(
@@ -311,5 +312,44 @@ list(
   tar_target(
     hazard_output_checks,
     validate_hazard_output(hazard_content_paths)
+  ),
+
+  ## Resources ---------------------------------------------------------------
+  # The canonical file is hand-maintained and committed; the pipeline reads it
+  # and never writes it. scripts/03_seed_resources.R proposes changes as a diff.
+
+  tar_target(resource_categories_path, "data/crosswalk/resource_categories.csv",
+             format = "file"),
+  tar_target(resource_categories, read_resource_categories(resource_categories_path)),
+  tar_target(resource_categories_checks, validate_resource_categories(resource_categories)),
+
+  tar_target(canonical_resources_path, "data/canonical/resources.csv",
+             format = "file"),
+  tar_target(canonical_resources, read_canonical_resources(canonical_resources_path)),
+  tar_target(
+    canonical_resources_checks,
+    validate_canonical_resources(canonical_resources, resource_categories)
+  ),
+
+  tar_target(
+    resources_cdta,
+    resources_to_cdta(canonical_resources, cdta_boundaries)
+  ),
+
+  tar_target(
+    district_resource_categories,
+    resource_categories_per_district(resources_cdta, resource_categories)
+  ),
+
+  tar_target(
+    resource_payload_paths,
+    write_resource_payloads(resources_cdta, cdta_crosswalk,
+                            "data/processed/resources"),
+    format = "file"
+  ),
+
+  tar_target(
+    resource_payloads_checks,
+    validate_resource_payloads(resource_payload_paths, resources_cdta)
   )
 )
