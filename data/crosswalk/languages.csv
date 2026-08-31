@@ -1,0 +1,63 @@
+lep_language,notify_nyc_language,is_covered,is_aggregate,notes
+Akan (incl. Twi),,FALSE,FALSE,
+Albanian,,FALSE,FALSE,
+Amharic,,FALSE,FALSE,
+Arabic,Arabic,TRUE,FALSE,
+Armenian,,FALSE,FALSE,
+Bengali,Bengali,TRUE,FALSE,
+Burmese,,FALSE,FALSE,
+"Chinese (incl. Mandarin, Cantonese)",Chinese,TRUE,FALSE,
+Croatian,,FALSE,FALSE,
+Filipino,,FALSE,FALSE,
+French,French,TRUE,FALSE,
+Fulah,,FALSE,FALSE,
+Ga,,FALSE,FALSE,
+Greek,,FALSE,FALSE,
+Gujarati,,FALSE,FALSE,
+Haitian,Haitian Creole,TRUE,FALSE,
+Hebrew,,FALSE,FALSE,
+Hindi,,FALSE,FALSE,
+Igbo,,FALSE,FALSE,
+Indonesian,,FALSE,FALSE,
+Italian,Italian,TRUE,FALSE,
+Jamaican Creole English,,FALSE,FALSE,
+Japanese,,FALSE,FALSE,
+Korean,Korean,TRUE,FALSE,
+Macedonian,,FALSE,FALSE,
+Malay,,FALSE,FALSE,
+Malayalam,,FALSE,FALSE,
+Manding languages,,FALSE,TRUE,"Census aggregate bucket, not a single language"
+Nepali,,FALSE,FALSE,
+Oromo,,FALSE,FALSE,
+Other Afro-Asiatic languages,,FALSE,TRUE,"Census aggregate bucket, not a single language"
+Other Bantu languages,,FALSE,TRUE,"Census aggregate bucket, not a single language"
+Other English-based Creole languages,,FALSE,TRUE,"Census aggregate bucket, not a single language"
+Other Indo-Iranian languages,,FALSE,TRUE,"Census aggregate bucket, not a single language"
+Other Mande languages,,FALSE,TRUE,"Census aggregate bucket, not a single language"
+Other Middle and South American languages,,FALSE,TRUE,"Census aggregate bucket, not a single language"
+Other Niger-Congo languages,,FALSE,TRUE,"Census aggregate bucket, not a single language"
+Other and unspecified languages,,FALSE,TRUE,"Census aggregate bucket, not a single language"
+Other languages of Africa,,FALSE,TRUE,"Census aggregate bucket, not a single language"
+Other languages of Asia,,FALSE,TRUE,"Census aggregate bucket, not a single language"
+Pashto,,FALSE,FALSE,
+"Persian (incl. Farsi, Dari)",,FALSE,FALSE,
+Polish,Polish,TRUE,FALSE,
+Portuguese,,FALSE,FALSE,
+Punjabi,,FALSE,FALSE,
+Romanian,,FALSE,FALSE,
+Russian,Russian,TRUE,FALSE,
+Serbian,,FALSE,FALSE,
+Sinhala,,FALSE,FALSE,
+Slovak,,FALSE,FALSE,
+Spanish,Spanish,TRUE,FALSE,
+Tagalog (incl. Filipino),,FALSE,FALSE,
+Tamil,,FALSE,FALSE,
+Thai,,FALSE,FALSE,
+Tibetan,,FALSE,FALSE,
+Turkish,,FALSE,FALSE,
+Ukrainian,,FALSE,FALSE,
+Urdu,Urdu,TRUE,FALSE,
+Vietnamese,,FALSE,FALSE,
+Wolof,,FALSE,FALSE,
+Yiddish,Yiddish,TRUE,FALSE,
+Yoruba,,FALSE,FALSE,

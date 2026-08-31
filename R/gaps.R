@@ -178,3 +178,123 @@ gap_registry_summary <- function(reg, ranked_slugs) {
     ) |>
     arrange(desc(available), hazard_slug)
 }
+
+# --- facility and hazard layers ---------------------------------------------
+
+COOL_OPTIONS_URL <- paste0(
+  "https://services6.arcgis.com/yG5s3afENB5iO9fj/arcgis/rest/services/",
+  "Cool_Options/FeatureServer/0/query")
+EVAC_ZONES_ID   <- "epne-qv9x"
+EVAC_CENTERS_ID <- "p5md-weyf"
+SOCRATA <- "https://data.cityofnewyork.us/resource/"
+
+# NYC OEM Cool Options.
+#
+# Cooling CENTERS only open during a declared heat emergency, so "distance to a
+# cooling center" is not a standing condition anyone can measure. Cool Options
+# is the year-round list, and Space_type separates indoor rooms from spray
+# showers and pools. The heat gaps use INDOOR ONLY: a spray shower is not the
+# relief an older adult needs during a heat wave.
+#
+# Finder_status is deliberately ignored. It is live open/closed state, and
+# baking a seasonal snapshot into a standing indicator would make the number
+# wrong for most of the year.
+get_cool_options <- function(url = COOL_OPTIONS_URL, indoor_only = TRUE) {
+  parsed <- httr::parse_url(url)
+  parsed$query <- list(
+    where = if (indoor_only) "Space_type='Cooling Center'" else "1=1",
+    outFields = "Facility_name,Location_type,Space_type,Borough_name,Accessible",
+    outSR = 4326, f = "geojson"
+  )
+  x <- read_sf(httr::build_url(parsed))
+  if (nrow(x) == 0) stop("Cool Options returned no features")
+  x
+}
+
+get_socrata_geo <- function(id, select = NULL, where = NULL) {
+  q <- list(`$limit` = 50000)
+  if (!is.null(select)) q$`$select` <- select
+  if (!is.null(where)) q$`$where` <- where
+  parsed <- httr::parse_url(paste0(SOCRATA, id, ".geojson"))
+  parsed$query <- q
+  read_sf(httr::build_url(parsed))
+}
+
+# Hurricane evacuation zones. Zone X is "not in any zone" and must be dropped,
+# or 150 square miles of the city reads as evacuation-zone area.
+get_evac_zones <- function(id = EVAC_ZONES_ID) {
+  x <- get_socrata_geo(id) |> st_make_valid()
+  zone_col <- intersect(c("hurricane_", "hurricane_evacuation_zone"), names(x))[1]
+  x$zone <- x[[zone_col]]
+  out <- x |> filter(zone %in% as.character(1:6))
+  if (nrow(out) < 6) stop("Evacuation zones: expected zones 1-6, got ", nrow(out))
+  out
+}
+
+# Hurricane evacuation centers.
+#
+# NOT ayer-cga7. That id, cited in the research script and in section 8f as the
+# place to check for capacity, is a map visualisation asset with ZERO columns -
+# 60 rows of empty objects. p5md-weyf is the actual dataset. It has no capacity
+# field either, so gaps 15 and 19 stay blocked.
+get_evac_centers <- function(id = EVAC_CENTERS_ID) {
+  x <- get_socrata_geo(id)
+  if (nrow(x) < 50) stop("Evacuation centers: expected ~60, got ", nrow(x))
+  x
+}
+
+# Solid waste and wastewater facilities, from FacDB.
+#
+# These are deliberately EXCLUDED from the resource crosswalk - a wastewater
+# plant is not somewhere a resident seeks help - but they are hazard sources,
+# so they are fetched separately here.
+get_hazard_facilities <- function(facgroup, boro = "QUEENS") {
+  parsed <- httr::parse_url(FACDB_URL)
+  parsed$query <- list(
+    `$where` = sprintf("boro='%s' AND facgroup='%s'", boro, facgroup),
+    `$select` = "uid,facname,facgroup,facsubgrp,latitude,longitude",
+    `$limit` = 5000
+  )
+  x <- jsonlite::fromJSON(httr::build_url(parsed)) |> tibble::as_tibble()
+  x |>
+    mutate(lon = na_if_zero(as.numeric(longitude)),
+           lat = na_if_zero(as.numeric(latitude))) |>
+    filter(!is.na(lon), !is.na(lat)) |>
+    st_as_sf(coords = c("lon", "lat"), crs = 4326, remove = FALSE)
+}
+
+# --- language coverage ------------------------------------------------------
+
+read_language_crosswalk <- function(path) {
+  readr::read_csv(path, show_col_types = FALSE, col_types = readr::cols(
+    is_covered = readr::col_logical(),
+    is_aggregate = readr::col_logical(),
+    .default = readr::col_character()
+  ))
+}
+
+validate_language_crosswalk <- function(lx, lep) {
+  assert_no_na(lx, c("lep_language", "is_covered", "is_aggregate"))
+  assert_unique(lx, "lep_language")
+
+  # Every language in the workbook must be classified, or a new one silently
+  # counts as "not covered by Notify NYC" without anyone deciding that.
+  observed <- setdiff(unique(lep$language), "Total")
+  missing <- setdiff(observed, lx$lep_language)
+  if (length(missing) > 0) {
+    stop("languages.csv: unclassified language(s) in the LEP workbook: ",
+         paste(missing, collapse = ", "))
+  }
+
+  # Notify NYC publishes in 13 languages; 12 appear in the workbook (English is
+  # the base language and is not an LEP category).
+  n_cov <- sum(lx$is_covered)
+  if (n_cov != 12) {
+    stop("languages.csv: expected 12 covered languages, got ", n_cov,
+         " - has Notify NYC's language list changed?")
+  }
+  if (any(lx$is_covered & lx$is_aggregate)) {
+    stop("languages.csv: a language cannot be both covered and an aggregate bucket")
+  }
+  TRUE
+}

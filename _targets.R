@@ -222,7 +222,8 @@ list(
     district_payloads,
     build_district_payloads(cdta_crosswalk, hazards, hazard_measures, chp, lep,
                             overlay_index = hazard_override_index(hazard_overlays),
-                            resource_categories = district_resource_categories)
+                            resource_categories = district_resource_categories,
+                            gap_selection = gap_selection)
   ),
 
   tar_target(
@@ -367,5 +368,57 @@ list(
       ranked_slugs = names(HAZARD_SEVERITY),
       pinned_slugs = HAZARD_PINNED
     )
+  ),
+
+  ## Gap inputs --------------------------------------------------------------
+
+  tar_target(language_crosswalk_path, "data/crosswalk/languages.csv", format = "file"),
+  tar_target(language_crosswalk, read_language_crosswalk(language_crosswalk_path)),
+  tar_target(language_crosswalk_checks, validate_language_crosswalk(language_crosswalk, lep)),
+
+  tar_target(cool_options, get_cool_options()),
+  tar_target(evac_zones, get_evac_zones()),
+  tar_target(evac_centers, get_evac_centers()),
+  tar_target(solid_waste_facilities, get_hazard_facilities("SOLID WASTE")),
+  tar_target(wastewater_facilities, get_hazard_facilities("WATER AND WASTEWATER")),
+
+  ## Gap computation ---------------------------------------------------------
+
+  tar_target(
+    gap_values,
+    compute_available_gaps(gap_registry, list(
+      districts = select(sf::st_drop_geometry(cdta_boundaries), cdta2020 = CDTA2020),
+      cdta = cdta_boundaries, crosswalk = cdta_crosswalk, chp = chp, lep = lep,
+      languages = language_crosswalk,
+      tracts = fvi, tract_pop = tract_pop,
+      tract_cdta = filter(tract_cdta, !is.na(cdta2020)),
+      stormwater = stormwater_moderate,
+      cool_options = cool_options,
+      evac_zones = evac_zones,
+      evac_centers_cdta = facilities_to_cdta(evac_centers, cdta_boundaries),
+      solid_waste_buffer = sf::st_sfc(buffer_miles(solid_waste_facilities, 0.5), crs = 2263),
+      wastewater_buffer = sf::st_sfc(buffer_miles(wastewater_facilities, 0.5), crs = 2263),
+      flood_x_wastewater = sf::st_sfc(sf::st_intersection(
+        sf::st_union(sf::st_transform(stormwater_moderate, 2263)),
+        buffer_miles(wastewater_facilities, 0.5)), crs = 2263),
+      hazard_facilities_cdta = facilities_to_cdta(
+        rbind(select(solid_waste_facilities, uid, facname, geometry),
+              select(wastewater_facilities, uid, facname, geometry)),
+        cdta_boundaries),
+      critical_resources = sf::st_as_sf(
+        filter(resources_cdta, is_critical, !is.na(cdta2020)),
+        coords = c("lon", "lat"), crs = 4326, remove = FALSE),
+      resources_cdta = resources_cdta
+    ))
+  ),
+
+  tar_target(gap_selection, select_district_gaps(gap_values, hazards)),
+
+  tar_target(gap_selection_checks, validate_gap_selection(gap_selection, hazards, cdta_crosswalk)),
+
+  tar_target(
+    gap_matrix_paths,
+    write_gap_matrices(gap_values, gap_registry, cdta_crosswalk, "data/processed/gaps"),
+    format = "file"
   )
 )

@@ -28,7 +28,8 @@ DISPLAY_BORO_CODE <- 4L
 
 build_district_payloads <- function(crosswalk, hazards, measures, chp, lep,
                                    overlay_index = NULL,
-                                   resource_categories = NULL) {
+                                   resource_categories = NULL,
+                                   gap_selection = NULL) {
   chp_d <- chp_districts(chp)
   chp_city <- chp_citywide(chp)
 
@@ -124,6 +125,12 @@ build_district_payloads <- function(crosswalk, hazards, measures, chp, lep,
         ))
       },
 
+      ## F - the gaps displayed on this district's page ---------------------
+      gaps_displayed = if (is.null(gap_selection)) list() else {
+        gs <- gap_selection |> filter(cdta2020 == row$cdta2020) |> arrange(display_order)
+        lapply(seq_len(nrow(gs)), function(k) gap_entry(gs[k, ]))
+      },
+
       # Which hazards have district-specific guidance. The frontend reads this
       # instead of probing for a 404 on districts/<slug>/hazards/<hazard>.json.
       hazard_overrides = if (is.null(overlay_index)) character() else
@@ -153,7 +160,7 @@ num_or_null <- function(x) {
 # five languages - but lep_for_district() takes head(n), so it is one config
 # change away from being reachable, and it fails silently on one district.
 DISTRICT_ARRAY_FIELDS <- c("hazards", "languages", "hazard_overrides",
-                           "resource_categories")
+                           "resource_categories", "gaps_displayed")
 
 write_district_payloads <- function(payloads, dir) {
   dir.create(dir, showWarnings = FALSE, recursive = TRUE)
