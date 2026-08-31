@@ -351,5 +351,21 @@ list(
   tar_target(
     resource_payloads_checks,
     validate_resource_payloads(resource_payload_paths, resources_cdta)
+  ),
+
+  ## Resource gap registry ---------------------------------------------------
+  # Config, documentation and acquisition backlog in one committed CSV. All 33
+  # candidates keep a row; eight are retired with a reason.
+
+  tar_target(gap_registry_path, "data/registry/resource_gaps.csv", format = "file"),
+  tar_target(gap_registry, read_gap_registry(gap_registry_path)),
+
+  tar_target(
+    gap_registry_checks,
+    validate_gap_registry(
+      gap_registry,
+      ranked_slugs = names(HAZARD_SEVERITY),
+      pinned_slugs = HAZARD_PINNED
+    )
   )
 )
