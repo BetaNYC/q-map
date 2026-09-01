@@ -10,6 +10,15 @@ summary: >
   Pandemic influenza or another communicable outbreak. Vulnerability is measured citywide rather than by district.
 
 sections:
+  # Rendered from conditions.json, not from this file. Screen 02's "current
+  # conditions" box was dropped and the citywide respiratory readout moves
+  # here, which is the hazard it is actually about.
+  #
+  # The number is a share of CITYWIDE emergency department visits and this page
+  # is district-scoped, so the component must render conditions.geography_label
+  # alongside it. That is not optional copy.
+  - id: current-conditions
+    title: Respiratory illness in New York City right now
   - id: preparedness
     title: Before
   - id: response
@@ -17,4 +26,5 @@ sections:
   - id: general
     title: General information
 
-map_layers: []
+map_layers:
+  - pivi_choropleth

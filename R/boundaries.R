@@ -98,8 +98,13 @@ write_cdta_geojson <- function(cdta_simplified, crosswalk, path) {
     arrange(cdta2020)
 
   if (file.exists(path)) file.remove(path)
+  # RFC7946=YES drops the `crs` member GDAL otherwise writes. RFC 7946 removed
+  # crs entirely - GeoJSON is WGS84 lon/lat by definition - so publishing one is
+  # a pre-2016 artifact that MapLibre ignores and some validators warn on. The
+  # flag also enforces right-hand-rule winding, which is what tippecanoe and
+  # MapLibre want anyway. The explicit COORDINATE_PRECISION still wins.
   st_write(out, path, driver = "GeoJSON", quiet = TRUE,
-           layer_options = c("COORDINATE_PRECISION=6"))
+           layer_options = c("COORDINATE_PRECISION=6", "RFC7946=YES"))
   path
 }
 
@@ -223,6 +228,14 @@ validate_cdta_simplified <- function(cdta_simplified, cdta) {
 validate_cdta_geojson <- function(path) {
   size <- file.info(path)$size
   if (is.na(size)) stop(paste0("GeoJSON not written: ", path))
+
+  # RFC 7946 has no `crs` member. Asserted rather than trusted because it comes
+  # back the moment someone drops RFC7946=YES from the layer_options, and it is
+  # invisible in every other check.
+  if (any(grepl('"crs"', readLines(path, n = 3, warn = FALSE), fixed = TRUE))) {
+    stop("cdta.geojson carries a `crs` member - RFC 7946 removed it. ",
+         "Check RFC7946=YES is still in write_cdta_geojson()'s layer_options.")
+  }
   if (size > GEOJSON_MAX_BYTES) {
     stop(paste0(
       "cdta.geojson is ", round(size / 1024), " KB, over the ",

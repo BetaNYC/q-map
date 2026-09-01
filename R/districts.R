@@ -120,8 +120,7 @@ build_district_payloads <- function(crosswalk, hazards, measures, chp, lep,
         lapply(seq_len(nrow(rc)), function(k) list(
           slug = rc$canonical_category[k],
           label = rc$canonical_label[k],
-          count = as.integer(rc$count[k]),
-          is_critical = isTRUE(rc$is_critical[k])
+          count = as.integer(rc$count[k])
         ))
       },
 

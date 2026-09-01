@@ -28,13 +28,13 @@ RESOURCE_SOURCES <- c("facdb", "qnpd", "franc")
 
 read_resource_categories <- function(path) {
   readr::read_csv(path, show_col_types = FALSE, col_types = readr::cols(
-    is_critical = readr::col_logical(), .default = readr::col_character()
+    .default = readr::col_character()
   ))
 }
 
 validate_resource_categories <- function(cx) {
   required <- c("source", "source_field", "source_category",
-                "canonical_category", "is_critical")
+                "canonical_category")
   missing <- setdiff(required, names(cx))
   if (length(missing) > 0) {
     stop("resource_categories.csv: missing column(s) ",
@@ -57,20 +57,9 @@ validate_resource_categories <- function(cx) {
          paste(dupes$source_category, collapse = ", "))
   }
 
-  # is_critical is a property of the canonical category, but it is stored per
+  # The display label is a property of the canonical category but is stored per
   # row so the file stays a single reviewable sheet. Assert consistency, or a
-  # category becomes critical in one source and not another.
-  inconsistent <- cx |>
-    filter(canonical_category != "exclude") |>
-    group_by(canonical_category) |>
-    summarise(n = dplyr::n_distinct(is_critical), .groups = "drop") |>
-    filter(n > 1)
-  if (nrow(inconsistent) > 0) {
-    stop("resource_categories.csv: is_critical disagrees across rows for ",
-         paste(inconsistent$canonical_category, collapse = ", "))
-  }
-
-  # Same for the display label.
+  # category gets one label from one source and another from the next.
   bad_label <- cx |>
     filter(canonical_category != "exclude") |>
     group_by(canonical_category) |>
@@ -91,9 +80,141 @@ map_category <- function(cx, source, values, field) {
   idx <- match(values, m$source_category)
   tibble::tibble(
     canonical_category = m$canonical_category[idx],
-    canonical_label = m$canonical_label[idx],
-    is_critical = m$is_critical[idx]
+    canonical_label = m$canonical_label[idx]
   )
+}
+
+# --- display casing ---------------------------------------------------------
+#
+# FacDB publishes `facname` in ALL CAPS - 5,485 of 5,732 shipped records, 96%.
+# Screens 05 and 06 render title case ("Ravenswood Branch", "LIC Community Boat
+# House"). Somebody has to convert, and it is the pipeline rather than the
+# frontend: the casing of a proper noun is a property of the record, the
+# exceptions are editorial judgment, and a Svelte component is the wrong place
+# for a list of NYC acronyms nobody reviews.
+#
+# Note `opname` does NOT need this in most cases - FacDB already title-cases it
+# (84% of Queens rows). It is run through the same function anyway so the 16%
+# that arrive shouting come out consistent with everything else.
+#
+# WHY A NAIVE TITLE-CASER IS NOT ENOUGH
+#
+# Measured against the real names, four classes break it:
+#
+#   acronyms   "PS 811Q", "JHS 190", "NYPD", "FDNY", "YMCA", "LIC"
+#              -> a naive caser gives "Ps 811q", "Nypd", "Ymca"
+#   suffixes   "TOPAZ ARTS, INC." -> "Topaz Arts, Inc." not "Inc"
+#   particles  "TEMPLE OF ISRAEL" -> "Temple of Israel", lowercase interior
+#              "of/the/and/for" but never the FIRST word
+#   ordinals   "ST. JOHN'S" -> "St. John's"; "101ST STREET" -> "101st Street"
+#              (a naive caser gives "101St")
+#
+# So: title-case as the default, then a reviewable exception list restores the
+# tokens that must not be title-cased. The list lives here rather than in the
+# canonical CSV because it is a property of the LANGUAGE, not of any one
+# record - putting it in the CSV would mean repeating it on every row that
+# happens to contain "NYPD".
+#
+# Records whose correct casing is genuinely idiosyncratic are corrected by hand
+# in data/canonical/resources.csv, which is the file's whole purpose. This
+# function only has to be right about the general case.
+
+# Tokens that stay fully upper. Matched case-insensitively against whole words.
+DISPLAY_UPPER <- c(
+  "NYC", "NYPD", "FDNY", "MTA", "NYCHA", "DOE", "HRA", "DSS", "ACS", "DOT",
+  "DEP", "DOB", "DHS", "OEM", "EMS", "PAL", "YMCA", "YWCA", "JCC", "USA", "US",
+  "LIC", "JFK", "PS", "IS", "JHS", "MS", "HS", "CUNY", "SUNY", "LGBT", "LGBTQ",
+  "HIV", "AIDS", "WIC", "SNAP", "GED", "ESL", "STEM", "VFW", "AME", "UFT",
+  "NAACP", "NY", "II", "III", "IV",
+  # Religious and community-organisation acronyms that turn up repeatedly in
+  # the Queens data and read as words otherwise.
+  "SDA", "YM", "YWHA", "YMHA", "CYO", "COGIC", "UMC", "AMEZ"
+)
+
+# Words that stay lower when they fall inside a name (never first).
+#
+# `van` and `von` are deliberately NOT here, though they are Dutch/German
+# particles. In Queens "Van Wyck" is a road, a house and a dozen organisation
+# names, and it wants the capital; "mobile van" wants the lowercase. Capitalised
+# is right far more often, and "Show Lincoln Mobile Van Extension Clinic" is a
+# tolerable miss where "van wyck" would not be.
+#
+# The Spanish particles stay, because Queens organisation names use them the
+# other way round - "Mexicanos Unidos de Queens" is the common shape.
+DISPLAY_LOWER <- c(
+  "a", "an", "and", "as", "at", "by", "de", "del", "for", "from", "in", "la",
+  "las", "los", "of", "on", "or", "the", "to", "with"
+)
+
+# Fixed spellings for things neither rule gets right.
+DISPLAY_FIXED <- c(
+  "Inc." = "Inc.", "Inc" = "Inc", "Llc" = "LLC", "L.L.C." = "LLC",
+  "Co." = "Co.", "Corp." = "Corp.", "Mt." = "Mt.", "St." = "St.",
+  "Ft." = "Ft.", "Jr." = "Jr.", "Sr." = "Sr."
+)
+
+display_case <- function(x) {
+  out <- vapply(x, function(s) {
+    if (is.na(s) || !nzchar(s)) return(s)
+
+    # Leave anything already mixed-case alone. FacDB's opname is mostly correct
+    # already, and re-casing a hand-corrected canonical name would undo the
+    # correction on every rebuild - which is exactly the failure the canonical
+    # file exists to prevent.
+    if (s != toupper(s)) return(s)
+
+    words <- strsplit(s, " ", fixed = TRUE)[[1]]
+    n <- length(words)
+
+    cased <- vapply(seq_along(words), function(i) {
+      w <- words[i]
+      if (!nzchar(w)) return(w)
+
+      bare <- gsub("[^A-Za-z]", "", w)
+
+      # Acronyms keep their case wherever they appear.
+      if (nzchar(bare) && toupper(bare) %in% DISPLAY_UPPER) return(toupper(w))
+
+      # Ordinals: 101ST -> 101st, 3RD -> 3rd. Digits then letters.
+      if (grepl("^[0-9]+(ST|ND|RD|TH)[[:punct:]]*$", w)) return(tolower(w))
+
+      # Anything with an interior digit is a code, not a word: 811Q, P.S.811
+      if (grepl("[0-9]", w) && grepl("[A-Za-z]", w)) return(toupper(w))
+
+      lowered <- tolower(w)
+
+      # Particles stay lower unless they lead the name.
+      if (i > 1 && lowered %in% DISPLAY_LOWER) return(lowered)
+
+      # Title-case each alphabetic run: MOTHER-IN-LAW -> Mother-In-Law.
+      # Apostrophes are kept inside the run so JOHN'S -> John's and not
+      # John'S - a possessive must not capitalise.
+      w2 <- gsub("([A-Za-z])([A-Za-z']*)", "\\U\\1\\L\\2", lowered, perl = TRUE)
+
+      # Two name prefixes the general rule gets wrong, both common enough in
+      # this data to be worth encoding rather than hand-correcting record by
+      # record:
+      #
+      #   O'BRIEN   -> O'Brien   (Irish O', capitalises the next letter)
+      #   MCAULIFFE -> McAuliffe (Mc/Mac, same)
+      #
+      # The O' rule is anchored to a SINGLE leading letter so it fires on
+      # "O'Brien" and "D'Angelo" but never on the possessive in "John's".
+      w2 <- gsub("^([A-Za-z])'([a-z])", "\\U\\1\\E'\\U\\2", w2, perl = TRUE)
+      w2 <- gsub("^(Ma?c)([a-z])", "\\1\\U\\2", w2, perl = TRUE)
+      w2
+    }, character(1))
+
+    res <- paste(cased, collapse = " ")
+
+    # Fixed spellings last, so they win over the general rules.
+    for (k in names(DISPLAY_FIXED)) {
+      res <- gsub(paste0("\\b", gsub("\\.", "\\\\.", k), "\\b"),
+                  DISPLAY_FIXED[[k]], res, perl = TRUE)
+    }
+    res
+  }, character(1), USE.NAMES = FALSE)
+  out
 }
 
 # --- geocoding --------------------------------------------------------------
@@ -203,7 +324,7 @@ get_facdb <- function(cx, boro = "QUEENS", url = FACDB_URL) {
     q <- list(`$where` = where, `$limit` = 5000, `$offset` = offset,
               `$select` = paste("uid,facname,address,city,zipcode,boro,cd",
                                 "facgroup,facsubgrp,factype,datasource",
-                                "capacity,latitude,longitude", sep = ","))
+                                "capacity,latitude,longitude,opname", sep = ","))
     parsed <- httr::parse_url(url); parsed$query <- q
     page <- jsonlite::fromJSON(httr::build_url(parsed))
     if (length(page) == 0 || nrow(page) == 0) break
@@ -234,7 +355,7 @@ read_franc <- function(path) {
 
 CANONICAL_COLUMNS <- c(
   "resource_id", "source", "source_id", "provenance", "verified_on",
-  "name", "canonical_category", "subcategory", "is_critical",
+  "name", "operator", "canonical_category", "subcategory",
   "address", "lon", "lat", "geocode_boro", "geocode_match",
   "in_queens", "serves_queens", "is_coad_member",
   "mission", "contact", "contact_name", "email", "phone", "website", "social",
@@ -247,18 +368,19 @@ candidates_facdb <- function(facdb, cx, verified_on) {
   sub <- map_category(cx, "facdb", facdb$facsubgrp, "facsubgrp")
   grp <- map_category(cx, "facdb", facdb$facgroup, "facgroup")
   cat <- dplyr::coalesce(sub$canonical_category, grp$canonical_category)
-  crit <- dplyr::coalesce(sub$is_critical, grp$is_critical)
 
   tibble::tibble(
     source = "facdb",
     source_id = facdb$uid,
     provenance = "dcp_facilities_database",
     verified_on = verified_on,
-    name = facdb$facname,
+    name = display_case(facdb$facname),
+    # FacDB already title-cases opname on 84% of Queens rows; the other 16%
+    # arrive shouting, so it goes through the same normaliser.
+    operator = display_case(facdb$opname),
     canonical_category = cat,
     subcategory = facdb$factype,
-    is_critical = crit,
-    address = paste_na(facdb$address, facdb$city, facdb$zipcode),
+    address = display_case(paste_na(facdb$address, facdb$city, facdb$zipcode)),
     # FacDB uses 0/0 as a null-coordinate sentinel rather than leaving the
     # field empty - 89 Queens records, mostly cultural institutions. Treated as
     # missing so they can be geocoded from their address instead of plotting
@@ -284,7 +406,6 @@ candidates_qnpd <- function(qnpd, cx, geo, verified_on) {
     name = qnpd$name,
     canonical_category = m$canonical_category,
     subcategory = qnpd$organization_type,
-    is_critical = m$is_critical,
     address = qnpd$address,
     lon = geo$lon, lat = geo$lat,
     geocode_boro = geo$geocode_boro,
@@ -313,7 +434,6 @@ candidates_franc <- function(franc, cx, verified_on) {
     name = franc$Name,
     canonical_category = m$canonical_category,
     subcategory = franc$source_layer,
-    is_critical = m$is_critical,
     address = NA_character_,
     lon = coords[, "X"], lat = coords[, "Y"],
     geocode_boro = "Queens",
@@ -429,7 +549,6 @@ read_canonical_resources <- function(path) {
   readr::read_csv(path, show_col_types = FALSE, col_types = readr::cols(
     lon = readr::col_double(), lat = readr::col_double(),
     capacity = readr::col_double(),
-    is_critical = readr::col_logical(),
     in_queens = readr::col_logical(),
     serves_queens = readr::col_logical(),
     is_coad_member = readr::col_logical(),
@@ -505,7 +624,7 @@ resources_to_cdta <- function(res, cdta) {
 resource_categories_per_district <- function(res_cdta, cx) {
   labels <- cx |>
     filter(canonical_category != "exclude") |>
-    distinct(canonical_category, canonical_label, is_critical)
+    distinct(canonical_category, canonical_label)
 
   res_cdta |>
     filter(!is.na(cdta2020)) |>
@@ -536,9 +655,13 @@ write_resource_payloads <- function(res_cdta, crosswalk, dir) {
         compact_list(list(
           resource_id = r$resource_id,
           name = r$name,
+          # The operating organisation, where the facility name alone does not
+          # identify it - screen 06 renders "Ravenswood Branch" over "Queens
+          # Public Library". FacDB `opname`; absent for qnpd and franc, where
+          # the record IS the organisation.
+          operator = na_null(col_or_na(r, "operator")),
           category = r$canonical_category,
           subcategory = na_null(r$subcategory),
-          is_critical = isTRUE(r$is_critical),
           is_coad_member = isTRUE(r$is_coad_member),
           lon = r$lon, lat = r$lat,
           address = na_null(r$address),
@@ -547,10 +670,15 @@ write_resource_payloads <- function(res_cdta, crosswalk, dir) {
           email = na_null(col_or_na(r, "email")),
           phone = na_null(col_or_na(r, "phone")),
           website = na_null(col_or_na(r, "website")),
+          social = na_null(col_or_na(r, "social")),
           languages = na_null(r$languages),
           accepts_referrals = na_null(r$accepts_referrals),
           fees = na_null(r$fees),
-          capacity = if (is.na(r$capacity)) NULL else r$capacity,
+          # Omitted when zero, not emitted as 0. FacDB uses 0 for "not
+          # reported" on 5,021 of 5,432 records, and a detail screen that
+          # renders the field faithfully prints "Capacity: 0" for 88% of
+          # resources - which reads as a fact rather than an absence.
+          capacity = if (is.na(r$capacity) || r$capacity == 0) NULL else r$capacity,
           source = r$source,
           provenance = r$provenance,
           verified_on = r$verified_on

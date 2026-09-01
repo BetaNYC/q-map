@@ -33,8 +33,27 @@ REQUIRED_SECTIONS <- c("preparedness", "response", "general")
 # error rather than a section nobody notices is missing.
 OPTIONAL_SECTIONS <- c(
   "signs-of-heat-illness", "prevention", "evacuation", "after",
-  "flooding-basements", "air-quality", "power-outage"
+  "flooding-basements", "air-quality", "power-outage",
+  # A section with no authored content: the frontend renders the citywide
+  # respiratory-illness readout from conditions.json in its place.
+  "current-conditions"
 )
+
+# Sections whose body the frontend supplies rather than the content file.
+#
+# Screen 02's "current conditions" box was dropped, and the respiratory readout
+# moves to the infectious-disease hazard page. Something has to say WHERE on
+# that page it belongs, and the options were a hardcoded position in the
+# frontend or a declared section here.
+#
+# Declared wins: the author controls the order, the section carries its own
+# title, and the page stays readable as a single file. It also keeps the rule
+# that content files are the vocabulary for what a page contains - a hardcoded
+# card would be the one part of a hazard page not visible in its yml.
+#
+# These sections carry no items and no body BY DESIGN, so the "stub sections
+# must be authored" check has to exempt them.
+DATA_BACKED_SECTIONS <- c("current-conditions")
 
 read_hazard_content <- function(dir = HAZARD_CONTENT_DIR) {
   files <- list.files(dir, pattern = "\\.ya?ml$", full.names = TRUE)
@@ -73,16 +92,50 @@ read_hazard_overlays <- function(dir = HAZARD_CONTENT_DIR) {
 # what a district actually renders. Replacing whole keys keeps both files
 # readable in isolation.
 merge_hazard_overlay <- function(base, overlay) {
-  for (k in intersect(names(overlay), HAZARD_OVERLAY_KEYS)) {
+  replaced <- intersect(names(overlay), HAZARD_OVERLAY_KEYS)
+  for (k in replaced) {
     base[[k]] <- overlay[[k]]
   }
-  base$.overridden <- intersect(names(overlay), HAZARD_OVERLAY_KEYS)
+
+  # Provenance goes under `meta`, not a dot-prefixed top-level key.
+  #
+  # `.overridden` was awkward to reach in JS (obj[".overridden"]) and in most
+  # template languages, and undocumented besides. `meta` is the shape the
+  # district payload already uses, so this reuses a convention rather than
+  # inventing a second one.
+  base$meta <- list(
+    district = overlay$.district %||% NA_character_,
+    # Which whole keys came from the override. The merge is deliberately not a
+    # deep merge, and this is the only way to see that from the output file.
+    overridden = replaced
+  )
+
+  # An override that authors real content is no longer a stub, whatever the
+  # base file says. q14/coastal-storm is fully written - sections, links and a
+  # hand-authored evacuation passage - and inherited `status: stub` from a base
+  # that is not, so a "draft content" banner keyed on status would have shown
+  # on the one district hazard page that is actually finished.
+  if (!"status" %in% replaced && identical(base$status, "stub") &&
+      hazard_sections_authored(base$sections)) {
+    base$status <- "authored"
+  }
   base
+}
+
+# Does every section that is supposed to carry content actually carry some?
+# Data-backed sections are exempt: they have no items or body by design.
+hazard_sections_authored <- function(sections) {
+  if (is.null(sections) || length(sections) == 0) return(FALSE)
+  all(vapply(sections, function(s) {
+    if (isTRUE(s$id %in% DATA_BACKED_SECTIONS)) return(TRUE)
+    (length(s$items) > 0) || (!is.null(s$body) && nzchar(trimws(s$body)))
+  }, logical(1)))
 }
 
 # --- validation -------------------------------------------------------------
 
-validate_hazard_content <- function(content, model_slugs, registry_ids = character()) {
+validate_hazard_content <- function(content, model_slugs, registry_ids = character(),
+                                    available_ids = NULL) {
   if (anyNA(names(content))) {
     stop("Hazard content: a file has no `slug`: ",
          paste(vapply(content[is.na(names(content))],
@@ -138,6 +191,16 @@ validate_hazard_content <- function(content, model_slugs, registry_ids = charact
     for (lyr in y$map_layers %||% list()) {
       if (!lyr %in% registry_ids) {
         stop(where, ": map_layer '", lyr, "' is not in data/registry/map_layers.csv")
+      }
+      # Membership is not enough. This check passed q14/coastal-storm while it
+      # declared hurricane_evac_zones and surge_current, both of which were
+      # marked blocked_on_data and had no artifact - so the one district hazard
+      # page with authored map intent pointed at nothing, and the build was
+      # green. A layer id that resolves to no file is a blank map, silently.
+      if (!is.null(available_ids) && !lyr %in% available_ids) {
+        stop(where, ": map_layer '", lyr, "' is in the registry but its status ",
+             "is not `available`, so no artifact exists and the map renders ",
+             "empty. Ship the layer first, or drop it from the content file.")
       }
     }
 
@@ -297,6 +360,26 @@ force_arrays <- function(x, fields = HAZARD_ARRAY_FIELDS) {
   x
 }
 
+# Give every section the same shape: `items` an array, `body` a string.
+#
+# Authored sections carry one or the other - a link list or a prose block - and
+# stub sections carried NEITHER, so a frontend iterating `section.items` got
+# `undefined` on seven of eight hazards and a stub rendered as a crash rather
+# than an empty accordion. Seven of eight is the normal case right now, and
+# will stay so until the copy lands.
+#
+# Filling the absent one with an empty value rather than teaching every
+# consumer to test for it: the alternative pushes an `items ?? []` into every
+# call site, and one of them will be forgotten on the hazard nobody opened.
+normalise_sections <- function(sections) {
+  if (is.null(sections)) return(list())
+  lapply(sections, function(s) {
+    s$items <- if (is.null(s$items)) list() else s$items
+    s$body  <- if (is.null(s$body)) "" else s$body
+    s
+  })
+}
+
 # Copy, not generate. The internal `.file` marker is dropped; everything else
 # ships exactly as authored.
 write_hazard_content <- function(content, dir) {
@@ -304,6 +387,7 @@ write_hazard_content <- function(content, dir) {
   paths <- vapply(names(content), function(slug) {
     y <- content[[slug]]
     y$.file <- NULL
+    y$sections <- normalise_sections(y$sections)
     p <- file.path(dir, paste0(slug, ".json"))
     jsonlite::write_json(force_arrays(y), p, auto_unbox = TRUE,
                          null = "null", na = "null")
@@ -343,7 +427,21 @@ validate_hazard_output <- function(paths) {
 # shared, renaming that id breaks the link. Treat an id like `slug` and
 # `resource_id`: additive changes are free, renames are a migration.
 
-LAYER_STATUSES <- c("available", "blocked_on_data", "deferred")
+# `pending_build` was added when the registry was reconciled against the target
+# store and seven rows turned out to claim `blocked_on_data` while their data
+# was already built. That single status was doing two jobs - "we do not have
+# the data" and "we have the data, the artifact is not written yet" - and
+# collapsing them is how the drift stayed invisible for so long.
+#
+# The distinction is load-bearing for the frontend, not bookkeeping:
+#   available        there is something to load, now
+#   pending_build    the data exists; the writer is not built yet. Do not load.
+#   blocked_on_data  the data does not exist. `blocked_on` says what is missing.
+#   deferred         a scope decision, not a data gap
+#
+# validate_layer_tiles() requires an artifact for `available` only, so a row can
+# be corrected the day its data lands without waiting on the writer.
+LAYER_STATUSES <- c("available", "pending_build", "blocked_on_data", "deferred")
 LAYER_KINDS <- c("context", "resource")
 LAYER_DELIVERY <- c("inline", "geojson", "pmtiles", "cog")
 
@@ -430,9 +528,12 @@ write_hazard_overlays <- function(content, overlays, dir) {
   paths <- vapply(names(overlays), function(key) {
     parts <- strsplit(key, "/", fixed = TRUE)[[1]]
     hazard <- parts[1]; district <- parts[2]
-    merged <- merge_hazard_overlay(content[[hazard]], overlays[[key]])
+    ov <- overlays[[key]]
+    ov$.district <- district
+    merged <- merge_hazard_overlay(content[[hazard]], ov)
     merged$.file <- NULL
-    merged$district <- district
+    merged$.overridden <- NULL
+    merged$sections <- normalise_sections(merged$sections)
     out_dir <- file.path(dir, district, "hazards")
     dir.create(out_dir, showWarnings = FALSE, recursive = TRUE)
     p <- file.path(out_dir, paste0(hazard, ".json"))

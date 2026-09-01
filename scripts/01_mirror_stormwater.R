@@ -127,7 +127,13 @@ message("\nMirrored ", length(LAYERS), " stormwater layers to ", OUT)
 #   st_transform(4326). tippecanoe assumes lon/lat input. Handing it EPSG:2263
 #   State Plane feet produces tiles somewhere off the coast of Africa.
 
-TILE_MIN_ZOOM <- 10   # citywide view
+# z10 was described as "citywide view" and is not: a Queens-wide frame at 390px
+# sits around z10 and a borough or citywide frame goes wider, at which point the
+# layer silently disappears - MapLibre renders nothing below a source's minzoom
+# and reports no error. z8 covers any framing the app can reach. The cost is
+# negligible because these are two dissolved polygons; low zooms add a handful
+# of tiles, not a proportional share of the file.
+TILE_MIN_ZOOM <- 8
 TILE_MAX_ZOOM <- 16   # block level; flood extents carry no detail below this
 
 if (nchar(Sys.which("tippecanoe")) == 0) {
@@ -151,6 +157,12 @@ if (nchar(Sys.which("tippecanoe")) == 0) {
       "-o", shQuote(dst),
       "-Z", TILE_MIN_ZOOM, "-z", TILE_MAX_ZOOM,
       "-l", shQuote(paste0("stormwater_", nm)),
+      # -n sets the `name` in the PMTiles metadata block. Without it tippecanoe
+      # stores the input path, so the shipped tiles announced themselves as
+      # "data/prepared/stormwater_moderate_2_13.pmtiles" - a local build path
+      # leaking into a published artifact. The layer_id is what any consumer
+      # reading the metadata should see.
+      "-n", shQuote(paste0("stormwater_", nm)),
       # Flood extents are the data, not decoration. Dropping features or
       # shrinking tiny polygons would remove real flooded blocks.
       "--no-feature-limit", "--no-tile-size-limit",

@@ -1,18 +1,16 @@
 layer_id,label,kind,geometry,delivery,status,blocked_on,source,notes
 hvi_choropleth,Heat Vulnerability Index,context,polygon,inline,available,,DOHMH HVI feature service,Joins to cdta.geojson by cdta2020; no separate geometry needed
-stormwater_moderate_2_13,Stormwater flooding (moderate rain),context,polygon,pmtiles,available,,DEP stormwater flood map 2.13 in/hr current,Tiled by scripts/01_mirror_stormwater.R; published in data-v* and copied to data/processed/layers/
-stormwater_limited_1_77,Stormwater flooding (limited rain),context,polygon,pmtiles,available,,DEP stormwater flood map 1.77 in/hr current,Tiled by scripts/01_mirror_stormwater.R; published in data-v* and copied to data/processed/layers/
-surge_current,Storm surge (present day),context,polygon,pmtiles,blocked_on_data,fvi_tract_geometry,NYC Flood Vulnerability Index ss_cur,Tract-level index; needs tiling from the FVI service
-surge_2080s,Storm surge (2080s projection),context,polygon,pmtiles,blocked_on_data,coastal_surge_layer,Coastal Surge Flooding 2080s 100-Year,Single citywide multipart polygon; forward-looking context only
-hurricane_evac_zones,Hurricane evacuation zones,context,polygon,pmtiles,blocked_on_data,epne-qv9x,NYC Open Data epne-qv9x,Not yet fetched
+stormwater_moderate_2_13,Stormwater flooding (moderate rain),context,polygon,pmtiles,available,,DEP stormwater flood map 2.13 in/hr current,Tiled by scripts/01_mirror_stormwater.R at z8-16; published in data-v* and copied to data/processed/layers/
+stormwater_limited_1_77,Stormwater flooding (limited rain),context,polygon,pmtiles,available,,DEP stormwater flood map 1.77 in/hr current,Tiled by scripts/01_mirror_stormwater.R at z8-16; published in data-v* and copied to data/processed/layers/
+surge_current,Storm surge (present day),context,polygon,geojson,available,,NYC Flood Vulnerability Index ss_cur,"361 exposed tracts from the FVI ss_cur column, Queens-clipped. NULL means not exposed, so the layer is the exposed set."
+surge_2080s,Storm surge (2080s projection),context,polygon,pmtiles,blocked_on_data,coastal_surge_layer,Coastal Surge Flooding 2080s 100-Year,Single citywide multipart polygon; not fetched. Excluded from ranking and from forward-looking context - see METHODOLOGY.md
+hurricane_evac_zones,Hurricane evacuation zones,context,polygon,geojson,available,,NYC Open Data epne-qv9x,"Zones 1-6, Queens-clipped. Citywide these are 3 MB of coastal detail for six polygons."
 chem_businesses,Chemically intensive businesses,context,polygon,inline,available,,DOHMH Chemically Intensive Small Businesses,CD-level count; joins to cdta.geojson by cdta2020
 pivi_choropleth,Pandemic influenza vulnerability,context,polygon,inline,available,,DOHMH PIVI feature service,Joins to cdta.geojson by cdta2020
 tree_canopy,Tree canopy,context,raster,cog,deferred,land_cover_processing,NYC 2017 LiDAR Land Cover,121 GB source; needs local crop + reclassify. See PIPELINE_DESIGN.md section 9 item 5
 permeable_surface,Permeable surface,context,raster,cog,deferred,land_cover_processing,NYC 2017 LiDAR Land Cover,Same source and blocker as tree_canopy
 fema_100yr,FEMA 100-year floodplain,context,polygon,pmtiles,deferred,,FEMA NFHL,Reusable from d26 get_nfhl(); not yet in scope
 fema_500yr,FEMA 500-year floodplain,context,polygon,pmtiles,deferred,,FEMA NFHL,Reusable from d26 get_nfhl(); not yet in scope
-cooling_centers,Cooling centers,resource,point,geojson,blocked_on_data,cooling_centers_dataset,NYC OEM / Cool Options,Seasonal. NOT the cooling TOWER registry - see DATA_SOURCES.md
-evacuation_centers,Hurricane evacuation centers,resource,point,geojson,blocked_on_data,ayer-cga7,NYC Open Data ayer-cga7,Not yet fetched
-nonprofits,Community organisations,resource,point,geojson,blocked_on_data,resource_model,Queens Nonprofit Directory,Ungeocoded; needs the step-4 resource model
-franc_members,FRANC members,resource,point,geojson,blocked_on_data,resource_model,FRANC Resource Map,Rockaways only; QN14 has the only COAD
-libraries,Libraries,resource,point,geojson,blocked_on_data,ji82-xba5,DCP Facilities Database,qpl_libraries datasource
+cooling_centers,Indoor cool options,resource,point,geojson,available,,NYC OEM Cool Options,"Year-round indoor Cool Options. NOT emergency cooling centres, which open only in a declared heat emergency - see METHODOLOGY.md"
+evacuation_centers,Hurricane evacuation centers,resource,point,geojson,available,,NYC Open Data p5md-weyf,"60 centres citywide, 15 in Queens, none in the Rockaways. ayer-cga7 is the wrong id - zero columns"
+resources,Community resources,resource,point,geojson,available,,Queens Nonprofit Directory + DCP FacDB + FRANC Resource Map,One layer toggled by canonical_category; source and is_coad_member ship per record as secondary filters. Replaces the former nonprofits/franc_members/libraries rows

@@ -131,16 +131,48 @@ build_conditions <- function(archive, data_as_of = as.character(Sys.Date())) {
     rows <- latest |> filter(metric == m) |> arrange(date)
     cur <- rows$value[2]; prev <- rows$value[1]
     series <- archive |> filter(metric == m) |> arrange(date) |> slice_tail(n = 12)
+
+    # TWO TIME SCALES, BOTH SHIPPED.
+    #
+    # `direction` compares the last two weeks. On its own it was actively
+    # misleading: the visits series ran 7.48 -> 5.85 across its window, a
+    # sustained decline, with a two-week uptick at the end - so the chip said
+    # "up" while the sparkline beside it visibly fell.
+    #
+    # `trend` is the direction across the whole window, by ordinary least
+    # squares on the series rather than first-vs-last, so a single noisy
+    # endpoint cannot flip it. Shipping both lets the copy say "rising this
+    # week, down over three months" instead of picking one and being wrong the
+    # other way.
+    fit <- stats::lm(value ~ seq_along(value), data = series)
+    slope <- unname(stats::coef(fit)[2])
+
+    # Flat band: a slope under 1% of the window mean per week is noise at this
+    # sample size, and calling it a trend would put an arrow on nothing.
+    flat_band <- 0.01 * mean(series$value)
+
     list(
       # geography is an explicit field for the same reason reference_frame is:
       # this number sits on a district page and is NOT about that district.
       geography = "nyc",
+      # The rendered string, so the component cannot forget to say it. The
+      # number is a share of CITYWIDE emergency department visits, and on a
+      # page headed "The Rockaways" that has to be stated rather than implied
+      # by a field nobody renders.
+      geography_label = "New York City",
       metric = m,
       value = cur,
       previous = prev,
       direction = if (cur > prev) "up" else if (cur < prev) "down" else "flat",
       pct_change = round((cur - prev) / prev * 100, 1),
+      trend = if (slope > flat_band) "up"
+              else if (slope < -flat_band) "down" else "flat",
+      trend_window_weeks = nrow(series),
       unit = "pct_of_ed_visits",
+      # What the denominator actually is. "6.41" means 6.41% of ED visits, not
+      # 6.41 people, and PIPELINE_DESIGN.md section 6 is explicit that copy
+      # reading as counts is the failure mode here.
+      unit_label = "of emergency department visits",
       window_weeks = 12L,
       as_of = as.character(rows$date[2]),
       series = lapply(seq_len(nrow(series)), function(i) {
@@ -153,6 +185,12 @@ build_conditions <- function(archive, data_as_of = as.character(Sys.Date())) {
     as_of = as.character(max(archive$date)),
     data_as_of = data_as_of,
     archive_weeks = as.integer(dplyr::n_distinct(archive$date)),
+    # Which metric the screen-01 chip shows. Both ship, and they are different
+    # claims - visits is how much respiratory illness is about, hospitalisations
+    # is how bad it is getting. The severity signal is the one a preparedness
+    # reader should act on, and naming it here stops the choice being made
+    # incidentally in a component.
+    chip_metric = "respiratory_illness_hospitalizations",
     respiratory_illness_visits = mk("Respiratory illness visits"),
     respiratory_illness_hospitalizations = mk("Respiratory illness hospitalizations")
   )

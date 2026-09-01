@@ -17,4 +17,9 @@ sections:
   - id: general
     title: General information
 
-map_layers: []
+# The two shipped stormwater tilesets were orphaned: they were built, published
+# and copied into data/processed/layers/, and no hazard content file referenced
+# them, so nothing told the frontend to put them on a map.
+map_layers:
+  - stormwater_moderate_2_13
+  - stormwater_limited_1_77

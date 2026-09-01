@@ -264,14 +264,36 @@ list(
 
   tar_target(map_layer_registry_path, "data/registry/map_layers.csv", format = "file"),
   tar_target(map_layer_registry, read_layer_registry(map_layer_registry_path)),
-  tar_target(map_layer_registry_checks, validate_layer_registry(map_layer_registry)),
+
+  # Availability of every blocker named by either registry, gathered once from
+  # the real upstream objects. Both freshness checks read this, so a dataset
+  # landing invalidates them together. See R/registry.R.
+  tar_target(
+    blocker_facts_now,
+    blocker_facts(
+      fvi                 = fvi,
+      evac_zones          = evac_zones,
+      cool_options        = cool_options,
+      evac_centers        = evac_centers,
+      canonical_resources = canonical_resources
+    )
+  ),
+
+  tar_target(
+    map_layer_registry_checks,
+    validate_layer_registry(map_layer_registry) &&
+      validate_registry_freshness(map_layer_registry, blocker_facts_now,
+                                  "map_layers.csv", id_col = "layer_id")
+  ),
 
   tar_target(
     hazard_content_checks,
     validate_hazard_content(
       hazard_content,
       model_slugs = c(names(HAZARD_SEVERITY), HAZARD_PINNED),
-      registry_ids = map_layer_registry$layer_id
+      registry_ids = map_layer_registry$layer_id,
+      available_ids = map_layer_registry$layer_id[
+        map_layer_registry$status == "available"]
     )
   ),
 
@@ -367,7 +389,9 @@ list(
       gap_registry,
       ranked_slugs = names(HAZARD_SEVERITY),
       pinned_slugs = HAZARD_PINNED
-    )
+    ) &&
+      validate_registry_freshness(gap_registry, blocker_facts_now,
+                                  "resource_gaps.csv", id_col = "gap_id")
   ),
 
   ## Gap inputs --------------------------------------------------------------
@@ -394,8 +418,6 @@ list(
       tract_cdta = filter(tract_cdta, !is.na(cdta2020)),
       stormwater = stormwater_moderate,
       cool_options = cool_options,
-      evac_zones = evac_zones,
-      evac_centers_cdta = facilities_to_cdta(evac_centers, cdta_boundaries),
       solid_waste_buffer = sf::st_sfc(buffer_miles(solid_waste_facilities, 0.5), crs = 2263),
       wastewater_buffer = sf::st_sfc(buffer_miles(wastewater_facilities, 0.5), crs = 2263),
       flood_x_wastewater = sf::st_sfc(sf::st_intersection(
@@ -405,14 +427,17 @@ list(
         rbind(select(solid_waste_facilities, uid, facname, geometry),
               select(wastewater_facilities, uid, facname, geometry)),
         cdta_boundaries),
-      critical_resources = sf::st_as_sf(
-        filter(resources_cdta, is_critical, !is.na(cdta2020)),
-        coords = c("lon", "lat"), crs = 4326, remove = FALSE),
       resources_cdta = resources_cdta
     ))
   ),
 
-  tar_target(gap_selection, select_district_gaps(gap_values, hazards)),
+  # The numbers, not the config. Catches a unit that disagrees with the
+  # computation that produced it, an `available` gap with no value, and a
+  # template placeholder with no matching fact - three failure modes that are
+  # invisible to validate_gap_registry() because the config is well-formed.
+  tar_target(gap_values_checks, validate_gap_values(gap_values, cdta_crosswalk)),
+
+  tar_target(gap_selection, select_district_gaps(gap_values, hazards, cdta_crosswalk)),
 
   tar_target(gap_selection_checks, validate_gap_selection(gap_selection, hazards, cdta_crosswalk)),
 
@@ -454,5 +479,30 @@ list(
     format = "file"
   ),
 
-  tar_target(layer_tile_checks, validate_layer_tiles(layer_tile_paths, map_layer_registry))
+  tar_target(layer_tile_checks, validate_layer_tiles(layer_tile_paths, map_layer_registry)),
+
+  # GeoJSON overlays. Written directly rather than tiled: measured, every one is
+  # smaller than cdta.geojson, so tippecanoe would add a build step and a
+  # data-v* round trip to save nothing. See R/layers.R.
+  tar_target(queens_shape, queens_outline(cdta_boundaries)),
+
+  tar_target(
+    layer_geojson_paths,
+    c(
+      layer_hurricane_evac_zones(evac_zones, queens_shape,
+                                 "data/processed/layers/hurricane_evac_zones.geojson"),
+      layer_surge_current(fvi, queens_shape,
+                          "data/processed/layers/surge_current.geojson"),
+      layer_evacuation_centers(evac_centers, queens_shape,
+                               "data/processed/layers/evacuation_centers.geojson"),
+      layer_cooling_centers(cool_options, queens_shape,
+                            "data/processed/layers/cooling_centers.geojson"),
+      layer_resources(resources_cdta, cdta_crosswalk,
+                      "data/processed/layers/resources")
+    ),
+    format = "file"
+  ),
+
+  tar_target(layer_geojson_checks,
+             validate_layer_geojson(layer_geojson_paths, map_layer_registry))
 )

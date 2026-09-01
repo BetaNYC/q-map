@@ -20,6 +20,37 @@ GAP_POLARITY <- c("higher_is_worse", "higher_is_better")
 # cross-cutting gap can only ever reach a district through fall-through.
 GAP_PSEUDO_HAZARDS <- "cross-cutting"
 
+# Display labels for hazard_slug values that have no hazard page, and so no
+# label in HAZARD_LABELS.
+#
+# Every gap in gaps/<slug>.json carries its hazard_slug, and the "see all gaps"
+# view groups them. Two slugs have no page behind them: `cross-cutting` is the
+# registry-only pseudo-hazard above, and `air-quality` is where three retired
+# gaps hang - retired precisely because air quality is not one of q-map's eight
+# hazards, so acquiring NYCCAS data would not make them displayable.
+#
+# Without these, a grouped view renders raw slugs as headings. Labels live here
+# rather than in a hazard_label column on the CSV because a per-row label would
+# be denormalised across 33 rows and would drift from HAZARD_LABELS.
+GAP_ORPHAN_HAZARD_LABELS <- c(
+  `cross-cutting` = "Cross-cutting",
+  `air-quality`   = "Air quality"
+)
+
+# The label for any hazard_slug a gap may carry, page-backed or not.
+gap_hazard_label <- function(slug, hazard_labels = HAZARD_LABELS) {
+  known <- c(hazard_labels, GAP_ORPHAN_HAZARD_LABELS)
+  out <- unname(known[slug])
+  if (any(is.na(out))) {
+    stop("resource_gaps.csv: no display label for hazard_slug '",
+         paste(unique(slug[is.na(out)]), collapse = ", "),
+         "'. Add it to HAZARD_LABELS if it is a hazard, or to ",
+         "GAP_ORPHAN_HAZARD_LABELS if it is not - a grouped gaps view would ",
+         "otherwise render the raw slug as a heading.")
+  }
+  out
+}
+
 # Cooling TOWERS are not cooling CENTERS. The towers dataset (y4fw-iqfr) is
 # building HVAC equipment tracked for Legionella risk. Wiring one into a heat
 # gap would produce a plausible-looking, confidently wrong number on the hazard
