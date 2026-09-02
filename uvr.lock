@@ -43,6 +43,14 @@ url = "https://cran.r-project.org/src/contrib/Rcpp_1.1.2.tar.gz"
 checksum = "md5:353d35176db9c570705a0a324c06fdca"
 
 [[package]]
+name = "RcppParallel"
+version = "6.2.1"
+source = "cran"
+raw_version = "6.2.1"
+url = "https://cran.r-project.org/src/contrib/RcppParallel_6.2.1.tar.gz"
+checksum = "md5:8092b9b6d49db80db5b441bac00d835e"
+
+[[package]]
 name = "V8"
 version = "8.2.0"
 source = "cran"
@@ -530,6 +538,21 @@ requires = [
 ]
 
 [[package]]
+name = "qs2"
+version = "0.3.1"
+source = "cran"
+raw_version = "0.3.1"
+url = "https://cran.r-project.org/src/contrib/qs2_0.3.1.tar.gz"
+checksum = "md5:f28443f5de1e6c84e121f10afa1c2aa9"
+requires = [
+    "Rcpp",
+    "RcppParallel",
+    "stringfish",
+    "Rcpp",
+    "RcppParallel",
+]
+
+[[package]]
 name = "rapidjsonr"
 version = "1.2.1"
 source = "cran"
@@ -664,6 +687,20 @@ raw_version = "2.2-3"
 url = "https://cran.r-project.org/src/contrib/sp_2.2-3.tar.gz"
 checksum = "md5:727d54966fbfdd2a644748a1a733f483"
 requires = ["lattice"]
+
+[[package]]
+name = "stringfish"
+version = "0.19.2"
+source = "cran"
+raw_version = "0.19.2"
+url = "https://cran.r-project.org/src/contrib/stringfish_0.19.2.tar.gz"
+checksum = "md5:57576d40c0bb72dcf673c5ecef2d49e8"
+requires = [
+    "Rcpp",
+    "RcppParallel",
+    "Rcpp",
+    "RcppParallel",
+]
 
 [[package]]
 name = "stringi"
