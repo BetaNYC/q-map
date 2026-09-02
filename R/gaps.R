@@ -13,7 +13,12 @@
 
 GAP_PRIMITIVES <- c("access_threshold", "access_mean", "supply_ratio",
                     "exposure_overlay", "composite")
+# `not_applicable` is per-DISTRICT, never a registry value: a gap can be
+# available across Queens and have no answer for one district. The Rockaways
+# has no hurricane evacuation centre reachable on foot at all, so gap 13 has
+# nothing to average there while remaining a live gap everywhere else.
 GAP_STATUSES <- c("available", "blocked_on_data", "deferred", "retired")
+GAP_ROW_STATUSES <- c(GAP_STATUSES, "not_applicable")
 GAP_POLARITY <- c("higher_is_worse", "higher_is_better")
 
 # A registry-only pseudo-hazard. It has no page in the hazard catalog, so a

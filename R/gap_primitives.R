@@ -3,10 +3,9 @@
 # The five primitives the 33 gaps collapse to. Each returns one row per CDTA
 # with a `value` plus the `facts` the sentence template interpolates.
 #
-# Two are implemented here - supply_ratio and exposure_overlay - which between
-# them cover every gap that is computable without walk times. access_threshold
-# and access_mean both need a routed pedestrian network (section 11 step 8) and
-# are stubbed so the shape is fixed before r5r lands.
+# supply_ratio and exposure_overlay live here. access_threshold and access_mean
+# live in R/access.R, because they read the locally-produced walk-time table
+# rather than computing anything spatial - see ACCESS_MEASURES.md.
 
 ANALYSIS_CRS_GAPS <- 2263
 FEET_PER_MILE <- 5280
@@ -122,14 +121,8 @@ facilities_to_cdta <- function(facilities, cdta) {
 # DAG will read a published access_stats.csv as a file target rather than
 # routing at build time. Stubbed so the return shape is settled first.
 
-access_threshold <- function(...) {
-  stop("access_threshold needs the r5r access measures (step 8). ",
-       "9 of the 12 blocked gaps wait only on this.")
-}
-
-access_mean <- function(...) {
-  stop("access_mean needs the r5r access measures (step 8).")
-}
+# access_threshold() and access_mean() now live in R/access.R, implemented
+# against data/prepared/access_stats.csv.
 
 # --- the computable gaps ----------------------------------------------------
 #
@@ -279,6 +272,8 @@ compute_available_gaps <- function(reg, inputs) {
     out[[as.character(id)]] <<- tbl |> mutate(gap_id = as.integer(id))
   }
 
+  add(1,  access_threshold(inputs$access, inputs$block_cdta,
+                           "cool_options_indoor", 15, "all_residents"))
   add(2,  gap_02_cool_options(inputs$cool_options, inputs$cdta, inputs$crosswalk,
                               inputs$chp))
   add(7,  gap_population_exposure(inputs$tracts, inputs$tract_pop,
@@ -288,7 +283,11 @@ compute_available_gaps <- function(reg, inputs) {
   # computation goes.
   add(12, gap_population_exposure(inputs$tracts, inputs$tract_pop,
                                   inputs$tract_cdta, inputs$flood_x_wastewater, d))
+  add(13, access_mean(inputs$access, inputs$block_cdta,
+                      "evacuation_centers", "all_residents"))
   add(18, gap_18_language_coverage(inputs$lep, inputs$languages, inputs$crosswalk))
+  add(21, access_mean(inputs$access, inputs$block_cdta,
+                      "hospitals", "all_residents"))
   add(27, gap_population_exposure(inputs$tracts, inputs$tract_pop,
                                   inputs$tract_cdta, inputs$solid_waste_buffer, d))
   add(28, gap_population_exposure(inputs$tracts, inputs$tract_pop,
@@ -315,6 +314,16 @@ compute_available_gaps <- function(reg, inputs) {
     left_join(select(crosswalk_display_names(inputs$crosswalk),
                      cdta2020, facts_district),
               by = "cdta2020") |>
+    # A district a primitive could not answer for is `not_applicable` HERE,
+    # not `available` with a hole. Selection skips it and falls through, and
+    # the full matrix still ships the row so the absence is legible.
+    #
+    # Demotion requires an explicit reason: a primitive that returns NA without
+    # saying why is still a defect, and validate_gap_values() fails on it.
+    mutate(status = ifelse(
+      status == "available" & is.na(value) &
+        !is.na(dplyr::coalesce(facts_unavailable_reason, NA_character_)),
+      "not_applicable", status)) |>
     relocate(gap_id, hazard_slug, priority, cdta2020, value)
 }
 
@@ -555,7 +564,10 @@ GAP_UNIT_REQUIRED_FACTS <- list(
   # values ran 62 to 403 and would have rendered as "207%". It never displayed
   # - cross-cutting is only reachable through fall-through, which has never
   # fired - so nothing surfaced it until the placeholder check did.
-  people_per_resource = c("people", "resources", "per_resource")
+  people_per_resource = c("people", "resources", "per_resource"),
+  # access_mean gaps: the sentence states a duration, so the duration must be
+  # a fact rather than the rounded root `value`.
+  minutes = "minutes"
 )
 
 # Scoped to the districts that actually ship, and that scoping is not laziness.
@@ -677,7 +689,8 @@ GAP_UNIT_HEADLINE_FACT <- c(
   pct_facilities      = "exposed",
   people_per_resource = "per_resource",
   count_speakers      = "speakers",
-  per_10k             = "per_10k"
+  per_10k             = "per_10k",
+  minutes             = "minutes"
 )
 
 gap_headline_value <- function(row) {

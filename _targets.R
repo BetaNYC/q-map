@@ -406,6 +406,22 @@ list(
   tar_target(solid_waste_facilities, get_hazard_facilities("SOLID WASTE")),
   tar_target(wastewater_facilities, get_hazard_facilities("WATER AND WASTEWATER")),
 
+  ## Access measures ---------------------------------------------------------
+  # Published by scripts/04_access_measures.R, which runs LOCALLY with r5r and
+  # a JVM and is never part of this DAG. Read as files, exactly as section 8b
+  # requires - the pipeline consumes walk times and never routes.
+
+  tar_target(access_stats_path, "data/prepared/access_stats.csv", format = "file"),
+  tar_target(access_stats, read_access_stats(access_stats_path)),
+
+  tar_target(block_weights_path, "data/prepared/block_weights.csv", format = "file"),
+  tar_target(block_weights, read_block_weights(block_weights_path)),
+
+  # The spatial half stays here rather than in the local script, because it
+  # needs the UNSIMPLIFIED boundaries the DAG already holds.
+  tar_target(block_cdta, blocks_to_cdta(block_weights, cdta_boundaries)),
+  tar_target(block_cdta_checks, validate_block_cdta(block_cdta)),
+
   ## Gap computation ---------------------------------------------------------
 
   tar_target(
@@ -427,7 +443,9 @@ list(
         rbind(select(solid_waste_facilities, uid, facname, geometry),
               select(wastewater_facilities, uid, facname, geometry)),
         cdta_boundaries),
-      resources_cdta = resources_cdta
+      resources_cdta = resources_cdta,
+      access = access_stats,
+      block_cdta = block_cdta
     ))
   ),
 

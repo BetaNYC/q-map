@@ -146,6 +146,16 @@ BLOCKERS <- list(
     resolved = function(f) FALSE
   ),
 
+  # The r5r file landed, but three of the four subpopulations it is sliced by -
+  # high-HVI blocks, stormwater-flood blocks, evacuation-zone blocks - are
+  # spatial filters that are not built yet. A different blocker from the routing
+  # itself, and re-tokened rather than left on `access_measures`, which would
+  # have failed the freshness check the moment the file appeared.
+  access_subpopulations = list(
+    kind = "data", label = "Block-level subpopulation filters",
+    resolved = function(f) isTRUE(f$access_subpopulations_built)
+  ),
+
   # A composite whose inputs are known but whose formula is not. Five registry
   # rows were "input lists, not formulas" and this is what is left of them.
   # Never resolvable by acquiring data - it needs a method decision.
@@ -231,6 +241,7 @@ blocker_facts <- function(fvi = NULL, evac_zones = NULL, cool_options = NULL,
     canonical_resources_rows = n(canonical_resources),
     coastal_surge_rows       = n(coastal_surge),
     access_stats_exists      = file.exists(access_stats_path),
+    access_subpopulations_built = FALSE,
     hospital_surge_exists    = file.exists(hospital_surge_path),
     evac_capacity_exists     = file.exists(evac_capacity_path),
     ebs_exists               = file.exists(ebs_path)
