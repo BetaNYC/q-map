@@ -75,12 +75,28 @@ jobs:
       #
       # libnode-dev is for V8, which rmapshaper needs and which is the one
       # dependency here that fails in a way that looks unrelated to mapping.
+      # System libraries the P3M binaries link against but do not carry.
+      #
+      # uvr.lock pins every R package and its checksum, which is a stronger
+      # guarantee than the Dockerfile it replaced - but it says nothing about
+      # the C libraries those binaries were compiled against. That gap is
+      # invisible until a shared object fails to load at runtime.
+      #
+      #   libgdal/geos/proj/udunits2   sf, units, classInt
+      #   libnode                      V8, which rmapshaper needs
+      #   libglpk, libgmp              igraph, which `targets` imports
+      #
+      # The igraph pair was missing and broke the first CI run:
+      #   libglpk.so.40: cannot open shared object file
+      # libgmp is added alongside it because igraph links both and the second
+      # would surface as an identical failure on the next run.
       - name: System libraries
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y --no-install-recommends \
             libgdal-dev libgeos-dev libproj-dev libudunits2-dev \
-            libnode-dev libcurl4-openssl-dev libssl-dev libxml2-dev
+            libnode-dev libcurl4-openssl-dev libssl-dev libxml2-dev \
+            libglpk-dev libgmp-dev
 
       - uses: r-lib/actions/setup-r@v2
         with:
