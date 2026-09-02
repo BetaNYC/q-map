@@ -1,0 +1,21 @@
+{
+"type": "FeatureCollection",
+"name": "evacuation_centers",
+"features": [
+{ "type": "Feature", "properties": { "name": "Hillcrest H.S.", "address": "160-05 Highland Avenue", "accessible": "Y" }, "geometry": { "type": "Point", "coordinates": [ -73.802665, 40.709656 ] } },
+{ "type": "Feature", "properties": { "name": "J.H.S. 190 Russell Sage", "address": "68-17 Austin Street", "accessible": "Y" }, "geometry": { "type": "Point", "coordinates": [ -73.851754, 40.723242 ] } },
+{ "type": "Feature", "properties": { "name": "Benjamin N. Cardozo H.S.", "address": "57-00 223 Street", "accessible": "Y" }, "geometry": { "type": "Point", "coordinates": [ -73.756587, 40.751848 ] } },
+{ "type": "Feature", "properties": { "name": "Townsend Harris H.S.", "address": "149-11 Melbourne Avenue", "accessible": "Y" }, "geometry": { "type": "Point", "coordinates": [ -73.821357, 40.734976 ] } },
+{ "type": "Feature", "properties": { "name": "P.S. 69 Jackson Heights", "address": "77-02 37 Avenue", "accessible": "Y" }, "geometry": { "type": "Point", "coordinates": [ -73.888591, 40.748834 ] } },
+{ "type": "Feature", "properties": { "name": "P.S./I.S. 208", "address": "74-30 Commonwealth Blvd", "accessible": "Y" }, "geometry": { "type": "Point", "coordinates": [ -73.727397, 40.744241 ] } },
+{ "type": "Feature", "properties": { "name": "J.H.S. 185 Edward Bleeker", "address": "147-26 25 Drive", "accessible": "Y" }, "geometry": { "type": "Point", "coordinates": [ -73.818623, 40.774857 ] } },
+{ "type": "Feature", "properties": { "name": "Metropolitan Avenue Campus", "address": "91-30 Metropolitan Avenue", "accessible": "Y" }, "geometry": { "type": "Point", "coordinates": [ -73.855802, 40.708525 ] } },
+{ "type": "Feature", "properties": { "name": "P.S. 307 Pioneer Academy", "address": "40-20 100 Street", "accessible": "Y" }, "geometry": { "type": "Point", "coordinates": [ -73.865823, 40.749315 ] } },
+{ "type": "Feature", "properties": { "name": "Frank Sinatra H.S.", "address": "35-12 35th Avenue", "accessible": "Y" }, "geometry": { "type": "Point", "coordinates": [ -73.925164, 40.756127 ] } },
+{ "type": "Feature", "properties": { "name": "Aviation CTE H.S.", "address": "45-30 36 Street", "accessible": "Y" }, "geometry": { "type": "Point", "coordinates": [ -73.929454, 40.743495 ] } },
+{ "type": "Feature", "properties": { "name": "Grover Cleveland H.S.", "address": "21-27 Himrod Street", "accessible": "Y" }, "geometry": { "type": "Point", "coordinates": [ -73.909635, 40.711266 ] } },
+{ "type": "Feature", "properties": { "name": "P.S. 58 School of Heroes", "address": "72-24 Grand Avenue", "accessible": "Y" }, "geometry": { "type": "Point", "coordinates": [ -73.890063, 40.728697 ] } },
+{ "type": "Feature", "properties": { "name": "I.S. 25 Adrien Block", "address": "34-65 192 Street", "accessible": "Y" }, "geometry": { "type": "Point", "coordinates": [ -73.789702, 40.764987 ] } },
+{ "type": "Feature", "properties": { "name": "P.S./I.S. 268", "address": "92-07 175 Street", "accessible": "Y" }, "geometry": { "type": "Point", "coordinates": [ -73.785202, 40.707665 ] } }
+]
+}
