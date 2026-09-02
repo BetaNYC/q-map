@@ -1,0 +1,74 @@
+name: archive-respiratory
+
+# DOHMH publishes a 12-week rolling window of respiratory illness figures.
+# Anything that falls out of it is gone permanently and cannot be recovered
+# from any source. This job is the only thing standing between the project and
+# losing that history week by week.
+#
+# The feed updates on Fridays. This runs Saturday to allow for a late post.
+# A missed run leaves a permanent hole; validate_respiratory() warns about
+# non-weekly intervals so the hole is visible rather than silent.
+#
+# Same shape as d26's refresh-311.yml: fetch, append, commit only if changed,
+# then dispatch the pipeline.
+
+on:
+  schedule:
+    - cron: '0 12 * * 6'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  archive:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: System libraries
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            libcurl4-openssl-dev libssl-dev libxml2-dev
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: '4.6.1'
+          use-public-rspm: true
+
+      - name: Install uvr
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/nbafrank/uvr/main/install.sh | sh
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Cache the uvr library
+        uses: actions/cache@v4
+        with:
+          path: .uvr/library
+          key: uvr-${{ runner.os }}-${{ hashFiles('uvr.lock') }}
+
+      - run: uvr sync --frozen
+
+      - name: Append this week to the archive
+        run: uvr run scripts/06_archive_respiratory.R
+
+      - name: Commit and dispatch
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/archive
+          if git diff --staged --quiet; then
+            echo "Feed has not advanced since the last run"
+          else
+            git commit -m "chore(archive): append respiratory illness week"
+            git push
+            # The pipeline reads the archive, so a new week means conditions.json
+            # is stale. repository_dispatch rather than relying on the push,
+            # because a GITHUB_TOKEN push does not trigger workflows.
+            curl -sf -X POST \
+              -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+              -H "Accept: application/vnd.github+json" \
+              "https://api.github.com/repos/${{ github.repository }}/dispatches" \
+              -d '{"event_type":"respiratory-archive-updated"}'
+          fi

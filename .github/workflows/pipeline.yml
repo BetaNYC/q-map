@@ -1,0 +1,141 @@
+name: pipeline
+
+# The tag of the data-v* release holding the Tier-2 mirrors lives in the
+# DATA_VERSION file, read below. d26 hardcoded its tag in two workflows and had
+# to edit both on every re-cut; one place only.
+
+on:
+  push:
+    branches: [main]
+    # The pipeline auto-commits data/processed/. paths-ignore stops that commit
+    # from re-triggering this workflow. Pushes made with GITHUB_TOKEN do not
+    # re-trigger workflows either, so this is the second of two guards.
+    paths-ignore:
+      - 'data/processed/**'
+  schedule:
+    # Monday 07:00 UTC. Tier-1 sources move slowly; this is a freshness check
+    # rather than a real refresh cadence.
+    - cron: '0 7 * * 1'
+  repository_dispatch:
+    types: [respiratory-archive-updated]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pipeline-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      data: ${{ steps.filter.outputs.data }}
+    steps:
+      - uses: actions/checkout@v4
+      # On a push, only run the pipeline when something it depends on changed.
+      # On every other event the filter step is skipped and the output is empty,
+      # which the `if` below treats as "run". d26 shipped without this gate and
+      # documented "every frontend change re-runs the entire pipeline" as a
+      # known wart before retrofitting it; take the end state.
+      - uses: dorny/paths-filter@v3
+        id: filter
+        if: github.event_name == 'push'
+        with:
+          filters: |
+            data:
+              - 'R/**'
+              - '_targets.R'
+              - 'scripts/**'
+              - 'content/**'
+              - 'data/crosswalk/**'
+              - 'data/registry/**'
+              - 'data/canonical/**'
+              - 'data/archive/**'
+              - 'uvr.lock'
+              - 'DATA_VERSION'
+              - '.github/workflows/pipeline.yml'
+
+  pipeline:
+    needs: changes
+    if: github.event_name != 'push' || needs.changes.outputs.data == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read the data release tag
+        id: dv
+        run: echo "tag=$(cat DATA_VERSION)" >> "$GITHUB_OUTPUT"
+
+      # No container. The Dockerfile d26 used existed to build GDAL from source
+      # with the Parquet driver, which PIPELINE_DESIGN.md section 3 declined -
+      # q-map ships JSON. uvr.lock pins R and every package with checksums,
+      # which is stronger pinning than that image provided. See section 10.
+      #
+      # libnode-dev is for V8, which rmapshaper needs and which is the one
+      # dependency here that fails in a way that looks unrelated to mapping.
+      - name: System libraries
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            libgdal-dev libgeos-dev libproj-dev libudunits2-dev \
+            libnode-dev libcurl4-openssl-dev libssl-dev libxml2-dev
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: '4.6.1'   # must match the [r] version in uvr.lock
+          use-public-rspm: true
+
+      - name: Install uvr
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/nbafrank/uvr/main/install.sh | sh
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Cache the uvr library
+        uses: actions/cache@v4
+        with:
+          path: .uvr/library
+          key: uvr-${{ runner.os }}-${{ hashFiles('uvr.lock') }}
+
+      # PIPELINE_DESIGN.md section 10: do NOT inherit d26's cold cache. Every
+      # d26 run is a full rebuild, which is fine at its scale and painful at a
+      # citywide one. The rolling key always saves a fresh cache and restores
+      # the most recent; targets decides what is actually stale.
+      - name: Cache the targets store
+        uses: actions/cache@v4
+        with:
+          path: _targets
+          key: targets-${{ runner.os }}-${{ github.run_id }}
+          restore-keys: targets-${{ runner.os }}-
+
+      - name: Restore the locked library
+        run: uvr sync --frozen   # fails if uvr.lock is stale
+
+      - name: Rehydrate Tier-2 mirrors
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p data/prepared
+          gh release download "${{ steps.dv.outputs.tag }}" \
+            --repo "${{ github.repository }}" --dir data/prepared/ --clobber
+
+      - name: Run the pipeline
+        env:
+          # R reads only the FIRST .Renviron it finds, and this project has its
+          # own (gitignored, so absent here). Keys must arrive as environment
+          # variables; census_api_key() checks Sys.getenv first.
+          CENSUS_API_KEY: ${{ secrets.CENSUS_API_KEY }}
+        run: uvr run scripts/run_pipeline.R
+
+      - name: Commit refreshed outputs
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/processed
+          if git diff --staged --quiet; then
+            echo "No change to data/processed"
+          else
+            git commit -m "chore(pipeline): refresh outputs"
+            git push
+          fi
