@@ -15,7 +15,7 @@ displayed for the 14 in Queens. The percentiles and composite indicators that ap
 R/                  function library, sourced into the DAG
 scripts/            standalone: mirrors, crosswalk build, heavy local steps
 _targets.R          the pipeline
-content/hazards/    authored hazard guidance (validated, never generated)
+content/hazards/    authored hazard guidance
 data/
   crosswalk/        committed, hand-verifiable geography + category crosswalks
   registry/         the resource-gap registry
