@@ -1,6 +1,5 @@
 # Coastal Storm — STUB. Schema-valid but unwritten; sections carry no items yet.
-# Authored content: the pipeline validates and copies, never generates.
-
+# Authored content: the pipeline validates and copies content below
 slug: coastal-storm
 label: Coastal Storm
 jra_category: coastal-storm

@@ -1,5 +1,5 @@
 # Mass Casualty — STUB. Schema-valid but unwritten; sections carry no items yet.
-# Authored content: the pipeline validates and copies, never generates.
+# Authored content: the pipeline validates and copies content below
 
 slug: mass-casualty
 label: Mass Casualty
@@ -7,7 +7,7 @@ jra_category: mass-casualty-incident
 status: stub
 
 summary: >
-  An incident producing more casualties than local resources can handle. Not scored by district; see METHODOLOGY.md.
+  An incident producing more casualties than local resources can handle. Not scored by district.
 
 sections:
   - id: preparedness

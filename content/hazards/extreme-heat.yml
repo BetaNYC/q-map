@@ -1,7 +1,4 @@
-# Extreme Heat — the worked example for the hazard content schema.
-#
-# Authored content. The pipeline validates and copies this; it never generates
-# it. Edit freely — every link is checked on build, and a 404 fails it.
+# Extreme Heat — Example for the hazard content schema.
 
 slug: extreme-heat
 label: Extreme Heat

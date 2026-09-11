@@ -1,25 +1,62 @@
-# Heavy Rain — STUB. Schema-valid but unwritten; sections carry no items yet.
-# Authored content: the pipeline validates and copies, never generates.
+# Heavy Rain
+# Authored content: the pipeline validates and copies content below
 
 slug: heavy-rain
 label: Heavy Rain
 jra_category: flooding
-status: stub
 
 summary: >
-  Stormwater flooding from intense rainfall. Basement apartments are the highest-risk housing during a cloudburst.
+  This is placeholder summary text for the heavy rain hazard
 
 sections:
   - id: preparedness
-    title: Before
+    title: Preparedness
+    items: 
+      - label: Know your flooding risk from Flood Help NY
+        url: https://www.floodhelpny.org/en
+      - label: Build your property's readiness
+        items:
+          - label: Get personalized flood guidance for your property type and location from Blue Dots
+            url: https://bluedots.nyc
+          - label: Consider getting flood insurance
+            url: https://www.floodsmart.gov/
+          - label: Install flood infrastructure
+            note: true
+      - label: Review NYC Emergency Management's guidelines for before, during, and after flooding.
+        url: https://www.nyc.gov/site/em/ready/flooding.page
+      - label: See what the City does during a flood
+        url: https://www.nyc.gov/site/dep/whats-new/prepare-for-the-storm.page
+      - label: Before a flood
+        items:
+          - label: Make an itemized list of personal property, including furnishings, clothing, and valuables.
+            note: true
+          - label: Learn the safest route from your home or workplace to safe, high ground in case you have to evacuate. This should be part of your household disaster plan.
+            note: true
+          - label: If you live in a flood-susceptible area, keep materials, such as sandbags, plywood, plastic sheeting, and lumber, on hand to help protect your home.
+            note: true
   - id: response
-    title: During
+    title: Response
+    items:
+      - label: Get realtime information on the flooding level from FloodNet NYC
+        url: https://dataviz.floodnet.nyc/
+      - label: If you live in a basement apartment, be prepared to move to a higher floor during periods of heavy rain. Be prepared to evacuate if needed.
+        note: true
+      - label: During a flood
+        items:
+          - label: Do not use showers, sinks, or any object, machine, or device connected to the building's plumbing system.
+            note: true
+          - label: Report downed wires to 311 immediately.
+            note: true
+          - label: Bring outdoor objects, such as lawn furniture, garbage cans and other loose items, inside the house or tie them down securely.
+            note: true
+          - label: To prepare for a possible power outage, charge cell phone batteries, gather supplies, and turn your refrigerator and freezer to a colder setting. If you lose power, items that need refrigeration will stay cooler for longer.
+            note: true
+          - label: Check on friends, relatives, and neighbors, especially older adults and people with disabilities, access and functional needs, or health conditions. Help them to prepare if needed.
+            note: true
+
   - id: general
     title: General information
 
-# The two shipped stormwater tilesets were orphaned: they were built, published
-# and copied into data/processed/layers/, and no hazard content file referenced
-# them, so nothing told the frontend to put them on a map.
 map_layers:
   - stormwater_moderate_2_13
   - stormwater_limited_1_77

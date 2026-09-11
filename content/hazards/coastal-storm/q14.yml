@@ -1,10 +1,5 @@
 # The Rockaways — coastal storm override.
 #
-# The motivating case for per-district hazard content. QN14 is the only Queens
-# district where every resident lives in a present-day storm surge tract, it is
-# a barrier peninsula with limited egress, and it is the only district served by
-# a COAD (FRANC). Citywide coastal-storm guidance does not cover any of that.
-#
 # Overlays replace whole top-level keys. Anything that varies only numerically
 # should be templated from the district payload instead of overridden here.
 

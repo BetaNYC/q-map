@@ -205,20 +205,114 @@ validate_hazard_content <- function(content, model_slugs, registry_ids = charact
     }
 
     for (s in y$sections) {
+      unknown_s <- setdiff(names(s), SECTION_KEYS)
+      if (length(unknown_s) > 0) {
+        stop(where, " [", s$id, "]: unknown section key(s) ",
+             paste(unknown_s, collapse = ", "),
+             ". Allowed: ", paste(SECTION_KEYS, collapse = ", "))
+      }
+      if (!is.null(s$body) && !nzchar(trimws(s$body))) {
+        stop(where, " [", s$id, "]: section has an empty `body`")
+      }
       # A stub section may legitimately be empty while content is being
       # written; a section with items must have well-formed ones.
-      for (it in s$items %||% list()) {
-        if (is.null(it$label) || !nzchar(it$label)) {
-          stop(where, " [", s$id, "]: an item has no label")
-        }
-        if (is.null(it$url) || !grepl("^https://", it$url)) {
-          stop(where, " [", s$id, "]: item '", it$label,
-               "' needs an https:// url")
-        }
-      }
+      for (it in s$items %||% list()) validate_item(it, where, s$id, depth = 1)
     }
   }
   TRUE
+}
+
+# An item is one of three things, and which one must be deliberate:
+#
+#   a LINK      label + url
+#   a GROUP     label + items (one level of nesting only)
+#   a NOTE      label alone, with note: true
+#
+# `note: true` is required rather than inferred from the absence of a url. The
+# failure this guards against is a link somebody meant to add and did not - a
+# dropped url would otherwise validate silently and render as inert text, which
+# is exactly what the link checker exists to prevent. Prose guidance is a real
+# content type ("Make an itemized list of personal property"), but it has to be
+# claimed.
+MAX_ITEM_DEPTH <- 2
+
+# Keys an item may carry. Whitelisted rather than open, because the schema was
+# permissive enough that a typo shipped: `bdoy:` would have validated, been
+# copied into the JSON, and rendered as nothing. An unknown key is far more
+# likely to be a misspelling than a deliberate extension.
+ITEM_KEYS <- c("label", "url", "items", "note", "body")
+
+# Same for sections. `body` was already in use on extreme-heat and the Rockaways
+# override and had never been validated at all.
+SECTION_KEYS <- c("id", "title", "body", "items")
+
+# Tracking parameters. Copy arrives from people who found the link on their
+# phone, so it carries whatever the sharing app appended. `fbclid` is a
+# per-click identifier and the utm_* set attributes every q-map visitor to
+# someone else's campaign. Rejected rather than stripped, so the authored file
+# is the clean one.
+TRACKING_PARAMS <- c("fbclid", "gclid", "mc_eid", "igshid",
+                     "utm_source", "utm_medium", "utm_campaign",
+                     "utm_content", "utm_term", "utm_id")
+
+validate_item <- function(it, where, section_id, depth) {
+  at <- paste0(where, " [", section_id, "]")
+
+  unknown <- setdiff(names(it), ITEM_KEYS)
+  if (length(unknown) > 0) {
+    stop(at, ": unknown item key(s) ", paste(unknown, collapse = ", "),
+         ". Allowed: ", paste(ITEM_KEYS, collapse = ", "),
+         ". A misspelled key would otherwise ship and render as nothing.")
+  }
+
+  if (is.null(it$label) || !nzchar(it$label)) {
+    stop(at, ": an item has no label")
+  }
+  lbl <- paste0("item '", substr(it$label, 1, 48), "'")
+
+  has_url <- !is.null(it$url) && nzchar(it$url)
+  has_kids <- !is.null(it$items) && length(it$items) > 0
+  is_note <- isTRUE(it$note)
+
+  if (!has_url && !has_kids && !is_note) {
+    stop(at, ": ", lbl, " has no url, no sub-items, and is not marked ",
+         "`note: true`. If it is prose rather than a link, say so explicitly - ",
+         "a dropped url would look identical.")
+  }
+  if (has_url && is_note) {
+    stop(at, ": ", lbl, " is marked `note: true` but has a url")
+  }
+
+  if (has_url) {
+    if (!grepl("^https://", it$url)) {
+      stop(at, ": ", lbl, " needs an https:// url")
+    }
+    q <- sub("^[^?]*\\??", "", it$url)
+    found <- TRACKING_PARAMS[vapply(TRACKING_PARAMS, function(p)
+      grepl(paste0("(^|&)", p, "="), q), logical(1))]
+    if (length(found) > 0) {
+      stop(at, ": ", lbl, " carries tracking parameter(s) ",
+           paste(found, collapse = ", "),
+           ". Use the clean url - these attribute q-map's readers to someone ",
+           "else's campaign.")
+    }
+  }
+
+  # `body` is a sentence of context alongside the label - why this link matters,
+  # or the caveat that makes it useful. It composes with all three item types.
+  if (!is.null(it$body) && !nzchar(trimws(it$body))) {
+    stop(at, ": ", lbl, " has an empty `body`")
+  }
+
+  if (has_kids) {
+    if (depth >= MAX_ITEM_DEPTH) {
+      stop(at, ": ", lbl, " nests deeper than ", MAX_ITEM_DEPTH,
+           " levels. Screen 04 is a sectioned link list, not a tree - add a ",
+           "section rather than another level.")
+    }
+    for (kid in it$items) validate_item(kid, where, section_id, depth + 1)
+  }
+  invisible(TRUE)
 }
 
 # Collect every URL in the catalog, with enough context to report a failure
@@ -228,6 +322,18 @@ validate_hazard_content <- function(content, model_slugs, registry_ids = charact
 # they are edited rarely and reviewed less - so excluding them would leave the
 # least-watched content unchecked. Found the hard way: three of the four links
 # in the first overlay written were dead.
+# Depth-first walk returning every item that carries a url, at any level.
+# Without this the link checker would silently skip nested items - the least
+# reviewed content in the file.
+flatten_items <- function(items) {
+  out <- list()
+  for (it in items) {
+    if (!is.null(it$url) && nzchar(it$url)) out[[length(out) + 1]] <- it
+    if (!is.null(it$items)) out <- c(out, flatten_items(it$items))
+  }
+  out
+}
+
 hazard_links <- function(content, overlays = list()) {
   all_content <- content
   for (key in names(overlays)) {
@@ -238,7 +344,7 @@ hazard_links <- function(content, overlays = list()) {
   rows <- lapply(names(all_content), function(slug) {
     y <- all_content[[slug]]
     lapply(y$sections, function(s) {
-      items <- s$items %||% list()
+      items <- flatten_items(s$items %||% list())
       if (length(items) == 0) return(NULL)
       tibble::tibble(
         slug = slug, section = s$id,
