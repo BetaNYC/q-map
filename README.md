@@ -7,7 +7,7 @@ An emergency-preparedness map for Queens. Hazard profiles, resource directories,
 ## Approach
 
 Everything is computed citywide across all 59 community-district CDTAs and
-displayed for the 14 in Queens. The percentiles and composite indicators that appear on a district page are defined relative to the rest of the city, so the full matrix is needed to produce any single district's numbers.
+displayed for the 14 in Queens. The percentiles and composite indicators that appear on a district page are defined relative to the rest of the city.
 
 ## Layout
 
