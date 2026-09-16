@@ -12,18 +12,18 @@ displayed for the 14 in Queens. The percentiles and composite indicators that ap
 ## Layout
 
 ```
-R/                  function library, sourced into the DAG
-scripts/            standalone: mirrors, crosswalk build, heavy local steps
+R/                  functions
+scripts/            standalone scripts: mirrors, crosswalk build, heavy local steps
 _targets.R          the pipeline
-content/hazards/    authored hazard guidance
+content/hazards/    hazard guidance
 data/
-  crosswalk/        committed, hand-verifiable geography + category crosswalks
-  registry/         the resource-gap registry
-  canonical/        the hand-maintained resource file
+  crosswalk/        geography + category crosswalks
+  registry/         resource-gap registry
+  canonical/        hand-maintained resource file
   source/           raw inputs (gitignored)
-  prepared/         Tier-2 mirror outputs (gitignored, published as data-v*)
+  prepared/         mirrored outputs (gitignored, published as data-v* GitHub releases)
   processed/        pipeline outputs (written and committed by CI)
-alerts/             Notify NYC poller — separate service, separate deploy
+alerts/             Notify NYC poller
 web/                Svelte 5 + MapLibre app
 ```
 
