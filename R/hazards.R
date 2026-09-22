@@ -2,35 +2,59 @@
 #
 # The per-district hazard ordering.
 #
-# Model: risk = severity x exposure. Severity is a citywide editorial constant;
-# exposure is the local measure normalised against the citywide maximum, so a
-# genuine zero stays zero. Two earlier approaches - pure citywide percentile,
-# and anchoring severity to the JRA's Planning Priority Scores - were
-# prototyped and rejected on evidence. See METHODOLOGY.md for both, and for the
-# expert-review questions this model is provisional pending.
+# Model: three hazards ranked on a common 1-5 score, compared UNWEIGHTED, with
+# ties broken by geographic specificity. Five hazards are pinned below them in
+# a fixed order. This is the expert-reviewed model from queens-hazard-ranking
+# (index.qmd, a4c1429), adopted 2026-09-22 and asserted against
+# data/canonical/hazard_ranking_reviewed.csv.
+#
+# It replaces `risk = severity x exposure`, whose editorial severity weights
+# were provisional pending this review. Two earlier approaches - pure citywide
+# percentile, and anchoring severity to the JRA's Planning Priority Scores -
+# were prototyped and rejected before that. METHODOLOGY.md, "The reviewed
+# ranking is the source of truth", carries all of it.
 
 # --- the eight hazards ------------------------------------------------------
 
-# Ranked hazards, in the order their severity weights place them citywide.
-# PROVISIONAL, adopted 2026-08-28 pending expert review. Reasoning per weight
-# is in METHODOLOGY.md; do not adjust these without updating it.
-HAZARD_SEVERITY <- c(
-  `coastal-storm` = 1.00,
-  `extreme-heat`  = 0.80,
-  `heavy-rain`    = 0.70,
-  `hazmat`        = 0.40
+# The three ranked hazards, in TIE-BREAK order - which is also the reviewed
+# methodology's geographic-specificity order:
+#
+#   coastal storm  the only one of the three that is not a citywide hazard
+#   heavy rain     citywide, but concentrated in the areas that actually flood
+#   extreme heat   heterogeneous, but less acutely so in the physical
+#                  environment than the other two
+#
+# This vector is the tie-break, so its order is load-bearing, not cosmetic.
+# There are no severity weights: the scores share a 1-5 scale and are compared
+# as they are.
+HAZARD_PRIORITY <- c("coastal-storm", "heavy-rain", "extreme-heat")
+
+# Which measure column in `hazard_measures` carries each ranked hazard's score.
+# Kept as an explicit map rather than deriving the column name from the slug,
+# so a renamed measure fails loudly at `all_of()` instead of silently ranking
+# on nothing.
+HAZARD_SCORE_COL <- c(
+  `coastal-storm` = "score_coastal_storm",
+  `heavy-rain`    = "score_heavy_rain",
+  `extreme-heat`  = "score_extreme_heat"
 )
 
-# Pinned hazards occupy positions 5-8 in this fixed order. A hazard is pinned
-# when it has no district-level measure that meaningfully varies across the
-# districts being displayed. Infectious disease is first because it is the only
-# one of the four that is actually measured - its position is an observed
-# result, not an absence.
+# Pinned hazards occupy positions 4-8 in this fixed order, settled at expert
+# review 2026-09-22. A hazard is pinned when it does not usefully distinguish
+# the districts being displayed - which is a different claim from "least
+# dangerous", hence HAZARD_PIN_REASON below.
+#
+# Hazmat is pinned despite BEING measured, and despite scoring high: Queens
+# carries atypically many chemically intensive businesses, so the measure put
+# it first or second in 11 of 14 districts while separating them poorly.
+# Infectious disease is measured too, and scores 1 or 2 in every Queens
+# district.
 HAZARD_PINNED <- c(
+  "hazmat",
   "infectious-disease",
   "extreme-cold",
-  "blackout-cyberattack",
-  "mass-casualty"
+  "mass-casualty",
+  "blackout-cyberattack"
 )
 
 HAZARD_LABELS <- c(
@@ -46,8 +70,13 @@ HAZARD_LABELS <- c(
 
 # Why each pinned hazard is pinned, carried into the payload so the UI can be
 # honest rather than implying "least dangerous".
+# DRAFT on the two measured hazards - Andrew to settle the wording. The
+# previous infectious-disease string, "measured citywide, but does not vary
+# across Queens", was factually wrong: PIVI takes both 1 and 2 across the 14
+# districts, so it does vary. It is low everywhere, which is a different claim.
 HAZARD_PIN_REASON <- c(
-  `infectious-disease`   = "measured citywide, but does not vary across Queens",
+  `hazmat`               = "high across Queens; the measure does not separate districts",
+  `infectious-disease`   = "measured, and low in every Queens district (1 or 2 of 5)",
   `extreme-cold`         = "no district-level measure published",
   `blackout-cyberattack` = "no district-level measure published",
   `mass-casualty`        = "not scored by district; see METHODOLOGY.md"
@@ -162,15 +191,16 @@ get_fvi <- function(url = FVI_SERVICE_URL) {
 # review chose the latter. 2 is not amended; METHODOLOGY.md, "The reviewed
 # ranking is the source of truth", records the departure and the evidence.
 #
-# `coastal` (population share x population-weighted mean index) is KEPT for now
-# so this change does not alter any output on its own. build_hazards() still
-# reads it; PR-2 switches the ranking to coastal_max_fvi and deletes it.
+# The population-weighted measure this function used to return (population
+# share x population-weighted mean surge index) is gone - nothing reads it now
+# that the ranking is the reviewed one.
 #
-# pop_total / pop_exposed / pop_share_exposed stay regardless of that: they
-# produce surge_pop_pct, which ships in risk_profile and the district page
-# displays. Under the reviewed method they will read as inconsistent with the
-# ranking - QN07 is 30.1% exposed and scores 4, QN10 is 23% and scores 5 -
-# because share and worst-case are different facts. That is expected.
+# pop_total / pop_exposed / pop_share_exposed stay: they produce
+# surge_pop_pct, which ships in risk_profile and the district page displays.
+# Under the reviewed method they read as inconsistent with the ranking - QN07
+# is 30.1% exposed and scores 4, QN10 is 23% and scores 5 - because share and
+# worst-case are different facts. That is expected, and it is why the district
+# band has to say which claim it is making.
 coastal_per_cdta <- function(fvi, tract_cdta, tract_pop, index_col = "ss_cur") {
   fvi |>
     inner_join(tract_cdta, by = "geoid") |>
@@ -180,9 +210,6 @@ coastal_per_cdta <- function(fvi, tract_cdta, tract_pop, index_col = "ss_cur") {
     summarise(
       pop_total = sum(pop, na.rm = TRUE),
       pop_exposed = sum(pop[!is.na(idx)], na.rm = TRUE),
-      mean_index = if (sum(pop[!is.na(idx)], na.rm = TRUE) > 0) {
-        stats::weighted.mean(idx[!is.na(idx)], pop[!is.na(idx)])
-      } else 0,
       # An NA index means the tract is NOT exposed, so it is dropped rather
       # than scored 0. A district whose every tract is NA yields 0 here, and a
       # district with no row at all is coalesced to 0 in
@@ -191,26 +218,10 @@ coastal_per_cdta <- function(fvi, tract_cdta, tract_pop, index_col = "ss_cur") {
       coastal_max_fvi = if (any(!is.na(idx))) max(idx[!is.na(idx)]) else 0,
       .groups = "drop"
     ) |>
-    mutate(
-      pop_share_exposed = ifelse(pop_total > 0, pop_exposed / pop_total, 0),
-      coastal = pop_share_exposed * mean_index
-    )
+    mutate(pop_share_exposed = ifelse(pop_total > 0, pop_exposed / pop_total, 0))
 }
 
 # --- the ranking model ------------------------------------------------------
-
-# Exposure normalised against the citywide maximum rather than converted to a
-# percentile. Percentile is uniform by construction, so a district with zero
-# exposure still scores ~0.2 from ties at the bottom; max-normalisation keeps a
-# real zero at zero, which is what makes the eligibility floor automatic.
-#
-# HVI is divided by its published 1-5 scale rather than by the observed max, so
-# it is not re-ranked - the same rule METHODOLOGY.md applies to PIVI.
-normalise_exposure <- function(x, scale_max = NULL) {
-  m <- if (is.null(scale_max)) max(x, na.rm = TRUE) else scale_max
-  if (!is.finite(m) || m <= 0) return(rep(0, length(x)))
-  pmin(pmax(x / m, 0), 1)
-}
 
 # Quintile rank 1-5, the reviewed method's way of putting a continuous measure
 # on the same 1-5 footing as the published indices (HVI, FVI).
@@ -254,7 +265,7 @@ build_hazard_measures <- function(crosswalk, hvi, pivi, chem, rain, coastal) {
     left_join(chem, by = "borocd") |>
     left_join(rename(rain, rain_pct = pct_area), by = "cdta2020") |>
     left_join(
-      select(coastal, cdta2020, coastal, coastal_max_fvi,
+      select(coastal, cdta2020, coastal_max_fvi,
              coastal_pop_share = pop_share_exposed),
       by = "cdta2020"
     ) |>
@@ -262,32 +273,24 @@ build_hazard_measures <- function(crosswalk, hvi, pivi, chem, rain, coastal) {
     # rather than present with a zero. Make the zero explicit, or it becomes NA
     # and the hazard silently drops out of that district's ordering.
     mutate(
-      coastal = coalesce(coastal, 0),
       coastal_max_fvi = coalesce(coastal_max_fvi, 0),
       coastal_pop_share = coalesce(coastal_pop_share, 0),
       rain_pct = coalesce(rain_pct, 0)
     ) |>
     mutate(
+      # Reported percentiles, not ranking inputs - they ship inside the stat
+      # objects in risk_profile so a reader can place a district citywide.
       hvi_pct = midrank_pct(hvi),
-      chem_pct = midrank_pct(chem_business_count),
-      # HVI is normalised against its published 1-5 scale, not the observed
-      # maximum, so it is never re-ranked. The others have no published scale
-      # and normalise against the citywide max.
-      `extreme-heat`  = normalise_exposure(hvi, scale_max = 5),
-      `heavy-rain`    = normalise_exposure(rain_pct),
-      `coastal-storm` = normalise_exposure(coastal),
-      `hazmat`        = normalise_exposure(chem_business_count)
+      chem_pct = midrank_pct(chem_business_count)
     ) |>
-    # The REVIEWED scores, all on the published 1-5 footing. Added alongside
-    # the exposure columns above rather than replacing them, so this change
-    # alters no output on its own; PR-2 rewires build_hazards() onto these and
-    # drops the four `normalise_exposure()` columns and `coastal`.
+    # The reviewed scores, all on the published 1-5 footing, which is what
+    # lets them be compared without severity weights.
     #
     # Note what is NOT here: hazmat. The review pins it (position 4) because
     # Queens has atypically many chemically intensive businesses, so the
-    # measure ranked it 1st or 2nd in 11 of 14 districts and discriminated
-    # between them poorly. chem_business_count stays in the payload as context
-    # and still feeds the chem_businesses map layer.
+    # measure ranked it 1st or 2nd in 11 of 14 districts and separated them
+    # poorly. chem_business_count stays in the payload as district context and
+    # still feeds the chem_businesses map layer.
     mutate(
       score_coastal_storm = as.integer(coastal_max_fvi),
       score_heavy_rain    = quintile_citywide(rain_pct),
@@ -304,16 +307,22 @@ validate_hazard_measures <- function(measures) {
   assert_row_count(measures, 59, 59)
   assert_unique(measures, "cdta2020")
   assert_no_na(measures, c("hvi", "pivi", "chem_business_count",
-                           "rain_pct", "coastal", "coastal_max_fvi",
-                           names(HAZARD_SEVERITY), REVIEWED_SCORE_COLS))
+                           "rain_pct", "coastal_max_fvi", "coastal_pop_share",
+                           REVIEWED_SCORE_COLS))
 
-  # Exposure must be a proportion. A value outside 0-1 means the normalisation
-  # divided by the wrong maximum, which would silently reorder every district.
-  for (h in names(HAZARD_SEVERITY)) {
-    v <- measures[[h]]
-    if (any(v < 0 | v > 1)) {
-      stop("Exposure for '", h, "' falls outside 0-1")
-    }
+  # Every ranked hazard must have a score column, and every score column must
+  # belong to a ranked hazard. This is the guard against the failure the
+  # reviewed report itself hit: a hazard missing from the tie-break vector
+  # sorts by NA rather than by priority, and the table still renders.
+  if (!setequal(names(HAZARD_SCORE_COL), HAZARD_PRIORITY)) {
+    stop("HAZARD_SCORE_COL and HAZARD_PRIORITY disagree on which hazards are ",
+         "ranked: ", paste(setdiff(union(names(HAZARD_SCORE_COL), HAZARD_PRIORITY),
+                                   intersect(names(HAZARD_SCORE_COL), HAZARD_PRIORITY)),
+                           collapse = ", "))
+  }
+  if (!setequal(unname(HAZARD_SCORE_COL), REVIEWED_SCORE_COLS)) {
+    stop("HAZARD_SCORE_COL names columns that the reviewed score set does not ",
+         "cover, so a hazard would rank on an unasserted measure")
   }
 
   # The reviewed scores share one scale, which is the whole reason they can be
@@ -330,13 +339,15 @@ validate_hazard_measures <- function(measures) {
   }
 
   # Each ranked hazard must actually vary across the districts being displayed
-  # - that is the criterion that put four hazards in the ranked set and four in
-  # the pinned one. If one goes flat, it belongs in the pinned set instead.
+  # - that is the criterion that put three hazards in the ranked set and five
+  # in the pinned one. If one goes flat, it belongs in the pinned set instead.
+  # Scores are integers now, so no rounding tolerance is needed.
   queens <- measures |> filter(substr(cdta2020, 1, 2) == "QN")
-  for (h in names(HAZARD_SEVERITY)) {
-    if (dplyr::n_distinct(round(queens[[h]], 6)) < 3) {
-      stop("Ranked hazard '", h, "' takes fewer than 3 distinct values across ",
-           "Queens - it no longer meets the ranking criterion (METHODOLOGY.md)")
+  for (s in REVIEWED_SCORE_COLS) {
+    if (dplyr::n_distinct(queens[[s]]) < 3) {
+      stop("Ranked hazard measure '", s, "' takes fewer than 3 distinct values ",
+           "across Queens - it no longer meets the ranking criterion ",
+           "(METHODOLOGY.md)")
     }
   }
   TRUE
@@ -416,25 +427,69 @@ validate_hazard_ranking <- function(measures, reviewed) {
   TRUE
 }
 
+# Assert the ORDER the reviewed scores produce, not just the scores.
+#
+# validate_hazard_ranking() locks the inputs; this locks the output. They are
+# separate targets because they fail for different reasons: a score drift means
+# a measure changed, an order drift with correct scores means the tie-break or
+# the ranked/pinned split changed. Conflating them would make the message
+# useless in either case.
+#
+# The expected order is DERIVED from the fixture here rather than stored beside
+# it, so the two cannot disagree - the same reason the fixture holds scores
+# only.
+validate_hazard_order <- function(hazards, reviewed) {
+  expected <- reviewed |>
+    transmute(
+      cdta2020,
+      `coastal-storm` = coastal_max_fvi,
+      `heavy-rain`    = heavy_rain_quintile,
+      `extreme-heat`  = hvi
+    ) |>
+    tidyr::pivot_longer(-cdta2020, names_to = "slug", values_to = "score") |>
+    group_by(cdta2020) |>
+    arrange(desc(score), match(slug, HAZARD_PRIORITY), .by_group = TRUE) |>
+    summarise(expected = paste(slug, collapse = " > "), .groups = "drop")
+
+  actual <- hazards |>
+    filter(ranked, substr(cdta2020, 1, 2) == "QN") |>
+    group_by(cdta2020) |>
+    arrange(rank, .by_group = TRUE) |>
+    summarise(actual = paste(slug, collapse = " > "), .groups = "drop")
+
+  cmp <- inner_join(expected, actual, by = "cdta2020")
+  if (nrow(cmp) != nrow(expected)) {
+    stop("Hazard order check covers ", nrow(cmp), " of ", nrow(expected),
+         " reviewed districts")
+  }
+
+  bad <- cmp[cmp$expected != cmp$actual, ]
+  if (nrow(bad) > 0) {
+    stop("Hazard order disagrees with the reviewed ranking in ", nrow(bad),
+         " district(s):\n  ",
+         paste0(bad$cdta2020, ": got '", bad$actual, "', reviewed '",
+                bad$expected, "'", collapse = "\n  "))
+  }
+  TRUE
+}
+
 # Build the ordered hazard list for every district.
 #
-# `measures` is one row per CDTA with columns named for each ranked hazard slug,
-# each already normalised to 0-1 exposure.
+# `measures` is one row per CDTA carrying the three reviewed score columns.
+# Ranks 1-3 are the ranked hazards, ordered by score descending; ranks 4-8 are
+# the pinned ones in HAZARD_PINNED order.
 build_hazards <- function(measures) {
-  ranked <- names(HAZARD_SEVERITY)
-
   long <- measures |>
-    select(cdta2020, all_of(ranked)) |>
-    tidyr::pivot_longer(all_of(ranked), names_to = "slug", values_to = "exposure") |>
-    mutate(
-      severity = unname(HAZARD_SEVERITY[slug]),
-      risk = severity * exposure
-    ) |>
+    select(cdta2020, all_of(unname(HAZARD_SCORE_COL))) |>
+    tidyr::pivot_longer(-cdta2020, names_to = "score_col", values_to = "score") |>
+    mutate(slug = names(HAZARD_SCORE_COL)[match(score_col, HAZARD_SCORE_COL)]) |>
+    select(-score_col) |>
     group_by(cdta2020) |>
-    # Ties are broken by severity, then slug, so the ordering is deterministic
-    # across rebuilds - a district with two zero-exposure hazards must not
-    # reshuffle them between runs.
-    arrange(desc(risk), desc(severity), slug, .by_group = TRUE) |>
+    # Score descending, then geographic specificity. HAZARD_PRIORITY covers
+    # every ranked hazard (asserted in validate_hazard_measures), so match()
+    # never returns NA here and the ordering is total and deterministic - a
+    # four-way tie resolves the same way on every rebuild.
+    arrange(desc(score), match(slug, HAZARD_PRIORITY), .by_group = TRUE) |>
     mutate(rank = row_number(), ranked = TRUE) |>
     ungroup()
 
@@ -443,8 +498,8 @@ build_hazards <- function(measures) {
     slug = HAZARD_PINNED
   ) |>
     mutate(
-      exposure = NA_real_, severity = NA_real_, risk = NA_real_,
-      rank = length(ranked) + match(slug, HAZARD_PINNED),
+      score = NA_integer_,
+      rank = length(HAZARD_PRIORITY) + match(slug, HAZARD_PINNED),
       ranked = FALSE
     )
 

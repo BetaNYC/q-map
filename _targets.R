@@ -227,6 +227,11 @@ list(
     build_hazards(hazard_measures)
   ),
 
+  tar_target(
+    hazard_order_checks,
+    validate_hazard_order(hazards, hazard_ranking_reviewed)
+  ),
+
   ## District payloads -------------------------------------------------------
 
   tar_target(chp_path, "data/prepared/chp_by_cd.csv", format = "file"),
@@ -309,7 +314,7 @@ list(
     hazard_content_checks,
     validate_hazard_content(
       hazard_content,
-      model_slugs = c(names(HAZARD_SEVERITY), HAZARD_PINNED),
+      model_slugs = c(HAZARD_PRIORITY, HAZARD_PINNED),
       registry_ids = map_layer_registry$layer_id,
       available_ids = map_layer_registry$layer_id[
         map_layer_registry$status == "available"]
@@ -406,7 +411,7 @@ list(
     gap_registry_checks,
     validate_gap_registry(
       gap_registry,
-      ranked_slugs = names(HAZARD_SEVERITY),
+      ranked_slugs = HAZARD_PRIORITY,
       pinned_slugs = HAZARD_PINNED
     ) &&
       validate_registry_freshness(gap_registry, blocker_facts_now,

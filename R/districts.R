@@ -57,9 +57,10 @@ build_district_payloads <- function(crosswalk, hazards, measures, chp, lep,
           rank = h$rank, ranked = h$ranked
         )
         if (h$ranked) {
-          out$risk <- round(h$risk, 4)
-          out$severity <- h$severity
-          out$exposure <- round(h$exposure, 4)
+          # One integer 1-5 (0 for an unexposed coastal district), on the same
+          # scale for all three, which is what makes them comparable without a
+          # weight. Replaces the former risk / severity / exposure triple.
+          out$score <- as.integer(h$score)
         } else {
           out$reason <- h$pin_reason
         }
@@ -136,8 +137,8 @@ build_district_payloads <- function(crosswalk, hazards, measures, chp, lep,
         sort(overlay_index$hazard[overlay_index$district == row$slug]),
 
       meta = list(
-        hazard_model = "severity_x_exposure",
-        hazard_model_status = "provisional_pending_expert_review",
+        hazard_model = "reviewed_unweighted_1_5",
+        hazard_model_status = "expert_reviewed_2026_09_22",
         citywide_baseline_population = as.integer(chp_city$Overall_Pop)
       )
     )
@@ -200,7 +201,7 @@ validate_district_payloads <- function(payloads, crosswalk) {
     stop("Expected ", nrow(shipped), " district payloads, got ", length(payloads))
   }
 
-  n_ranked <- length(HAZARD_SEVERITY)
+  n_ranked <- length(HAZARD_PRIORITY)
   n_total <- n_ranked + length(HAZARD_PINNED)
 
   for (slug in names(payloads)) {
@@ -259,8 +260,13 @@ validate_district_payloads <- function(payloads, crosswalk) {
 
 # The Rockaways is the calibration case for the whole hazard model: the most
 # surge-exposed district in Queens by a wide margin. If it is not coastal-storm
-# led, the severity weights or the exposure normalisation are wrong. Asserted
-# rather than spot-checked so a future weight change cannot quietly break it.
+# led, the coastal measure or the tie-break is wrong. Asserted rather than
+# spot-checked so a future change cannot quietly break it.
+#
+# The old second case - "QN01 must not lead with hazmat" - is gone because
+# hazmat is pinned now, so it cannot lead any district by construction. The
+# structural assertion below is stronger than the spot check it replaces: it
+# holds the ranked/pinned split on all 14 districts rather than one.
 validate_hazard_calibration <- function(payloads) {
   qn14 <- payloads[["q14"]]
   if (is.null(qn14)) stop("q14 (The Rockaways) payload missing")
@@ -269,10 +275,28 @@ validate_hazard_calibration <- function(payloads) {
          qn14$hazards[[1]]$slug, "', expected 'coastal-storm'")
   }
 
-  qn01 <- payloads[["q01"]]
-  if (qn01$hazards[[1]]$slug == "hazmat") {
-    stop("Calibration: QN01 Astoria-Queensbridge leads with hazmat - the ",
-         "chemical-business count is dominating the ordering again")
+  # Ranks 1-3 are ranked and carry a score; 4-8 are pinned and carry a reason.
+  # A pinned hazard reaching the top three would read to a resident as a risk
+  # ordering when it is not one.
+  for (slug in names(payloads)) {
+    hz <- payloads[[slug]]$hazards
+    if (length(hz) != 8) {
+      stop("Calibration: ", slug, " has ", length(hz), " hazards, expected 8")
+    }
+    for (i in seq_along(hz)) {
+      should_rank <- i <= length(HAZARD_PRIORITY)
+      if (!identical(hz[[i]]$ranked, should_rank)) {
+        stop("Calibration: ", slug, " position ", i, " is ",
+             if (hz[[i]]$ranked) "ranked" else "pinned", " ('", hz[[i]]$slug,
+             "'), expected ", if (should_rank) "ranked" else "pinned")
+      }
+      if (should_rank && is.null(hz[[i]]$score)) {
+        stop("Calibration: ", slug, " position ", i, " is ranked but has no score")
+      }
+      if (!should_rank && is.null(hz[[i]]$reason)) {
+        stop("Calibration: ", slug, " position ", i, " is pinned but has no reason")
+      }
+    }
   }
   TRUE
 }
