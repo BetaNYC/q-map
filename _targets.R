@@ -192,6 +192,20 @@ list(
 
   ## Hazard ranking ----------------------------------------------------------
 
+  # The expert-reviewed scores. Committed input, hash tracked: re-cutting the
+  # fixture invalidates hazard_ranking_checks and nothing else, so a review
+  # that changes no number is a no-op rebuild.
+  tar_target(
+    hazard_ranking_reviewed_path,
+    "data/canonical/hazard_ranking_reviewed.csv",
+    format = "file"
+  ),
+
+  tar_target(
+    hazard_ranking_reviewed,
+    read_reviewed_ranking(hazard_ranking_reviewed_path)
+  ),
+
   tar_target(
     hazard_measures,
     build_hazard_measures(cdta_crosswalk, hvi, pivi, chem_businesses,
@@ -201,6 +215,11 @@ list(
   tar_target(
     hazard_measures_checks,
     validate_hazard_measures(hazard_measures)
+  ),
+
+  tar_target(
+    hazard_ranking_checks,
+    validate_hazard_ranking(hazard_measures, hazard_ranking_reviewed)
   ),
 
   tar_target(
