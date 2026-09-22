@@ -197,6 +197,20 @@ BLOCKERS <- list(
   critical_flag_removed = list(
     kind = "reason", label = "Depended on the removed is_critical flag",
     resolved = function(f) FALSE
+  ),
+
+  # Gaps 27-30 were attached to hazmat, which the reviewed ranking (2026-09-22)
+  # pins at position 4. Selection only draws from ranked hazards, so a gap on a
+  # pinned hazard can never display, and validate_gap_registry() refuses to
+  # carry one as live. None of the four measures a ranked hazard - 27 and 28 are
+  # proximity buffers with no flood layer - so re-attaching them would misstate
+  # what they measure. Gap 31 was the exception and moved to heavy rain.
+  #
+  # Distinct from no_matching_hazard: that one means q-map does not carry the
+  # hazard at all. This one means it does, but ranks it out of reach.
+  hazard_pinned = list(
+    kind = "reason", label = "Attached to a hazard the ranking pins",
+    resolved = function(f) FALSE
   )
 )
 
