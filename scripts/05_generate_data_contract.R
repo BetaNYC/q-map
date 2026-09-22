@@ -217,13 +217,13 @@ NOTES_IDX <- list(
 )
 
 NOTES_DISTRICT <- list(
-  hazards = "Always 8, ordered. Positions 1-4 are ranked, 5-8 pinned. See gotchas.",
+  hazards = "Always 8, ordered. Positions 1-3 are ranked, 4-8 pinned. See gotchas.",
   risk_profile = "Every entry is a **stat object**, never a bare number.",
   population = "`total` is a stat object too, and its `source` differs from `surge_pop_pct`'s. See gotchas.",
   resource_categories = "**Derived per district.** Do not hardcode a global list.",
   hazard_overrides = "Slugs with district-specific guidance. Fetch the override file only for these.",
-  gaps_displayed = "Up to 3. Every entry carries `risk_rank`; a fallback also carries `fallback_from` naming the top-three hazard whose slot it fills.",
-  meta = "Carries `hazard_model_status`. Currently `provisional_pending_expert_review`."
+  gaps_displayed = "Up to 3, one per ranked hazard. Every entry carries `risk_rank`; a fallback also carries `fallback_from` naming the ranked hazard whose slot it fills.",
+  meta = "Carries `hazard_model` and `hazard_model_status`. Currently `reviewed_unweighted_1_5` and `expert_reviewed_2026_09_22`."
 )
 
 NOTES_RESOURCES <- list(
@@ -294,9 +294,9 @@ field_table(districts_all, NOTES_DISTRICT),
 "### `hazards[]`",
 "",
 field_table(hazard_entries, list(
-  ranked = "`true` for positions 1-4. When `false`, `risk`/`severity`/`exposure` are absent and `reason` is present.",
-  risk = "`severity x exposure`. Comparable **within** a district, not across districts.",
-  exposure = "0-1, normalised against the citywide maximum."
+  ranked = "`true` for positions 1-3. When `false`, `score` is absent and `reason` is present.",
+  score = "Integer on a shared 1-5 scale, so the three ranked hazards compare directly - there is no weight. Coastal storm alone admits `0`, meaning no exposed tract. Ties are already resolved in `rank`; do not re-sort on `score`.",
+  reason = "Why this hazard is pinned. Always present when `ranked` is `false`. Render it - it is what stops a pinned hazard reading as \"least dangerous\"."
 )),
 "",
 "### `risk_profile` entries",
@@ -339,8 +339,8 @@ field_table(cat_entries, list(
 field_table(gap_displayed, list(
   sentence_template = "Interpolate `facts` into this. **The pipeline does not write the sentence.**",
   facts = "Keys vary by gap. Interpolate by name, do not assume a fixed set.",
-  risk_rank = "The rank of the hazard this gap measures. **Always present.** The one exception is a `cross-cutting` gap, which measures no ranked hazard and instead carries the rank of the slot it fills - `hazard_slug` tells you which reading applies.",
-  fallback_from = "Present only on a fallback. Names the top-three hazard whose slot this sentence fills, so the UI can say so rather than implying an alignment that is not there.",
+  risk_rank = "The rank of the hazard this gap measures, always 1-3. **Always present.** The one exception is a `cross-cutting` gap, which measures no ranked hazard and instead carries the rank of the slot it fills - `hazard_slug` tells you which reading applies.",
+  fallback_from = "Present only on a fallback, which can now only be a `cross-cutting` gap standing in for a top-three hazard that had nothing to report. Names that hazard, so the UI can say so rather than implying an alignment that is not there. Absent on every district today; handle it anyway.",
   polarity = "`higher_is_worse` or `higher_is_better`. **Do not assume.**"
 )),
 "",
@@ -485,8 +485,9 @@ field_table(read1(Sys.glob(file.path(PROCESSED, "layers/resources/*.geojson"))[1
 "- **`point_on_surface` is not a centroid.** QN14's true centroid is in open water.",
 "- **Two population figures from two sources.** `population.total` is CHP; `surge_pop_pct`'s denominator is ACS. They disagree by up to 20% per district. **Multiplying the share by the total does not give a headcount.** Both carry `source`.",
 "- **`polarity` is data, not a UI assumption.** These indicators mix deficits, supplies and distances. A single \"more filled = more\" rule is wrong.",
-"- **Pinned hazards are not \"least dangerous\".** Positions 5-8 mean *not differentiable by district*. Read `ranked` and show `reason`; do not present them as a continuation of the ranking.",
-"- **The hazard ordering is provisional.** `meta.hazard_model_status` says so. Severity weights are editorial and awaiting expert review.",
+"- **Pinned hazards are not \"least dangerous\".** Positions 4-8 mean *not differentiable by district*. Hazmat is pinned *because* it scores high everywhere in Queens, not because it scores low. Read `ranked` and show `reason`; do not present pinned hazards as a continuation of the ranking.",
+"- **The hazard ordering is expert-reviewed.** It reproduces `queens-hazard-ranking` exactly and the pipeline asserts that it does. Ties in `score` are broken by geographic specificity (coastal storm, then heavy rain, then extreme heat) and are already resolved in `rank` - do not re-sort on `score`, or a tie will reorder.",
+"- **`score` and `surge_pop_pct` measure different things.** Coastal storm's `score` is the *worst-case* tract in the district; `risk_profile.surge_pop_pct` is the *share of residents* in any exposed tract. They are not monotonic in each other - QN07 is 30.1% exposed and scores 4, QN10 is 23% and scores 5. Label which one a sentence is quoting.",
 "- **Check `status` before reading a gap's `value`.** Most of the 33 have none, and 10 are retired - examined and rejected, which is a different claim from waiting on data. Group a 'see all gaps' view by `status`, not by hazard.",
 "- **`resource_categories` is per-district.** Two wireframe screens show different lists because they render different districts. Both are right.",
 "- **Arrays stay arrays.** `map_layers`, `hazards`, `languages`, `gaps_displayed` and `resources` are always arrays, even with one element. Asserted in the pipeline.",

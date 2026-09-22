@@ -288,10 +288,10 @@ compute_available_gaps <- function(reg, inputs) {
   add(18, gap_18_language_coverage(inputs$lep, inputs$languages, inputs$crosswalk))
   add(21, access_mean(inputs$access, inputs$block_cdta,
                       "hospitals", "all_residents"))
-  add(27, gap_population_exposure(inputs$tracts, inputs$tract_pop,
-                                  inputs$tract_cdta, inputs$solid_waste_buffer, d))
-  add(28, gap_population_exposure(inputs$tracts, inputs$tract_pop,
-                                  inputs$tract_cdta, inputs$wastewater_buffer, d))
+  # Gaps 27 and 28 were retired 2026-09-22 (hazard_pinned) when the reviewed
+  # ranking pinned hazmat - same rule as 11 and 17 above: the registry rows
+  # stay, the computation goes. Leaving the add() in place shipped a retired
+  # row carrying a value, which is what validate_gap_values() now refuses.
   add(31, gap_facility_exposure(inputs$hazard_facilities_cdta, inputs$stormwater, d))
   add(33, gap_33_communication(inputs$resources_cdta, out[["7"]], d))
 
@@ -475,6 +475,14 @@ select_district_gaps <- function(gaps, hazards, crosswalk, n_target = 3) {
     }
 
     # Fall-through: continue down the ranked hazards, then cross-cutting.
+    #
+    # UNREACHABLE under the reviewed model. It needs more ranked hazards than
+    # slots, and there are now exactly three of each (HAZARD_PRIORITY), so
+    # `nrow(hz) > n_target` is 3 > 3. Kept rather than deleted because it
+    # revives the moment a fourth hazard is ranked. Until then a barren
+    # top-three hazard goes straight to the cross-cutting branch below - and
+    # pinned hazmat's gaps (#27, #28, #31) cannot be displayed at all, because
+    # `hz` is ranked hazards only. They remain in gaps/<slug>.json.
     if (length(chosen) < n_target && nrow(hz) > n_target) {
       for (i in seq(n_target + 1, nrow(hz))) {
         if (length(chosen) >= n_target) break
@@ -586,6 +594,27 @@ validate_gap_values <- function(gap_values, crosswalk) {
   fail <- function(...) stop("gap values: ", ..., call. = FALSE)
 
   shipped <- crosswalk |> filter(boro_code == 4) |> pull(cdta2020)
+
+  # 0. Computed means available. The converse of check 1, and the one that
+  #    was missing: compute_available_gaps() is a hand-kept list of add()
+  #    calls that never reads registry status, so retiring a gap in the
+  #    registry without deleting its add() shipped a `retired` row still
+  #    carrying a value - breaking the contract's "only `available` has a
+  #    value". Found 2026-09-22 when gaps 27 and 28 were retired that way.
+  #    `not_applicable` is the one legitimate non-available status here: it is
+  #    assigned per district downstream of the registry, not by it.
+  stale <- gap_values |>
+    filter(!status %in% c("available", "not_applicable")) |>
+    distinct(gap_id, status)
+  if (nrow(stale) > 0) {
+    fail("gap(s) ", paste(sprintf("%s (%s)", stale$gap_id, stale$status),
+                          collapse = ", "),
+         " are still computed but not `available` in resource_gaps.csv. ",
+         "Retiring or blocking a gap is two steps: the registry row, AND ",
+         "removing its add() from compute_available_gaps(). Otherwise the ",
+         "row ships with a value the contract says it cannot have.")
+  }
+
   live <- gap_values |>
     filter(status == "available", cdta2020 %in% shipped)
 
