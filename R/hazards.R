@@ -149,17 +149,28 @@ get_fvi <- function(url = FVI_SERVICE_URL) {
 
 # --- district-level hazard measures -----------------------------------------
 
-# Coastal storm, aggregated tract -> CDTA and POPULATION-weighted.
+# Coastal storm, aggregated tract -> CDTA, two ways.
 #
-# PIPELINE_DESIGN.md 2 requires population weighting for census-tract sources,
-# and it matters here: a district's coastal risk is about how many people live
-# in the surge zone, not how much of its area does. The Rockaways is the case
-# that makes the difference visible.
+# `coastal_max_fvi` is the REVIEWED measure: the worst-case tract, max(ss_cur)
+# across the district. Adopted 2026-09-22 from queens-hazard-ranking@a4c1429,
+# the source of truth for the ranking after expert review.
 #
-# The measure is (share of district population in an exposed tract) x
-# (population-weighted mean surge index among those tracts). The first term
-# carries most of the signal; the second distinguishes a district with a lot of
-# mildly exposed people from one with a lot of severely exposed people.
+# This reverses the population weighting that `coastal` below applies, and with
+# it PIPELINE_DESIGN.md 2's requirement that census-tract sources be
+# population-weighted. The two answer different questions - "how much of this
+# district is exposed" versus "how bad is it where it is worst" - and the
+# review chose the latter. 2 is not amended; METHODOLOGY.md, "The reviewed
+# ranking is the source of truth", records the departure and the evidence.
+#
+# `coastal` (population share x population-weighted mean index) is KEPT for now
+# so this change does not alter any output on its own. build_hazards() still
+# reads it; PR-2 switches the ranking to coastal_max_fvi and deletes it.
+#
+# pop_total / pop_exposed / pop_share_exposed stay regardless of that: they
+# produce surge_pop_pct, which ships in risk_profile and the district page
+# displays. Under the reviewed method they will read as inconsistent with the
+# ranking - QN07 is 30.1% exposed and scores 4, QN10 is 23% and scores 5 -
+# because share and worst-case are different facts. That is expected.
 coastal_per_cdta <- function(fvi, tract_cdta, tract_pop, index_col = "ss_cur") {
   fvi |>
     inner_join(tract_cdta, by = "geoid") |>
@@ -172,6 +183,12 @@ coastal_per_cdta <- function(fvi, tract_cdta, tract_pop, index_col = "ss_cur") {
       mean_index = if (sum(pop[!is.na(idx)], na.rm = TRUE) > 0) {
         stats::weighted.mean(idx[!is.na(idx)], pop[!is.na(idx)])
       } else 0,
+      # An NA index means the tract is NOT exposed, so it is dropped rather
+      # than scored 0. A district whose every tract is NA yields 0 here, and a
+      # district with no row at all is coalesced to 0 in
+      # build_hazard_measures() - both routes reproduce the report's
+      # replace_na(max_ss_cur_fvi, 0).
+      coastal_max_fvi = if (any(!is.na(idx))) max(idx[!is.na(idx)]) else 0,
       .groups = "drop"
     ) |>
     mutate(
@@ -195,6 +212,28 @@ normalise_exposure <- function(x, scale_max = NULL) {
   pmin(pmax(x / m, 0), 1)
 }
 
+# Quintile rank 1-5, the reviewed method's way of putting a continuous measure
+# on the same 1-5 footing as the published indices (HVI, FVI).
+#
+# This is deliberately the report's exact expression - cut() over quantile()
+# with include.lowest - rather than a re-derivation, because the fixture in
+# data/canonical/hazard_ranking_reviewed.csv was cut from that expression and
+# validate_hazard_ranking() asserts equality. A subtly different quantile type
+# would produce plausible off-by-one quintiles on the boundary districts.
+#
+# MUST be given all 59 CDTAs. The breaks are citywide; computing them over
+# Queens alone would rescale every Queens score and still validate against
+# every other check in the file. That is the failure mode PIPELINE_DESIGN.md
+# warns about, so the caller's row count is asserted, not assumed.
+quintile_citywide <- function(x) {
+  if (length(x) != 59) {
+    stop("quintile_citywide() needs all 59 CDTAs to place the breaks; got ",
+         length(x), ". Queens-only input would rescale every score.")
+  }
+  breaks <- stats::quantile(x, probs = seq(0, 1, 0.2), na.rm = TRUE)
+  as.integer(cut(x, breaks = breaks, labels = FALSE, include.lowest = TRUE))
+}
+
 # Assemble every district-level hazard measure, citywide, on one row per CDTA.
 #
 # Citywide because the exposure normalisation and the reported percentiles are
@@ -215,7 +254,8 @@ build_hazard_measures <- function(crosswalk, hvi, pivi, chem, rain, coastal) {
     left_join(chem, by = "borocd") |>
     left_join(rename(rain, rain_pct = pct_area), by = "cdta2020") |>
     left_join(
-      select(coastal, cdta2020, coastal, coastal_pop_share = pop_share_exposed),
+      select(coastal, cdta2020, coastal, coastal_max_fvi,
+             coastal_pop_share = pop_share_exposed),
       by = "cdta2020"
     ) |>
     # A district with no exposed tracts is absent from the coastal aggregation
@@ -223,6 +263,7 @@ build_hazard_measures <- function(crosswalk, hvi, pivi, chem, rain, coastal) {
     # and the hazard silently drops out of that district's ordering.
     mutate(
       coastal = coalesce(coastal, 0),
+      coastal_max_fvi = coalesce(coastal_max_fvi, 0),
       coastal_pop_share = coalesce(coastal_pop_share, 0),
       rain_pct = coalesce(rain_pct, 0)
     ) |>
@@ -236,14 +277,35 @@ build_hazard_measures <- function(crosswalk, hvi, pivi, chem, rain, coastal) {
       `heavy-rain`    = normalise_exposure(rain_pct),
       `coastal-storm` = normalise_exposure(coastal),
       `hazmat`        = normalise_exposure(chem_business_count)
+    ) |>
+    # The REVIEWED scores, all on the published 1-5 footing. Added alongside
+    # the exposure columns above rather than replacing them, so this change
+    # alters no output on its own; PR-2 rewires build_hazards() onto these and
+    # drops the four `normalise_exposure()` columns and `coastal`.
+    #
+    # Note what is NOT here: hazmat. The review pins it (position 4) because
+    # Queens has atypically many chemically intensive businesses, so the
+    # measure ranked it 1st or 2nd in 11 of 14 districts and discriminated
+    # between them poorly. chem_business_count stays in the payload as context
+    # and still feeds the chem_businesses map layer.
+    mutate(
+      score_coastal_storm = as.integer(coastal_max_fvi),
+      score_heavy_rain    = quintile_citywide(rain_pct),
+      # HVI is already published 1-5, so it is the score unchanged - no
+      # normalisation, no re-ranking.
+      score_extreme_heat  = as.integer(hvi)
     )
 }
+
+REVIEWED_SCORE_COLS <- c("score_coastal_storm", "score_heavy_rain",
+                         "score_extreme_heat")
 
 validate_hazard_measures <- function(measures) {
   assert_row_count(measures, 59, 59)
   assert_unique(measures, "cdta2020")
   assert_no_na(measures, c("hvi", "pivi", "chem_business_count",
-                           "rain_pct", "coastal", names(HAZARD_SEVERITY)))
+                           "rain_pct", "coastal", "coastal_max_fvi",
+                           names(HAZARD_SEVERITY), REVIEWED_SCORE_COLS))
 
   # Exposure must be a proportion. A value outside 0-1 means the normalisation
   # divided by the wrong maximum, which would silently reorder every district.
@@ -251,6 +313,19 @@ validate_hazard_measures <- function(measures) {
     v <- measures[[h]]
     if (any(v < 0 | v > 1)) {
       stop("Exposure for '", h, "' falls outside 0-1")
+    }
+  }
+
+  # The reviewed scores share one scale, which is the whole reason they can be
+  # compared without severity weights. Coastal admits 0 because "no exposed
+  # tract" is a real zero; the two indices are published 1-5 and a 0 there
+  # would mean a failed join, not an unexposed district.
+  for (s in REVIEWED_SCORE_COLS) {
+    v <- measures[[s]]
+    lo <- if (s == "score_coastal_storm") 0L else 1L
+    if (any(v < lo | v > 5L)) {
+      stop("Reviewed score '", s, "' falls outside ", lo, "-5, so it is not on ",
+           "the 1-5 footing the unweighted ranking depends on")
     }
   }
 
@@ -263,6 +338,80 @@ validate_hazard_measures <- function(measures) {
       stop("Ranked hazard '", h, "' takes fewer than 3 distinct values across ",
            "Queens - it no longer meets the ranking criterion (METHODOLOGY.md)")
     }
+  }
+  TRUE
+}
+
+# --- the reviewed ranking, as an asserted fixture ---------------------------
+
+# data/canonical/hazard_ranking_reviewed.csv is the expert-reviewed source of
+# truth for the three ranked scores. Human-owned and commented, so read with
+# comment.char and explicit types rather than letting readr guess.
+read_reviewed_ranking <- function(path) {
+  readr::read_csv(
+    path,
+    comment = "#",
+    col_types = readr::cols(
+      cdta2020            = readr::col_character(),
+      coastal_max_fvi     = readr::col_integer(),
+      heavy_rain_quintile = readr::col_integer(),
+      hvi                 = readr::col_integer()
+    )
+  )
+}
+
+# Assert the computed scores reproduce the reviewed fixture exactly.
+#
+# This is the target that makes the review load-bearing: change a measure
+# without re-running queens-hazard-ranking and re-cutting the fixture, and the
+# build stops here rather than shipping a ranking nobody approved.
+#
+# Two-way anti_join rather than a row count, per the house rule - it catches a
+# district the pipeline scores that the review does not, as well as one that
+# has gone missing. A count would pass on a swap.
+validate_hazard_ranking <- function(measures, reviewed) {
+  # Fixture column names are the report's; map them onto the pipeline's.
+  expected <- reviewed |>
+    transmute(
+      cdta2020,
+      score_coastal_storm = coastal_max_fvi,
+      score_heavy_rain    = heavy_rain_quintile,
+      score_extreme_heat  = hvi
+    )
+
+  computed <- measures |>
+    filter(substr(cdta2020, 1, 2) == "QN") |>
+    select(cdta2020, all_of(REVIEWED_SCORE_COLS))
+
+  extra   <- anti_join(computed, expected, by = "cdta2020")
+  missing <- anti_join(expected, computed, by = "cdta2020")
+  if (nrow(extra) > 0 || nrow(missing) > 0) {
+    or_none <- function(x) if (length(x) == 0) "none" else paste(x, collapse = ", ")
+    stop("Reviewed ranking covers ", nrow(expected), " districts, pipeline ",
+         nrow(computed), ". Scored but not reviewed: ", or_none(extra$cdta2020),
+         "; reviewed but not scored: ", or_none(missing$cdta2020))
+  }
+
+  # Compare column by column so the message names the measure that drifted,
+  # not just the district. A district can disagree on one score and agree on
+  # the other two, and which one it is decides where to look.
+  drift <- character(0)
+  joined <- inner_join(computed, expected, by = "cdta2020",
+                       suffix = c("", "_reviewed"))
+  for (s in REVIEWED_SCORE_COLS) {
+    bad <- joined[joined[[s]] != joined[[paste0(s, "_reviewed")]], ]
+    if (nrow(bad) > 0) {
+      drift <- c(drift, paste0(
+        s, ": ", paste0(bad$cdta2020, " (", bad[[s]], " vs reviewed ",
+                        bad[[paste0(s, "_reviewed")]], ")", collapse = ", ")
+      ))
+    }
+  }
+  if (length(drift) > 0) {
+    stop("Hazard scores disagree with the reviewed ranking:\n  ",
+         paste(drift, collapse = "\n  "),
+         "\nEither a measure changed, or queens-hazard-ranking needs ",
+         "re-running and data/canonical/hazard_ranking_reviewed.csv re-cut.")
   }
   TRUE
 }

@@ -1,0 +1,30 @@
+# The reviewed hazard scores, cut from queens-hazard-ranking@a4c1429.
+#
+# This file is the source of truth for the ranking after expert review
+# (2026-09-22). validate_hazard_ranking() asserts the pipeline reproduces it
+# exactly, so a measure cannot change without the review being re-run and this
+# file re-cut. Human-owned: CI never writes it.
+#
+# Scores only. The resulting per-district ORDER is derivable from these three
+# columns plus HAZARD_PRIORITY, so storing the order here as well would let the
+# two drift.
+#
+# coastal_max_fvi       max ss_cur across the district's tracts; 0 = no exposed
+#                       tract (the report's replace_na(., 0))
+# heavy_rain_quintile   quintile of stormwater_pct, cut over all 59 CDTAs
+# hvi                   DOHMH Heat Vulnerability Index, published 1-5
+cdta2020,coastal_max_fvi,heavy_rain_quintile,hvi
+QN01,4,5,3
+QN02,4,4,3
+QN03,2,3,3
+QN04,0,5,3
+QN05,0,3,1
+QN06,3,4,2
+QN07,4,2,2
+QN08,0,1,2
+QN09,0,4,3
+QN10,5,3,3
+QN11,3,1,1
+QN12,0,5,5
+QN13,4,4,4
+QN14,5,4,4
