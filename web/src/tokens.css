@@ -134,7 +134,13 @@
   --measure: 358px; /* §3 — the resulting content width, which the type and
                      * wrapping were designed against. Consistent on every screen. */
 
-  --touch-target-min: 44px; /* §10 / WCAG 2.5.5. NOT what the Figma frames
+  --touch-target-min: 44px;
+
+  /* The bottom sheet's collapsed height. Figma's Peek frames put the sheet at
+   * 123px. Lives here rather than in the component because the map positions
+   * its controls against the sheet's edge, and d26's fix publishes the LIVE
+   * height as --sheet-height at runtime — this is only the resting value. */
+  --sheet-peek: 123px; /* §10 / WCAG 2.5.5. NOT what the Figma frames
                              * currently measure: Resource Row and LayerRow are
                              * 16px, CategoryRow 22.7px, HazardRow 24px. Build
                              * to this and flag where it changes row pitch —

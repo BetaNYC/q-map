@@ -25,9 +25,19 @@
     district: DistrictIndexEntry;
     /** `layer_id`s currently on, from `?layers=`. */
     visibleLayers: string[];
+    /** Category slugs currently on, from `?categories=`. null means all. */
+    visibleCategories: string[] | null;
+    /** Fired when a resource point is tapped — the page writes `?resource=`. */
+    onSelectResource: (resourceId: string) => void;
   }
 
-  let { district, visibleLayers }: Props = $props();
+  let { district, visibleLayers, visibleCategories, onSelectResource }: Props = $props();
+
+  /** The resource points layer id, used by the filter effect and the click
+   *  handler. `layers/resources/<slug>.geojson` carries only resource_id,
+   *  name, category, source and is_coad_member — the popup's address and
+   *  operator come from the join the page does (§7.4). */
+  const RESOURCE_LAYER = 'resource-points';
 
   let container = $state<HTMLDivElement>();
   let map: maplibregl.Map | undefined;
@@ -89,6 +99,39 @@
         }
       }
 
+      // Per-district resource points — 178 KB at the largest, against 1.19 MB
+      // for one Queens-wide file. A district map needs only its own.
+      instance.addSource('resources', {
+        type: 'geojson',
+        data: dataUrl(`layers/resources/${district.slug}.geojson`)
+      });
+
+      instance.addLayer({
+        id: RESOURCE_LAYER,
+        type: 'circle',
+        source: 'resources',
+        paint: {
+          'circle-radius': ['interpolate', ['linear'], ['zoom'], 11, 3, 16, 7],
+          'circle-color': '#3258a3',
+          'circle-stroke-width': 1,
+          'circle-stroke-color': '#fefcfa'
+        }
+      });
+
+      instance.on('click', RESOURCE_LAYER, (e) => {
+        const id = e.features?.[0]?.properties?.resource_id;
+        if (typeof id === 'string') onSelectResource(id);
+      });
+
+      // A point is a 6px circle; the cursor is the only affordance on a
+      // pointer device that it can be tapped at all.
+      instance.on('mouseenter', RESOURCE_LAYER, () => {
+        instance.getCanvas().style.cursor = 'pointer';
+      });
+      instance.on('mouseleave', RESOURCE_LAYER, () => {
+        instance.getCanvas().style.cursor = '';
+      });
+
       instance.addLayer({
         id: 'cdta-current',
         type: 'line',
@@ -119,6 +162,24 @@
   });
 
   /**
+   * Apply `?categories=` to the resource points.
+   *
+   * A filter rather than add/remove: the source stays loaded, so toggling a
+   * category does not re-download the district's points. `null` means the
+   * parameter was absent, which is the default of everything showing — so the
+   * filter is removed entirely rather than built from all twelve slugs.
+   */
+  $effect(() => {
+    const categories = visibleCategories;
+    if (!styleReady || !map) return;
+
+    map.setFilter(
+      RESOURCE_LAYER,
+      categories === null ? null : ['in', ['get', 'category'], ['literal', categories]]
+    );
+  });
+
+  /**
    * Apply `?layers=` to the map.
    *
    * Reads `visibleLayers` and `styleReady`, so it re-runs both when the URL
@@ -142,11 +203,11 @@
 <style>
   .map {
     width: 100%;
-    /* The 04 Map frames give the map 748px in a 938px frame. Here it is a
-       share of the viewport so it works on a phone that is not 390x844 —
-       the bottom sheet takes the rest in step 9. */
-    height: 60svh;
-    min-height: 320px;
+    /* Fills the stage, which is whatever the header leaves of one viewport.
+       The 04 Map frames give the map 748px of a 938px frame; a share of the
+       viewport rather than a fixed height, so it holds on a phone that is not
+       390x844. */
+    height: 100%;
     background: var(--color-surface-sunken);
   }
 

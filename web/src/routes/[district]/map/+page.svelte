@@ -3,8 +3,11 @@
   import { goto } from '$app/navigation';
   import { base } from '$app/paths';
   import { page } from '$app/state';
+  import BottomSheet from '$lib/components/BottomSheet.svelte';
+  import HazardHeader from '$lib/components/HazardHeader.svelte';
   import LayerRow from '$lib/components/LayerRow.svelte';
   import Map from '$lib/components/Map.svelte';
+  import TabBar from '$lib/components/TabBar.svelte';
   import Popup from '$lib/components/Popup.svelte';
   import ResourceCard from '$lib/components/ResourceCard.svelte';
   import ResourceRow from '$lib/components/ResourceRow.svelte';
@@ -169,6 +172,31 @@
       : ''
   );
 
+  /** Which sheet tab is showing. Local UI state, not URL state: it is a view
+   *  preference rather than something a shared link should pin (§5 lists four
+   *  parameters and this is not one of them). */
+  let activeTab = $state<'resources' | 'layers'>('resources');
+
+  /** Tapping a point on the map writes `?resource=`, the same permalink §7.4
+   *  names — so a map click and a shared link arrive at identical state. */
+  function selectResource(resourceId: string) {
+    const url = new URL(page.url);
+    url.searchParams.set('resource', resourceId);
+    goto(url, { replaceState: true, noScroll: true, keepFocus: true });
+  }
+
+  /**
+   * §5: `?hazard=` exists because the map screen shows a HazardHeader and
+   * layer ids do not reverse-map to a hazard reliably. Nesting the route
+   * instead would have prerendered 112 more pages for a header string.
+   *
+   * Unknown slugs degrade rather than error — it is a parameter, not a route.
+   */
+  const hazardParam = $derived(browser ? page.url.searchParams.get('hazard') : null);
+  const hazard = $derived(
+    hazardParam ? (data.district.hazards.find((h) => h.slug === hazardParam) ?? null) : null
+  );
+
   function closePopup() {
     const url = new URL(page.url);
     url.searchParams.delete('resource');
@@ -179,69 +207,134 @@
 <!-- SCAFFOLD ONLY. The map itself, the bottom sheet and the popup are steps 8
      and 9. What is real here is the row list and its URL round-trip. -->
 
-<p><a href="{base}/{data.district.slug}">{data.district.display_name}</a></p>
+<!-- §3: the map screen is a stage with a bottom sheet — the map fills the
+     body, and the header sits above it. A flex column of exactly one viewport
+     so the stage cannot push itself below the fold. -->
+<div class="screen">
+  <header class="chrome">
+    {#if hazard}
+      <HazardHeader
+        label={hazard.label}
+        districtSlug={data.district.slug}
+        districtName={data.district.display_name}
+      />
+    {:else}
+      <HazardHeader
+        label="{data.district.display_name} map"
+        districtSlug={data.district.slug}
+        districtName={data.district.display_name}
+      />
+    {/if}
+  </header>
 
-<h1>{data.district.display_name} map</h1>
+<!-- The map is the stage; the sheet floats over it (§3). Both are client-only:
+     MapLibre needs a DOM and a WebGL context, and a prerendered page has
+     neither. -->
+<div class="stage">
+  {#if browser}
+    <Map
+      district={data.entry}
+      visibleLayers={selectedLayers}
+      visibleCategories={selected}
+      onSelectResource={selectResource}
+    />
 
-<!-- Step 8. The bottom sheet that should sit over this, and the resource
-     points and popup inside it, are step 9 — the lists below stand in for the
-     sheet's two tabs until then. -->
-{#if browser}
-  <!-- Client-only: MapLibre needs a DOM and a WebGL context, and a prerendered
-       page has neither. Rendering it server-side would throw at build. -->
-  <Map district={data.entry} visibleLayers={selectedLayers} />
-{/if}
+    {#if selectedResource}
+      <!-- §5: an unknown ?resource= id opens the map with no popup and no
+           error — that falls out of find() returning undefined. -->
+      <div class="popup-layer">
+        <Popup
+          resource={selectedResource}
+          {categoryLabel}
+          districtSlug={data.district.slug}
+          onClose={closePopup}
+        />
+      </div>
+    {/if}
 
-<!-- All twelve stay listed whatever the selection — §7.3: every category is
-     present and toggleable. Filtering the LIST would strand a user who arrived
-     from a CategoryRow link with no way to turn anything else on. What the
-     ?categories= parameter controls is which are ON, not which exist. -->
-<!-- The Resources / Layers tab bar is step 9. Both lists render here for now so
-     each component is exercised; they are not meant to sit together. -->
+    <BottomSheet label="Resources and layers for {data.district.display_name}">
+      {#snippet header()}
+        <TabBar
+          idBase="mapsheet"
+          tabs={[
+            { id: 'resources', label: 'Resources' },
+            { id: 'layers', label: 'Layers' }
+          ]}
+          active={activeTab}
+          onSelect={(id) => (activeTab = id as 'resources' | 'layers')}
+        />
+      {/snippet}
 
-<!-- §5: an unknown ?resource= id opens the map with no popup and no error. That
-     falls out of the find() returning undefined rather than needing a branch. -->
-{#if selectedResource}
-  <Popup
-    resource={selectedResource}
-    {categoryLabel}
-    districtSlug={data.district.slug}
-    onClose={closePopup}
-  />
-
-  <!-- SCAFFOLD. ResourceCard belongs on the resource detail screen (step 10),
-       which needs 248 more prerendered routes. Mounted here so it is exercised
-       against real records.
-
-       Guarded by hasDetail: §7.5 is QNPD and FRANC only. A FacDB record has an
-       `address` and would otherwise render a one-row card on a page it has no
-       detail view for. On the real route this cannot arise — the route only
-       exists for the 248 — so the guard belongs at the mount, not inside the
-       component. -->
-  {#if hasDetail(selectedResource)}
-    <ResourceCard resource={selectedResource} />
+      {#snippet children()}
+        <div id="mapsheet-panel" role="tabpanel" aria-labelledby="mapsheet-tab-{activeTab}">
+          {#if activeTab === 'resources'}
+            <!-- All twelve stay listed whatever the selection (§7.3) —
+                 filtering the LIST would strand someone who arrived from a
+                 CategoryRow link with no way to turn anything else on. -->
+            <ul class="rows">
+              {#each data.district.resource_categories as category (category.slug)}
+                <li>
+                  <ResourceRow {category} pressed={isOn(category.slug)} onToggle={toggle} />
+                </li>
+              {/each}
+            </ul>
+          {:else}
+            <ul class="rows">
+              {#each layers as layer (layer.layer_id)}
+                <li>
+                  <LayerRow
+                    {layer}
+                    pressed={selectedLayers.includes(layer.layer_id)}
+                    onToggle={toggleLayer}
+                  />
+                </li>
+              {/each}
+            </ul>
+          {/if}
+        </div>
+      {/snippet}
+    </BottomSheet>
   {/if}
-{/if}
-
-<h2>Resources</h2>
-<ul class="rows">
-  {#each data.district.resource_categories as category (category.slug)}
-    <li>
-      <ResourceRow {category} pressed={isOn(category.slug)} onToggle={toggle} />
-    </li>
-  {/each}
-</ul>
-
-<h2>Layers</h2>
-<ul class="rows">
-  {#each layers as layer (layer.layer_id)}
-    <li>
-      <LayerRow {layer} pressed={selectedLayers.includes(layer.layer_id)} onToggle={toggleLayer} />
-    </li>
-  {/each}
-</ul>
+  </div>
+</div>
 
 <style>
+  /* Exactly one viewport tall, never more: the stage is positioned against
+     this, and a stage that starts below a header while still being 100svh
+     pushes the sheet off the bottom of the screen. */
+  .screen {
+    display: flex;
+    flex-direction: column;
+    height: 100svh;
+    overflow: hidden;
+  }
+
+  .chrome {
+    flex-shrink: 0;
+    padding-inline: var(--gutter);
+    padding-top: var(--space-300);
+  }
+
+  /* The map screen opts out of the other screens' centred column — the map
+     fills whatever the header leaves, and the sheet is positioned against
+     this element rather than the viewport. */
+  .stage {
+    position: relative;
+    flex: 1 1 auto;
+    min-height: 0;
+    width: 100%;
+    overflow: hidden;
+  }
+
+  .popup-layer {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    /* Above the sheet's peek height so a popup is never hidden behind it. */
+    bottom: calc(var(--sheet-height, 123px) + var(--space-300));
+    z-index: 3;
+  }
+
   .rows {
     list-style: none;
     margin: 0;
