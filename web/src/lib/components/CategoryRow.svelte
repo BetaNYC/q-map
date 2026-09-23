@@ -79,6 +79,15 @@
     min-width: 0;
     overflow-wrap: break-word; /* Figma sets word-break: break-word on this row */
     line-height: var(--line-height-tight);
+
+    /* Figma puts a 22.667px min-height on this row's content. Without it the
+       row collapses to 41px — 12px padding, a ~17px line, 12px padding — which
+       is under WCAG 2.5.5's 44px and 5.67px short of the drawn 46.67px.
+       Carrying the design's own number satisfies both, and does so
+       deterministically: 22.667 + 24 is 46.67 whatever the font metrics do. */
+    min-height: 22.667px;
+    display: flex;
+    align-items: center;
   }
 
   .count {

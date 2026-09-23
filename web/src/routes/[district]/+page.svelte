@@ -1,89 +1,104 @@
 <script lang="ts">
-  import { base } from '$app/paths';
   import CategoryRow from '$lib/components/CategoryRow.svelte';
+  import Coad from '$lib/components/Coad.svelte';
+  import DistrictHeader from '$lib/components/DistrictHeader.svelte';
   import GapSentence from '$lib/components/GapSentence.svelte';
   import HazardRow from '$lib/components/HazardRow.svelte';
-  import InfoIcon from '$lib/icons/InfoIcon.svelte';
+  import HorizontalRule from '$lib/components/HorizontalRule.svelte';
+  import Section from '$lib/components/Section.svelte';
 
   let { data } = $props();
+
+  const district = $derived(data.district);
 </script>
 
-<!-- SCAFFOLD ONLY. The district screen — hazard rows, resource categories, gap
-     sentences — is built in step 5. -->
+<svelte:head>
+  <!-- Both names, because a shared link's preview should say which district
+       AND which community district — they are different strings and people
+       search on both. -->
+  <title>{district.display_name} — {district.cd_label} | Queens Resource Map</title>
+</svelte:head>
 
-<p><a href="{base}/">All districts</a></p>
+<!-- Screen 02. Figma: "02 District - Mobile", node 13:839.
+     390px frame, 16px gutters, 358px measure (handoff §3). -->
+<div class="screen">
+  <DistrictHeader {district} />
 
-<!-- display_name and cd_label are both shipped and both rendered; neither is
-     derivable from the other (handoff §2). -->
-<h1>{data.district.display_name}</h1>
-<p>{data.district.cd_label} · {data.district.cdta2020}</p>
+  <!-- 1 of 14 districts. `coad_name` is null in the same thirteen as `coad`,
+       so either check works; this reads as the question being asked. -->
+  {#if district.coad_name}
+    <Coad {district} />
+  {/if}
 
-{#if data.district.coad_name}
-  <!-- Renders in 1 of 14 districts. null is the common case, not the edge.
-       The real COAD component is built in step 5; the icon sits here now so it
-       is exercised on a real page rather than shipped unrendered. It is
-       aria-hidden, so the sentence reads on its own. -->
-  <p>
-    <InfoIcon />
-    {data.district.display_name} is served by the {data.district.coad_name}
-  </p>
-{/if}
+  <Section title="Hazard Areas">
+    <!-- Always 8, already ordered, three ranked and five pinned. `rank` is
+         authoritative — re-sorting on `score` would silently reorder the ties
+         that 8 of 14 districts have (§7.1). -->
+    <ul class="rows">
+      {#each district.hazards as hazard (hazard.slug)}
+        <li><HazardRow {hazard} districtSlug={district.slug} /></li>
+      {/each}
+    </ul>
+  </Section>
 
-<!-- The Hazards section proper — header, spacing, the HorizontalBreak — is
-     step 5. The list is here now so HazardRow is exercised against all 8 real
-     entries, ranked and pinned, rather than a mock.
+  <HorizontalRule />
 
-     A <ul> because it is a list of 8 and a screen reader should say so.
-     `rank` is the key AND the order: hazards[] arrives already ordered and
-     §7.1 is explicit that re-sorting on score would silently reorder the ties,
-     which 8 of 14 districts have. -->
-<ul class="hazards">
-  {#each data.district.hazards as hazard (hazard.slug)}
-    <li>
-      <HazardRow {hazard} districtSlug={data.district.slug} />
-    </li>
-  {/each}
-</ul>
+  <Section title="District Resource Map">
+    <!-- Derived per district — never a hardcoded list of twelve (§6). Counts
+         span 1 to 261 within one district, which is why they are numerals and
+         not a bar (§7.3). -->
+    <ul class="rows rows--spaced">
+      {#each district.resource_categories as category (category.slug)}
+        <li><CategoryRow {category} districtSlug={district.slug} /></li>
+      {/each}
+    </ul>
+  </Section>
 
-<!-- The ResourceMap section proper is step 5. The list is here so CategoryRow
-     is exercised against every category a real district holds — the count is
-     derived per district and q14's runs from 1 to 261. -->
-<ul class="categories">
-  {#each data.district.resource_categories as category (category.slug)}
-    <li><CategoryRow {category} districtSlug={data.district.slug} /></li>
-  {/each}
-</ul>
+  <HorizontalRule />
 
-<!-- The ResourceGap section proper is step 5. Exactly three per district, one
-     per ranked hazard, already ordered by risk_rank. -->
-<ul class="gaps">
-  {#each data.district.gaps_displayed as gap (gap.gap_id)}
-    <li><GapSentence {gap} /></li>
-  {/each}
-</ul>
+  <Section title="Resource Gaps">
+    <!-- Exactly three, one per ranked hazard, already ordered by risk_rank. -->
+    <ul class="rows rows--gaps">
+      {#each district.gaps_displayed as gap (gap.gap_id)}
+        <li><GapSentence {gap} /></li>
+      {/each}
+    </ul>
+  </Section>
+</div>
 
 <style>
-  .hazards,
-  .categories,
-  .gaps {
+  .screen {
+    display: flex;
+    flex-direction: column;
+
+    /* §3: 390px baseline with 16px gutters gives the 358px measure the type
+       and wrapping were designed against. Fluid above it — max-width keeps the
+       measure rather than letting lines run on a larger phone. */
+    max-width: calc(390px);
+    margin-inline: auto;
+    padding-inline: var(--gutter);
+    padding-block: var(--space-600);
+  }
+
+  .rows {
     list-style: none;
     margin: 0;
     padding: 0;
+    width: 100%;
   }
 
-  /* Figma spaces CategoryRow instances 8px apart (pitch 54.67 on a 46.67 row).
-     HazardRow rows butt together, so only this list needs the gap. */
-  .categories {
+  /* CategoryRow instances sit 8px apart; HazardRow instances butt together. */
+  .rows--spaced {
     display: flex;
     flex-direction: column;
     gap: var(--space-200);
   }
 
-  /* Figma spaces GapSentence instances ~24px apart (pitch 69 on a 45px
-     two-line sentence, 52 on a 28px one-liner). */
-  .gaps {
+  /* Gap sentences are 24px apart (Figma 15:1686). */
+  .rows--gaps {
     display: flex;
     flex-direction: column;
     gap: var(--space-600);
+    padding-block: 11px;
   }
 </style>
