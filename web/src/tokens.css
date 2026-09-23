@@ -57,6 +57,18 @@
   --color-severity-moderate-fill: #f2da9b; /* severity/moderate/fill */
   --color-severity-minor-fill: #e8ecf1;    /* severity/minor/fill */
 
+  /* Trend fills on the Conditions component (Figma node 14:1142). One per
+   * `direction`, and the mapping is "up is worse" — this measures illness.
+   *
+   * Two of the three duplicate a value that already has a token:
+   * color/red/200 is severity/extreme/fill's hex, and color/grey/200 is
+   * border/default's. They are kept SEPARATE rather than aliased, because they
+   * are separate variables in Figma holding the same value today. Aliasing
+   * would silently propagate a change to one into the other. */
+  --color-trend-up-fill: #f2d4d0;   /* color/red/200 — = severity/extreme/fill */
+  --color-trend-down-fill: #a0f3af; /* color/green/200 — the only new value */
+  --color-trend-flat-fill: #d7dce4; /* color/grey/200 — = border/default */
+
   /* ---- Spacing -------------------------------------------------------- */
   /* Figma's own numbering is kept rather than renamed to t-shirt sizes, so a
    * token here greps directly against the Figma variable. There is no

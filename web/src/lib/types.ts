@@ -48,6 +48,10 @@ export interface DistrictPayload {
   resource_categories: ResourceCategory[];
   /** Up to 3, one per ranked hazard. */
   gaps_displayed: DisplayedGap[];
+  /** Hazard slugs with a district-specific file. Fetch the override INSTEAD of
+   *  the base for these — the emitted override is already self-contained.
+   *  Only q14/coastal-storm today. */
+  hazard_overrides: string[];
 }
 
 /**
@@ -196,4 +200,46 @@ export interface Hazard {
   score?: number;
   /** Pinned only. Why this hazard is pinned rather than ranked. */
   reason?: string;
+}
+
+/**
+ * DATA_CONTRACT.md §7 — `conditions.json`.
+ *
+ * CITYWIDE, and it renders on district-scoped pages. `geography_label` exists
+ * so the component cannot omit saying so.
+ */
+export interface ConditionsMetric {
+  /** Always "nyc". This number is NOT about the district whose page it is on. */
+  geography: string;
+  /** "New York City". Render it — it is what stops a citywide figure reading as local. */
+  geography_label: string;
+  metric: string;
+  value: number;
+  previous: number;
+  /** Change over the LAST TWO WEEKS. */
+  direction: string;
+  pct_change: number;
+  /** Change over the WHOLE window, least-squares. Can disagree with `direction`. */
+  trend: string;
+  trend_window_weeks: number;
+  /** A percentage of emergency department visits, NOT a count. */
+  unit: string;
+  /** "of emergency department visits". Render this too — 6.41 means 6.41%. */
+  unit_label: string;
+  window_weeks: number;
+  as_of: string;
+  /** 12 weekly points, oldest first. Objects, NOT bare numbers — the contract
+   *  says "array[12]" without giving the element shape. `series[n].value` is
+   *  the figure and `series[n].date` its week ending. `value` equals the last
+   *  element's value and `previous` the second-to-last, seven days earlier. */
+  series: Array<{ date: string; value: number }>;
+}
+
+export interface Conditions {
+  as_of: string;
+  data_as_of: string;
+  archive_weeks: number;
+  /** Names a key of this object — which metric screen 01's chip shows. */
+  chip_metric: string;
+  [metric: string]: ConditionsMetric | string | number;
 }
