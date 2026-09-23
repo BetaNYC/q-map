@@ -21,7 +21,9 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: write   # auto-commit data/processed/
+  pages: write      # deploy-pages
+  id-token: write   # OIDC auth for the Pages deploy
 
 concurrency:
   group: pipeline-${{ github.ref }}
@@ -39,6 +41,10 @@ jobs:
       # which the `if` below treats as "run". d26 shipped without this gate and
       # documented "every frontend change re-runs the entire pipeline" as a
       # known wart before retrofitting it; take the end state.
+      #
+      # `web/**` is deliberately ABSENT from this list. A frontend-only push
+      # must not re-run {targets}; it falls through to build-web, which deploys
+      # against the committed data/processed/. Do not add it.
       - uses: dorny/paths-filter@v3
         id: filter
         if: github.event_name == 'push'
@@ -155,3 +161,90 @@ jobs:
             git commit -m "chore(pipeline): refresh outputs"
             git push
           fi
+
+      # Hand the freshly built outputs to build-web. Not the Pages artifact -
+      # that is web/build. build-web checks out the triggering SHA, which
+      # predates the auto-commit above, so its own data/processed/ would be a
+      # run behind. This is the only way the site and its data ship together.
+      - name: Upload processed outputs
+        uses: actions/upload-artifact@v4
+        with:
+          name: processed-data
+          path: data/processed/
+
+  # Build the Svelte app and bundle it with the data. Plain runner, Node only -
+  # none of the geospatial toolchain above is needed here.
+  #
+  # This job lives in pipeline.yml rather than a workflow of its own because the
+  # `paths-ignore: data/processed/**` guard at the top sits on the TRIGGER, so
+  # any job added here inherits it. A separate pages.yml would not, and the
+  # auto-commit would set a data refresh and a site rebuild chasing each other.
+  build-web:
+    needs: pipeline
+    # Run whether the pipeline ran or was skipped, but not if it failed or was
+    # cancelled - a failed pipeline leaves the previous Pages deploy live rather
+    # than publishing against half-written outputs.
+    if: always() && needs.pipeline.result != 'failure' && needs.pipeline.result != 'cancelled'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # web/static/data is a symlink for local dev. CI replaces it with a real
+      # directory, so no deploy ever depends on symlink traversal.
+      - name: Remove the dev data symlink
+        run: rm -f web/static/data
+
+      # The pipeline ran this run: use its artifact, which is newer than
+      # anything in this job's checkout.
+      - name: Use the freshly built outputs
+        if: needs.pipeline.result == 'success'
+        uses: actions/download-artifact@v4
+        with:
+          name: processed-data
+          path: web/static/data
+
+      # The pipeline was skipped (a web- or docs-only push): build against the
+      # committed snapshot, which is current by definition.
+      - name: Use the committed outputs
+        if: needs.pipeline.result == 'skipped'
+        run: cp -R data/processed web/static/data
+
+      - name: Prune junk
+        run: find web/static/data -name '.DS_Store' -delete
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Build
+        working-directory: web
+        env:
+          # Cache-buster for the data URLs. The deploy SHA, because it changes
+          # whenever the deployed data changes - unlike DATA_VERSION, which
+          # names the Tier-2 *input* mirror release. See web/src/lib/data.ts.
+          VITE_DATA_VERSION: ${{ github.sha }}
+        run: |
+          npm ci
+          npm run build
+
+      - name: Upload the Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: web/build
+
+  deploy:
+    needs: build-web
+    # build-web runs even when pipeline is skipped, but a skipped upstream job
+    # otherwise propagates a skip down to here. Opt out of that propagation so
+    # the site publishes whenever the web build succeeded, pipeline or not.
+    if: ${{ !cancelled() && needs.build-web.result == 'success' }}
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

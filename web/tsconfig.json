@@ -1,0 +1,17 @@
+{
+  // SvelteKit generates .svelte-kit/tsconfig.json (path aliases, module
+  // resolution, the $app/$lib ambient types) on `vite dev` and `vite build`.
+  // Extend it rather than restating any of it.
+  "extends": "./.svelte-kit/tsconfig.json",
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "sourceMap": true,
+    "strict": true,
+    "moduleResolution": "bundler"
+  }
+}

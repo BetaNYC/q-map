@@ -1,0 +1,14 @@
+<!doctype html>
+<!-- lang on the document is an accessibility contract item (handoff §10). -->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <!-- Mobile only for v1, 390px baseline (handoff §3). viewport-fit=cover so
+         the bottom sheet can reach into the home-indicator area on iOS. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    %sveltekit.head%
+  </head>
+  <body data-sveltekit-preload-data="hover">
+    <div style="display: contents">%sveltekit.body%</div>
+  </body>
+</html>

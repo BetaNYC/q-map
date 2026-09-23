@@ -1,0 +1,29 @@
+{
+  "name": "q-map-web",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "prepare": "svelte-kit sync",
+    "predev": "node scripts/check-data.mjs",
+    "dev": "vite dev",
+    "prebuild": "node scripts/check-data.mjs",
+    "build": "vite build",
+    "preview": "vite preview",
+    "check": "svelte-check --tsconfig ./tsconfig.json"
+  },
+  "devDependencies": {
+    "@sveltejs/adapter-static": "^3.0.9",
+    "@sveltejs/kit": "^2.46.0",
+    "@sveltejs/vite-plugin-svelte": "^6.2.1",
+    "@types/node": "^22.20.4",
+    "svelte": "^5.56.3",
+    "svelte-check": "^4.6.0",
+    "typescript": "^5.9.3",
+    "vite": "^7.1.7"
+  },
+  "dependencies": {
+    "maplibre-gl": "^5.24.0",
+    "pmtiles": "^4.4.1"
+  }
+}
