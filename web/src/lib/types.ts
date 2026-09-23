@@ -42,4 +42,42 @@ export interface DistrictPayload {
   coad: string | null;
   /** Present in 1 of 14, in exactly the same district as `coad`. */
   coad_name: string | null;
+  /** Always 8, already ordered. Positions 1-3 ranked, 4-8 pinned. */
+  hazards: Hazard[];
+  /** Derived per district — do not hardcode a global list. */
+  resource_categories: ResourceCategory[];
+}
+
+/**
+ * DATA_CONTRACT.md §3, `resource_categories[]` — what THIS district holds.
+ *
+ * Not to be confused with `default_resource_categories` on a hazard payload,
+ * which is a flat list of slugs saying what the map opens with.
+ */
+export interface ResourceCategory {
+  /** Matches `resources[].category` and the map layer's `category` property. */
+  slug: string;
+  label: string;
+  /** Resources of this category located in this district. Spans 1 to 261. */
+  count: number;
+}
+
+/**
+ * DATA_CONTRACT.md §3, `hazards[]`.
+ *
+ * `score` and `reason` are mutually exclusive and `ranked` is the discriminant:
+ * 42 of 112 entries carry `score`, the other 70 carry `reason`. Verified across
+ * all 14 payloads — no entry carries both, and none carries neither.
+ */
+export interface Hazard {
+  slug: string;
+  label: string;
+  /** 1-8. Authoritative — never re-sort on `score`. */
+  rank: number;
+  /** true for positions 1-3. */
+  ranked: boolean;
+  /** Ranked only. Integer 0-5 on one shared scale. */
+  score?: number;
+  /** Pinned only. Why this hazard is pinned rather than ranked. */
+  reason?: string;
 }

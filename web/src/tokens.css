@@ -103,14 +103,15 @@
 
   --letter-spacing-title: -0.2px; /* title/map-heading */
 
-  /* Figma sets lineHeight: 100 — line-height 1.0 — on EVERY text token. That
-   * is right for a single-line label or a chip and unreadable on anything that
-   * wraps, so it is split in two here.
+  /* Figma's `lineHeight: 100` in the variable dump is misleading: the text
+   * nodes themselves export as `line-height: normal`, which get_design_context
+   * confirms on every one of them. So tight IS normal — roughly 1.2 for this
+   * face — not 1.0.
    *
-   * --line-height-prose is a placeholder at 1.5: the value WCAG 1.4.12 names,
-   * and the one the layout must survive the user setting anyway. Andrew's
-   * number replaces it; this is the only line to change. */
-  --line-height-tight: 1;
+   * Split in two because normal is right for a label or a chip and cramped on
+   * anything that wraps at length. Prose is 1.5, the value WCAG 1.4.12 names
+   * and the one the layout has to survive a user setting regardless. */
+  --line-height-tight: normal;
   --line-height-prose: 1.5;
 
   /* ---- Layout --------------------------------------------------------- */

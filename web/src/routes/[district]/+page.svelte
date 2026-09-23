@@ -1,5 +1,7 @@
 <script lang="ts">
   import { base } from '$app/paths';
+  import CategoryRow from '$lib/components/CategoryRow.svelte';
+  import HazardRow from '$lib/components/HazardRow.svelte';
   import InfoIcon from '$lib/icons/InfoIcon.svelte';
 
   let { data } = $props();
@@ -25,3 +27,45 @@
     {data.district.display_name} is served by the {data.district.coad_name}
   </p>
 {/if}
+
+<!-- The Hazards section proper — header, spacing, the HorizontalBreak — is
+     step 5. The list is here now so HazardRow is exercised against all 8 real
+     entries, ranked and pinned, rather than a mock.
+
+     A <ul> because it is a list of 8 and a screen reader should say so.
+     `rank` is the key AND the order: hazards[] arrives already ordered and
+     §7.1 is explicit that re-sorting on score would silently reorder the ties,
+     which 8 of 14 districts have. -->
+<ul class="hazards">
+  {#each data.district.hazards as hazard (hazard.slug)}
+    <li>
+      <HazardRow {hazard} districtSlug={data.district.slug} />
+    </li>
+  {/each}
+</ul>
+
+<!-- The ResourceMap section proper is step 5. The list is here so CategoryRow
+     is exercised against every category a real district holds — the count is
+     derived per district and q14's runs from 1 to 261. -->
+<ul class="categories">
+  {#each data.district.resource_categories as category (category.slug)}
+    <li><CategoryRow {category} districtSlug={data.district.slug} /></li>
+  {/each}
+</ul>
+
+<style>
+  .hazards,
+  .categories {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  /* Figma spaces CategoryRow instances 8px apart (pitch 54.67 on a 46.67 row).
+     HazardRow rows butt together, so only this list needs the gap. */
+  .categories {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-200);
+  }
+</style>
