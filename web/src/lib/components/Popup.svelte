@@ -39,13 +39,50 @@
 
   let { resource, categoryLabel, districtSlug, onClose }: Props = $props();
 
+  let container = $state<HTMLElement>();
+
+  /**
+   * §10: "focus moves into it on open and returns to the trigger on close;
+   * Escape closes; a visible close control is required".
+   *
+   * Focus moves to the popup itself rather than to the close button — the
+   * close button is the LAST thing a keyboard user wants to land on, and
+   * putting focus on the container means the name and address are announced
+   * before the controls.
+   *
+   * `tabindex="-1"` makes the container programmatically focusable without
+   * adding it to the tab order. Returning focus is the caller's job, because
+   * only the caller knows what the trigger was — a map point or a list row.
+   */
+  $effect(() => {
+    container?.focus();
+  });
+
+  function onKeydown(event: KeyboardEvent) {
+    if (event.key !== 'Escape') return;
+    // Stop the map's own Escape handling (exiting fullscreen, cancelling a
+    // gesture) from also firing on the same press.
+    event.stopPropagation();
+    onClose?.();
+  }
+
   const subtitle = $derived(subtitleFor(resource, categoryLabel));
   const href = $derived(detailPath(resource, districtSlug));
 </script>
 
-<div class="popup">
+<!-- role="dialog" so a screen reader announces the boundary, and
+     aria-labelledby points at the name so entering it says which resource.
+     Not `aria-modal`: the map behind stays usable and nothing is trapped. -->
+<div
+  class="popup"
+  bind:this={container}
+  role="dialog"
+  tabindex="-1"
+  aria-labelledby="popup-name"
+  onkeydown={onKeydown}
+>
   <div class="lines">
-    <p class="name">{resource.name}</p>
+    <p class="name" id="popup-name">{resource.name}</p>
 
     <!-- Unconditional. Operator where it differs from the name, category label
          otherwise — see $lib/resources for the comparison rule. -->
@@ -86,6 +123,10 @@
 <style>
   .popup {
     position: relative;
+    /* Focused programmatically on open; the ring would otherwise draw around
+       the whole card for a mouse user who never asked for it. :focus-visible
+       still applies to the controls inside. */
+    outline: none;
     display: flex;
     align-items: flex-start;
     gap: var(--space-200);

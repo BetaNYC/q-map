@@ -16,6 +16,10 @@
 
      SCAFFOLD ONLY — copy and layout land in step 6. -->
 
+<svelte:head>
+  <title>Page not found | Queens Resource Map</title>
+</svelte:head>
+
 <h1>Page not found</h1>
 <p>That district, hazard or resource does not exist.</p>
 <p><a href="{base}/">Back to the district list</a></p>

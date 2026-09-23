@@ -201,11 +201,31 @@
     const url = new URL(page.url);
     url.searchParams.delete('resource');
     goto(url, { replaceState: true, noScroll: true, keepFocus: true });
+
+    /**
+     * §10: focus "returns to the trigger on close".
+     *
+     * The trigger is a point on the map, which is not a focusable element —
+     * MapLibre's canvas is. Returning there is the closest true statement: it
+     * puts the keyboard back where the selection was made, and the canvas is
+     * where the arrow keys pan from. Without this, focus falls to <body> and
+     * the next Tab starts from the top of the page.
+     */
+    queueMicrotask(() => {
+      document.querySelector<HTMLElement>('.maplibregl-canvas')?.focus();
+    });
   }
 </script>
 
 <!-- SCAFFOLD ONLY. The map itself, the bottom sheet and the popup are steps 8
      and 9. What is real here is the row list and its URL round-trip. -->
+
+<svelte:head>
+  <!-- The hazard name when the link carried one, the district otherwise. The
+       prerendered title is the district form, because `?hazard=` is read in
+       the browser (§5) — it updates on hydration. -->
+  <title>{hazard ? `${hazard.label} in ${data.district.display_name}` : `${data.district.display_name} map`} | Queens Resource Map</title>
+</svelte:head>
 
 <!-- §3: the map screen is a stage with a bottom sheet — the map fills the
      body, and the header sits above it. A flex column of exactly one viewport

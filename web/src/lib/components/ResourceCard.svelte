@@ -143,5 +143,21 @@
   .line a {
     color: var(--color-link);
     text-decoration: underline;
+
+    /* TARGET SIZE. These are inline links inside a labelled value, not list
+     * rows — the 44px table in §10 covers Resource Row, LayerRow, CategoryRow
+     * and HazardRow, all of which pass.
+     *
+     * WCAG 2.1 AA, which §10 names, has no target-size criterion. 2.2 added
+     * 2.5.8 at 24px AA, with an explicit exception for targets "in a sentence
+     * or block of text" — which these are. 44px is 2.5.5, AAA.
+     *
+     * Padded to clear 24px anyway, because a 14px phone link on a phone is
+     * genuinely hard to hit. NOT to 44px: that needs +15px a side against an
+     * 8px gap between lines, so adjacent targets would overlap — which 2.5.8
+     * prohibits in the same breath. The negative margin keeps the layout. */
+    display: inline-block;
+    padding-block: 5px;
+    margin-block: -5px;
   }
 </style>
