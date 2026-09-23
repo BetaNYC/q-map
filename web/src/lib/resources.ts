@@ -122,3 +122,56 @@ export function detailPath(resource: Resource, districtSlug: string): string | n
   const slug = resource.resource_id.slice(separator + 1);
   return `/${districtSlug}/resource/${source}/${slug}`;
 }
+
+/**
+ * Actionable contact values.
+ *
+ * DEPARTURE FROM THE FRAME, and a deliberate one. Figma draws the resource
+ * detail screen's phone, email and website as plain black text. On a phone, in
+ * an emergency, a number you cannot tap is a usability failure — and the app
+ * already establishes the opposite treatment: §7.6's PhoneElement renders
+ * hazard phone numbers as `tel:` links in blue. This applies the same rule to
+ * a resource's own contact details rather than inventing one. Flagged in
+ * web/README.md.
+ *
+ * Each returns null where the value cannot be trusted to be a single target,
+ * and the caller renders plain text instead. That matters: the data is not
+ * uniformly clean, and a link that dials the wrong number is worse than text.
+ *
+ *   phone    166 of 167 are one number; one is "855.322.4357/718.657.6195".
+ *            161 have 10 digits, 5 have 13 (an extension or a country code).
+ *   email    166 of 169 are one address; three are
+ *            "Imanansob@gmail.com/ Info@Ansob.org".
+ *   website  All 163 are single. The nine that contain a slash are URL PATHS
+ *            ("stfidelischurch.org/events/street-outreach"), not two sites —
+ *            which is why a naive multi-value check on "/" is wrong here.
+ */
+
+/** `tel:` for a value that is unambiguously one North American number. */
+export function telHref(value: string): string | null {
+  // Any separator means more than one number, or a number with commentary.
+  if (/[,;/]| or | and /i.test(value)) return null;
+
+  const digits = value.replace(/\D/g, '');
+  if (digits.length === 10) return `tel:+1${digits}`;
+  if (digits.length === 11 && digits.startsWith('1')) return `tel:+${digits}`;
+  // 13 digits is an extension or a non-NANP number; dialling the first ten of
+  // it would be a guess.
+  return null;
+}
+
+/** `mailto:` for a value that is unambiguously one address. */
+export function mailtoHref(value: string): string | null {
+  const trimmed = value.trim();
+  if (/[,;/\s]/.test(trimmed)) return null;
+  if ((trimmed.match(/@/g) ?? []).length !== 1) return null;
+  return `mailto:${trimmed}`;
+}
+
+/** An absolute URL. Values arrive bare ("hercareinc.org"), so a scheme is
+ *  added — without one the browser resolves it as a relative path. */
+export function websiteHref(value: string): string | null {
+  const trimmed = value.trim();
+  if (!trimmed || /\s/.test(trimmed)) return null;
+  return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+}

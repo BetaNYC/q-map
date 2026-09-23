@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { plainText } from '$lib/resources';
+  import { mailtoHref, plainText, telHref, websiteHref } from '$lib/resources';
   import type { Resource } from '$lib/types';
 
   /**
@@ -13,6 +13,10 @@
    * hasAddress, hasPhone and so on. Modelling eight props would put the "is
    * this field present" decision on every caller. The rows are assembled from
    * the record here instead, and an empty value drops out.
+   *
+   * A ROW HOLDS LINES, NOT A STRING. Contact stacks a name over an email, and
+   * only the email is a link; Address arrives with newlines in it. So each row
+   * is a list of lines, each optionally carrying an href.
    *
    * WHY THE WHOLE CARD CAN VANISH (§7.5). FRANC records carry ONLY `mission`,
    * and only 67 of 79 have one: address, phone, contact, email, languages,
@@ -31,6 +35,11 @@
    * is the behavioural rule and the frame is one illustrative instance.
    */
 
+  interface Line {
+    text: string;
+    href?: string;
+  }
+
   interface Props {
     resource: Resource;
   }
@@ -39,27 +48,36 @@
 
   const rows = $derived.by(() => {
     const r = resource;
+    const built: Array<{ label: string; lines: Line[] }> = [];
 
-    // Contact is two fields stacked, as Figma draws it: a name line and an
-    // email line, either of which may be missing on its own.
-    const contact = [r.contact_name, r.email].filter(Boolean).join('\n');
+    const add = (label: string, lines: Array<Line | null>) => {
+      const kept = lines.filter((l): l is Line => l !== null && Boolean(l.text?.trim()));
+      if (kept.length) built.push({ label, lines: kept });
+    };
 
-    const candidates: Array<[string, string | undefined]> = [
-      ['Mission', r.mission],
-      ['Address', r.address],
-      ['Phone', r.phone],
-      ['Contact', contact],
-      ['Languages Served', r.languages],
-      ['Fees', r.fees],
-      ['Accepts Referrals', r.accepts_referrals === 'Yes' ? undefined : r.accepts_referrals],
-      ['Website', r.website]
-    ];
+    // plainText handles the 27 FRANC missions carrying a literal <br>.
+    add('Mission', [r.mission ? { text: plainText(r.mission) } : null]);
+    add('Address', [r.address ? { text: r.address } : null]);
+    add('Phone', [r.phone ? { text: r.phone, href: telHref(r.phone) ?? undefined } : null]);
 
-    return candidates
-      .filter((entry): entry is [string, string] => Boolean(entry[1]?.trim()))
-      // 27 FRANC missions carry a literal <br>. plainText turns it into a real
-      // newline that `white-space: pre-line` renders; nothing else is unescaped.
-      .map(([label, value]) => ({ label, value: plainText(value) }));
+    // Two lines, and only the second is ever a link.
+    add('Contact', [
+      r.contact_name ? { text: r.contact_name } : null,
+      r.email ? { text: r.email, href: mailtoHref(r.email) ?? undefined } : null
+    ]);
+
+    add('Languages Served', [r.languages ? { text: r.languages } : null]);
+    add('Fees', [r.fees ? { text: r.fees } : null]);
+
+    if (r.accepts_referrals && r.accepts_referrals !== 'Yes') {
+      add('Accepts Referrals', [{ text: r.accepts_referrals }]);
+    }
+
+    add('Website', [
+      r.website ? { text: r.website, href: websiteHref(r.website) ?? undefined } : null
+    ]);
+
+    return built;
   });
 </script>
 
@@ -70,7 +88,17 @@
         <dt>{row.label}</dt>
         <!-- A definition list, not a stack of paragraphs: these are labelled
              values and the association should be programmatic, not visual. -->
-        <dd>{row.value}</dd>
+        <dd>
+          {#each row.lines as line, i (line.text + i)}
+            <span class="line">
+              {#if line.href}
+                <a href={line.href}>{line.text}</a>
+              {:else}
+                {line.text}
+              {/if}
+            </span>
+          {/each}
+        </dd>
       </div>
     {/each}
   </dl>
@@ -99,10 +127,21 @@
     margin: 0;
     line-height: var(--line-height-prose);
     overflow-wrap: break-word;
+  }
 
-    /* Address and Contact arrive with newlines in them and Figma draws them on
-       separate lines. Preserved without turning the whole value monospace or
-       stopping it wrapping. */
+  .line {
+    display: block;
+    /* Address arrives with newlines in it and Figma draws it on separate
+       lines. Preserved without turning the value monospace or stopping it
+       wrapping. */
     white-space: pre-line;
+  }
+
+  /* Blue and underlined, matching PhoneElement — the treatment the app already
+     gives a tappable number. Figma draws these as plain black text; see
+     $lib/resources for why that is departed from. */
+  .line a {
+    color: var(--color-link);
+    text-decoration: underline;
   }
 </style>
