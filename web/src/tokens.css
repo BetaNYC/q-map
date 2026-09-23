@@ -1,0 +1,130 @@
+/* Design tokens, transcribed from the Figma file `Final-UI`
+ * (key Gb1dMQbEsy14pYQ47FqAva) via get_variable_defs across all five mobile
+ * screens and the Popup component.
+ *
+ * The Figma variable name is on every line. That is the whole point of this
+ * file: when a value changes in Figma, `grep` finds the line here that no
+ * longer matches. Nothing else in the app should carry a literal colour, size
+ * or spacing value.
+ *
+ * Deliberately hand-written rather than generated. DATA_CONTRACT.md is
+ * generated because its input is 3,795 rows that move weekly; this is ~30
+ * constants that move rarely, and a build-time dependency on the Figma API
+ * would cost more than it saves.
+ *
+ * Figma defines several of these twice — `space/100` and `Spacing/space/100`
+ * are both 4, `Color/on-surface/*` and `color/text-blacks/*` are the same two
+ * hexes. One CSS variable per distinct VALUE, with both Figma names noted. */
+
+:root {
+  /* ---- Colour --------------------------------------------------------- */
+  /* Contrast ratios below are computed against the real surfaces, not against
+   * pure white — no surface in this design is #ffffff. */
+
+  --color-text-primary: #0a0a0a; /* color/text-blacks/primary, Color/on-surface/primary
+                                  * 19.34:1 on surface. Passes everywhere, including
+                                  * on all four severity fills (14.24–16.69). */
+
+  --color-text-secondary: #707070; /* color/text-blacks/secondary, Color/on-surface/secondary
+                                    * 4.84:1 on surface, 4.61:1 on surface-sunken — AA for
+                                    * text under 24px.
+                                    * GUARD RAIL: 3.56–4.17:1 on the severity fills and
+                                    * 4.14:1 on the alert fill, all below AA. Confirmed not
+                                    * used on a chip today; keep it that way. */
+
+  --color-link: #3258a3; /* color/blue/700 — 6.70:1 on surface, and >= 4.94:1 on
+                          * every fill in the file. */
+
+  --color-surface: #fefcfa;        /* color/off-white/primary — the page ground */
+  --color-surface-sunken: #f5f7f9; /* color/grey/50 — section fills */
+  --color-surface-alert: #f8e8dc;  /* color/orange/100 — AlertBanner only, which never
+                                    * renders in v1 (handoff §7.7). Declared because the
+                                    * token exists, not because anything uses it yet. */
+
+  --color-border: #d7dce4; /* border/default — 1.35:1 against surface.
+                            * Fine for a decorative rule. NOT sufficient for an input
+                            * boundary or a toggle state, which need 3:1 (WCAG 1.4.11);
+                            * the entry screen's Address and Location fields are the
+                            * cases to check when they are built. */
+
+  /* HazardRow rank-chip fills. Figma names these by severity; how the four
+   * severities map onto `rank` 1–3, the pinned positions, and `score` 0–5 is
+   * NOT expressed in the file and must not be guessed — settle it when
+   * HazardRow is built. Whatever the mapping, the number carries the meaning
+   * and must be in the accessible name (handoff §10); colour is decoration. */
+  --color-severity-extreme-fill: #f2d4d0;  /* severity/extreme/fill */
+  --color-severity-severe-fill: #f2d6c1;   /* severity/severe/fill */
+  --color-severity-moderate-fill: #f2da9b; /* severity/moderate/fill */
+  --color-severity-minor-fill: #e8ecf1;    /* severity/minor/fill */
+
+  /* ---- Spacing -------------------------------------------------------- */
+  /* Figma's own numbering is kept rather than renamed to t-shirt sizes, so a
+   * token here greps directly against the Figma variable. There is no
+   * `space/500` in the file; the gap is Figma's, not a transcription error. */
+
+  --space-50: 2px;  /* Spacing/space/50 */
+  --space-100: 4px; /* space/100, Spacing/space/100 */
+  --space-200: 8px; /* space/200 */
+  --space-300: 12px; /* space/300, Spacing/space/300 */
+  --space-400: 16px; /* space/400 */
+  --space-600: 24px; /* space/600 */
+
+  /* ---- Radius --------------------------------------------------------- */
+
+  --radius-sm: 2px; /* radius/sm — the only radius in the file. The bottom
+                     * sheet's top corners are visibly rounded in the frames
+                     * but carry no variable; that value is still needed. */
+
+  /* ---- Type ----------------------------------------------------------- */
+
+  /* AUTHENTIC Sans Pro is licensed for this project and self-hosted; the two
+   * cuts are declared in fonts.css. The fallback stack still matters — it is
+   * what renders during the font-display: swap window, and what a request with
+   * the face blocked falls back to. */
+  --font-sans:
+    'AUTHENTIC Sans Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    'Helvetica Neue', Arial, sans-serif;
+
+  /* icon/default — NewComputerModernMono10 BookItalic, used for the icon
+   * glyphs. Open-licensed, but d26 carries it as OTF; subset it to woff2
+   * before use. */
+  --font-mono-icon: 'NewComputerModernMono10', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --font-size-title: 18px;   /* title/map-heading */
+  --font-size-body: 14px;    /* body/default, body/default-bold, body/default-link */
+  --font-size-small: 12px;   /* body/small, body/small-bold, body/small-link, icon/default */
+  --font-size-caption: 11px; /* caption/metadata */
+
+  /* 433 and 611 are the AUTHENTIC Sans Pro 90 and 130 cuts' real weights, not
+   * roundings. In the fallback stack they resolve to 400 and 600. */
+  --font-weight-regular: 433; /* body/*, style 90 */
+  --font-weight-bold: 611;    /* body/*-bold, style 130 */
+  --font-weight-title: 600;   /* title/map-heading */
+
+  --letter-spacing-title: -0.2px; /* title/map-heading */
+
+  /* Figma sets lineHeight: 100 — line-height 1.0 — on EVERY text token. That
+   * is right for a single-line label or a chip and unreadable on anything that
+   * wraps, so it is split in two here.
+   *
+   * --line-height-prose is a placeholder at 1.5: the value WCAG 1.4.12 names,
+   * and the one the layout must survive the user setting anyway. Andrew's
+   * number replaces it; this is the only line to change. */
+  --line-height-tight: 1;
+  --line-height-prose: 1.5;
+
+  /* ---- Layout --------------------------------------------------------- */
+  /* Not Figma variables. Transcribed from Q-MAP-frontend-handoff.md §3 and
+   * §10, which state them as measured facts about the frames. */
+
+  --gutter: 16px;   /* §3 — 390px frame, 16px gutters */
+  --measure: 358px; /* §3 — the resulting content width, which the type and
+                     * wrapping were designed against. Consistent on every screen. */
+
+  --touch-target-min: 44px; /* §10 / WCAG 2.5.5. NOT what the Figma frames
+                             * currently measure: Resource Row and LayerRow are
+                             * 16px, CategoryRow 22.7px, HazardRow 24px. Build
+                             * to this and flag where it changes row pitch —
+                             * the fix is padding on the hit area, so the type
+                             * rhythm can stay. */
+}
