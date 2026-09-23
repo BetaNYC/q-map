@@ -4,6 +4,7 @@
   import { base } from '$app/paths';
   import { page } from '$app/state';
   import LayerRow from '$lib/components/LayerRow.svelte';
+  import Map from '$lib/components/Map.svelte';
   import Popup from '$lib/components/Popup.svelte';
   import ResourceCard from '$lib/components/ResourceCard.svelte';
   import ResourceRow from '$lib/components/ResourceRow.svelte';
@@ -181,6 +182,15 @@
 <p><a href="{base}/{data.district.slug}">{data.district.display_name}</a></p>
 
 <h1>{data.district.display_name} map</h1>
+
+<!-- Step 8. The bottom sheet that should sit over this, and the resource
+     points and popup inside it, are step 9 — the lists below stand in for the
+     sheet's two tabs until then. -->
+{#if browser}
+  <!-- Client-only: MapLibre needs a DOM and a WebGL context, and a prerendered
+       page has neither. Rendering it server-side would throw at build. -->
+  <Map district={data.entry} visibleLayers={selectedLayers} />
+{/if}
 
 <!-- All twelve stay listed whatever the selection — §7.3: every category is
      present and toggleable. Filtering the LIST would strand a user who arrived

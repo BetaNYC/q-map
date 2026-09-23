@@ -54,4 +54,14 @@ export const entries: EntryGenerator = () => {
  *
  * Its return merges into the universal load's `data` in +page.ts.
  */
-export const load: PageServerLoad = () => ({ layers: readAvailableLayers() });
+export const load: PageServerLoad = ({ params }) => {
+  // The map frames itself from `bbox`, which lives on districts.json (§2) and
+  // NOT on the district payload (§3) — the page's other load reads that one and
+  // has no bounds in it. This file already parses districts.json for entries(),
+  // so the entry is free here and costs one small object in the page rather
+  // than a second 13 KB fetch in the browser.
+  const entry = index.find((d) => d.slug === params.district);
+  if (!entry) throw new Error(`${params.district} is not in districts.json`);
+
+  return { layers: readAvailableLayers(), entry };
+};

@@ -35,5 +35,5 @@ export const load: PageLoad = async ({ fetch, params, data }) => {
   // `data` is +page.server.ts's return — the layer registry, read from disk at
   // build time. Passed through rather than re-fetched: it is already in the
   // prerendered payload.
-  return { district, layers: data.layers };
+  return { district, layers: data.layers, entry: data.entry };
 };
