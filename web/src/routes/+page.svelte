@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { base } from '$app/paths';
+  import CdtaCard from '$lib/components/CdtaCard.svelte';
 
   let { data } = $props();
 </script>
@@ -12,16 +12,24 @@
 <h1>Queens Resource Map</h1>
 <p>{data.queens.length} Queens districts of {data.all.length} citywide.</p>
 
-<ul>
+<!-- The entry screen proper — header, alert banner, map picker, address input —
+     is step 5. The card list is here so CdtaCard is exercised against all 14
+     real districts. -->
+<ul class="cards">
   {#each data.queens as district (district.slug)}
-    <li>
-      <!-- District cards navigate, so they are <a href>, never buttons
-           (handoff §10) — middle-click and open-in-new-tab have to work.
-           The href is built from the STORED slug; it is never derived from
-           cdta2020, so a published link cannot drift. -->
-      <a href="{base}/{district.slug}">
-        {district.display_name} — {district.cd_label}
-      </a>
-    </li>
+    <li><CdtaCard {district} /></li>
   {/each}
 </ul>
+
+<style>
+  .cards {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+
+    /* Figma spaces the cards 12px apart (pitch 64 on a 52px card). */
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-300);
+  }
+</style>
