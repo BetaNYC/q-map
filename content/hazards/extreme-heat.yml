@@ -28,6 +28,19 @@ sections:
       - label: Check the current heat advisory
         url: https://www.weather.gov/okx/
 
+  - id: utility-interruptions
+    title: Report utility interruptions immediately
+    items:
+      - label: Con Edison
+        tel: "1-800-752-6633"
+        tty: "1-800-642-2308"
+      - label: National Grid
+        tel: "1-718-643-4050"
+        tty: "1-718-297-2857"
+      - label: PSEG Long Island
+        tel: "1-800-490-0025"
+        tty: "1-631-755-6660"
+
   - id: general
     title: General information
     items:

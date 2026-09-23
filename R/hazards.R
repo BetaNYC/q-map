@@ -64,8 +64,8 @@ HAZARD_LABELS <- c(
   `hazmat`               = "Hazmat / Chemical",
   `infectious-disease`   = "Infectious Disease",
   `extreme-cold`         = "Extreme Cold",
-  `blackout-cyberattack` = "Blackout & Cyberattack",
-  `mass-casualty`        = "Mass Casualty"
+  `blackout-cyberattack` = "Blackout / Cyberattack (EMP)",
+  `mass-casualty`        = "Mass Casualty / Active Shooter Event"
 )
 
 # Why each pinned hazard is pinned, carried into the payload so the UI can be
@@ -75,11 +75,11 @@ HAZARD_LABELS <- c(
 # across Queens", was factually wrong: PIVI takes both 1 and 2 across the 14
 # districts, so it does vary. It is low everywhere, which is a different claim.
 HAZARD_PIN_REASON <- c(
-  `hazmat`               = "high across Queens; the measure does not separate districts",
-  `infectious-disease`   = "measured, and low in every Queens district (1 or 2 of 5)",
-  `extreme-cold`         = "no district-level measure published",
-  `blackout-cyberattack` = "no district-level measure published",
-  `mass-casualty`        = "not scored by district; see METHODOLOGY.md"
+  `hazmat`               = "Queens has more of these businesses than other boroughs",
+  `infectious-disease`   = "Queens neighborhoods score low on the Pandemic Influenza Vulnerability Index",
+  `extreme-cold`         = "Neighborhood-level comparison not available",
+  `blackout-cyberattack` = "Neighborhood-level comparison not available",
+  `mass-casualty`        = "Neighborhood-level comparison not available"
 )
 
 # --- Tier-1 hazard inputs ---------------------------------------------------
