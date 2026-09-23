@@ -24,12 +24,16 @@ import type { PageLoad } from './$types';
  *
  * The parsing lives in +page.svelte, guarded by `browser`.
  */
-export const load: PageLoad = async ({ fetch, params }) => {
+export const load: PageLoad = async ({ fetch, params, data }) => {
   const response = await fetch(dataUrl(`districts/${params.district}.json`));
   if (!response.ok) {
     throw new Error(`districts/${params.district}.json: ${response.status}`);
   }
 
   const district: DistrictPayload = await response.json();
-  return { district };
+
+  // `data` is +page.server.ts's return — the layer registry, read from disk at
+  // build time. Passed through rather than re-fetched: it is already in the
+  // prerendered payload.
+  return { district, layers: data.layers };
 };
