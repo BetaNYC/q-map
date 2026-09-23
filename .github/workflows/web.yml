@@ -1,0 +1,65 @@
+name: web
+
+# pipeline.yml has no `pull_request` trigger, so until this existed a PR got no
+# automated check at all and a failure surfaced only after merge, on main. That
+# is not hypothetical: PR #2 merged red and was fixed twenty minutes later by
+# PR #3. This workflow is the check that stands between a frontend PR and main.
+#
+# It builds and type-checks. It does not deploy, and it never runs the R
+# pipeline - a CSS change has no business re-running {targets}.
+
+on:
+  pull_request:
+    paths:
+      - 'web/**'
+      - '.github/workflows/web.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: web-${{ github.head_ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # web/static/data is a symlink to ../../data/processed, which is what a
+      # developer's machine uses. Replace it with a real directory so CI never
+      # depends on symlink traversal.
+      #
+      # No artifact to download here: data/processed/ is committed, so the
+      # checkout already has the payloads this PR would be built against - no
+      # artifact download and no pipeline run needed to prerender every route.
+      - name: Materialise the data directory
+        run: |
+          rm -f web/static/data
+          cp -R data/processed web/static/data
+          find web/static/data -name '.DS_Store' -delete
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install
+        working-directory: web
+        run: npm ci
+
+      # Type-check before building: svelte-check catches a contract mismatch
+      # (a field renamed in data/processed/ that src/lib/types.ts still
+      # declares) that a build would happily compile past.
+      - name: Type-check
+        working-directory: web
+        run: npm run check
+
+      # The real proof. adapter-static runs strict, so this fails if any route
+      # cannot be prerendered, and prerender.handleHttpError is 'fail', so it
+      # also fails on a dead internal link.
+      - name: Build
+        working-directory: web
+        run: npm run build

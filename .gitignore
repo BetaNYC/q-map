@@ -34,3 +34,11 @@ non-profit-directory/
 /.uvr/library/
 /.uvr/activate*
 .vscode/settings.json
+
+# Frontend build artefacts.
+# web/static/data is a tracked SYMLINK to data/processed and must not be
+# ignored — it is how the dev server serves the pipeline outputs at the same
+# relative paths production uses. See web/README.md.
+web/node_modules/
+web/build/
+web/.svelte-kit/
