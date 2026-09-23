@@ -60,6 +60,32 @@ export function subtitleFor(resource: Resource, categoryLabel: string): string {
 }
 
 /**
+ * Turn the one HTML tag that appears in the data into a line break.
+ *
+ * 27 FRANC `mission` values contain literal `<br>` — "Fridays 9:30AM-<br>10:30AM",
+ * "Food Distribution: 1st & 3rd Thursday<br>Nurturing Children…". It is the
+ * only tag anywhere in `data/processed/`: no other resource field, no gap
+ * sentence and no hazard content carries markup.
+ *
+ * Svelte escapes by default, so left alone these render as a visible "<br>" in
+ * the middle of a sentence. The alternatives were:
+ *
+ *   {@html}       renders the tag, and opens every one of 3,795 records as an
+ *                 injection surface for a field sourced from a scrape.
+ *   substitution  converts only <br> to a newline, which `white-space:
+ *                 pre-line` then renders, and leaves everything else escaped.
+ *
+ * The second is what this does. Anything OTHER than <br> appearing later still
+ * shows up literally — visible and reportable rather than silently executed.
+ *
+ * This is a workaround for a pipeline issue: `mission` is documented as a
+ * string and should not carry markup. Flagged in web/README.md.
+ */
+export function plainText(value: string): string {
+  return value.replace(/<br\s*\/?>/gi, '\n');
+}
+
+/**
  * FacDB records have no detail page by design — they are popup-only, and their
  * permalink is /q{NN}/map?resource=facdb:<hash>. 248 of the 3,795 records get a
  * page: 169 QNPD and 79 FRANC.

@@ -94,6 +94,74 @@ export interface Resource {
   address?: string;
   lon: number;
   lat: number;
+
+  /* Detail-screen fields. Present on QNPD records almost without exception;
+   * on FRANC records ONLY `mission` ever appears (67 of 79) — address, phone,
+   * contact, email, languages, fees, referrals and website are all zero. */
+  mission?: string;
+  phone?: string;
+  contact_name?: string;
+  email?: string;
+  languages?: string;
+  /** Free text, never a boolean: "None", "Yes", "$40 registration fee". */
+  fees?: string;
+  /** "Yes" on 164 records, "No" on 4. */
+  accepts_referrals?: string;
+  website?: string;
+}
+
+/**
+ * DATA_CONTRACT.md §6 — one entry in a hazard section.
+ *
+ * Exactly one of four shapes, and the pipeline rejects an entry that is none of
+ * them or more than one. The discriminant is which optional key is present:
+ *
+ *   Link   label + url
+ *   Group  label + items   (nests one level only)
+ *   Note   label + note: true
+ *   Phone  label + tel, optionally tty
+ *
+ * Any shape may additionally carry `body`, a sentence beneath the label.
+ */
+export interface HazardItem {
+  /** The item's heading — the same meaning for all four shapes. */
+  label: string;
+  /** The destination's own name, shown beside the heading. Links only. */
+  link_label?: string;
+  body?: string;
+  url?: string;
+  note?: true;
+  tel?: string;
+  tty?: string;
+  items?: HazardItem[];
+}
+
+/** DATA_CONTRACT.md §6, `sections[]`. */
+export interface HazardSection {
+  /** From a closed vocabulary. `current-conditions` is data-backed. */
+  id: string;
+  /** Optional. A section without one renders no heading — every heading on the
+   *  Extreme Heat screen belongs to a group, not a section. */
+  title?: string;
+  /** Always present, often []. */
+  items: HazardItem[];
+  /** Always present, often "". */
+  body: string;
+}
+
+/** DATA_CONTRACT.md §6 — `hazards/<slug>.json`, citywide authored guidance. */
+export interface HazardContent {
+  slug: string;
+  label: string;
+  jra_category: string;
+  /** `"stub"` on 6 of 8. ABSENT on the two authored ones — test for absence,
+   *  not for `status === 'stub'`. */
+  status?: string;
+  /** Optional since 2026-09-23 — neither authored screen renders one. */
+  summary?: string;
+  sections: HazardSection[];
+  default_resource_categories: string[];
+  map_layers: string[];
 }
 
 /**

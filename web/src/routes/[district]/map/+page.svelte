@@ -5,9 +5,11 @@
   import { page } from '$app/state';
   import LayerRow from '$lib/components/LayerRow.svelte';
   import Popup from '$lib/components/Popup.svelte';
+  import ResourceCard from '$lib/components/ResourceCard.svelte';
   import ResourceRow from '$lib/components/ResourceRow.svelte';
   import { dataUrl } from '$lib/data';
   import { listableLayers } from '$lib/layers';
+  import { hasDetail } from '$lib/resources';
   import type { Resource } from '$lib/types';
 
   let { data } = $props();
@@ -196,6 +198,19 @@
     districtSlug={data.district.slug}
     onClose={closePopup}
   />
+
+  <!-- SCAFFOLD. ResourceCard belongs on the resource detail screen (step 10),
+       which needs 248 more prerendered routes. Mounted here so it is exercised
+       against real records.
+
+       Guarded by hasDetail: §7.5 is QNPD and FRANC only. A FacDB record has an
+       `address` and would otherwise render a one-row card on a page it has no
+       detail view for. On the real route this cannot arise — the route only
+       exists for the 248 — so the guard belongs at the mount, not inside the
+       component. -->
+  {#if hasDetail(selectedResource)}
+    <ResourceCard resource={selectedResource} />
+  {/if}
 {/if}
 
 <h2>Resources</h2>

@@ -23,15 +23,26 @@ HAZARD_CONTENT_DIR <- "content/hazards"
 # frontend write the sentence"), not an overlay.
 HAZARD_OVERLAY_KEYS <- c("summary", "sections", "map_layers", "resource_categories")
 
-# Every hazard page renders these three, so their absence is a build failure
-# rather than an empty accordion. They are the "General template" from the
-# wireframe notes.
-REQUIRED_SECTIONS <- c("preparedness", "response", "general")
-
-# Hazard-specific sections are optional and free-form ("signs-of-heat-illness",
-# "prevention"), but must come from a known vocabulary so a typo becomes an
-# error rather than a section nobody notices is missing.
-OPTIONAL_SECTIONS <- c(
+# Section ids. A CLOSED vocabulary but no longer a required set.
+#
+# `preparedness`, `response` and `general` were required until 2026-09-23, on
+# the reading that every hazard page renders the same three-part spine. The two
+# authored screens disagree: Heavy Rain draws "Preparedness" and "Response" as
+# headings and has no `general` at all, while Extreme Heat draws no section
+# heading anywhere - its structure is carried entirely by groups, which are the
+# bold label with an indented block beside a rule.
+#
+# Requiring the three therefore forced empty sections into files purely to
+# satisfy the check, which is the opposite of what the check was for.
+#
+# The vocabulary stays closed: a typo'd id should still be an error rather than
+# a section nobody notices is missing.
+SECTION_IDS <- c(
+  "preparedness", "response", "general",
+  # `cooling` groups the Extreme Heat page's air-conditioning and green-space
+  # guidance. Named for its content rather than for a phase, which is what the
+  # page's structure is now organised around.
+  "cooling",
   "signs-of-heat-illness", "prevention", "evacuation", "after",
   "flooding-basements", "air-quality", "power-outage",
   # Utility contact numbers. The only section built from PHONE items, and the
@@ -170,28 +181,55 @@ validate_hazard_content <- function(content, model_slugs, registry_ids = charact
     if (!identical(y$.file, paste0(slug, ".yml"))) {
       stop(where, ": filename does not match slug")
     }
-    for (f in c("label", "summary", "sections")) {
+    # `summary` became optional 2026-09-23. Neither authored hazard screen
+    # renders one - the page opens on its first section - so requiring it
+    # forced placeholder prose into every file ("This is placeholder summary
+    # text for the heavy rain hazard") that no screen would ever show.
+    for (f in c("label", "sections")) {
       if (is.null(y[[f]]) || !nzchar(as.character(y[[f]])[1])) {
         stop(where, ": missing required field `", f, "`")
       }
+    }
+    # Optional, but not empty-if-present: a `summary:` key with nothing under
+    # it is a half-finished edit, not a decision.
+    if (!is.null(y$summary) && !nzchar(trimws(y$summary))) {
+      stop(where, ": `summary` is present but empty - remove the key or write it")
     }
 
     ids <- vapply(y$sections, function(s) s$id %||% NA_character_, character(1))
     if (anyNA(ids)) stop(where, ": a section has no `id`")
     if (anyDuplicated(ids)) stop(where, ": duplicate section id")
 
-    missing_req <- setdiff(REQUIRED_SECTIONS, ids)
-    if (length(missing_req) > 0) {
-      stop(where, ": missing required section(s) ",
-           paste(missing_req, collapse = ", "))
-    }
-    unknown <- setdiff(ids, c(REQUIRED_SECTIONS, OPTIONAL_SECTIONS))
+    # No section is required any more - see SECTION_IDS. The vocabulary is
+    # still closed, so a typo is still an error.
+    unknown <- setdiff(ids, SECTION_IDS)
     if (length(unknown) > 0) {
       stop(where, ": unknown section id(s) ", paste(unknown, collapse = ", "),
-           " - add to OPTIONAL_SECTIONS if intended")
+           " - add to SECTION_IDS if intended")
+    }
+
+    # `map_layers:` with nothing under it parses to NULL, not to an empty list,
+    # and force_arrays() skips NULL - so the key would vanish from the JSON
+    # while DATA_CONTRACT.md §6 promises `map_layers` is always an array. The
+    # stubs author the empty case as `map_layers: []`; a bare key is a
+    # half-finished edit, and the difference is invisible in the YAML.
+    if ("map_layers" %in% names(y) && is.null(y$map_layers)) {
+      stop(where, ": `map_layers:` is present but empty. Write `map_layers: []` ",
+           "for no layers - a bare key parses to null and drops the field from ",
+           "the JSON, which the contract says is always an array.")
     }
 
     for (lyr in y$map_layers %||% list()) {
+      # Each entry must be one string. `- []` in YAML is a list whose single
+      # entry is an empty list, and it reads almost identically to
+      # `map_layers: []`. Unguarded, `lyr %in% registry_ids` on a length-0
+      # value yields logical(0) and `if` then fails with "argument is of
+      # length zero" - an error that names neither the file nor the field.
+      if (length(lyr) != 1 || !is.character(unlist(lyr))) {
+        stop(where, ": a `map_layers` entry is not a single layer id. ",
+             "For no layers write `map_layers: []` on one line - `- []` is a ",
+             "list containing an empty list.")
+      }
       if (!lyr %in% registry_ids) {
         stop(where, ": map_layer '", lyr, "' is not in data/registry/map_layers.csv")
       }
@@ -216,6 +254,20 @@ validate_hazard_content <- function(content, model_slugs, registry_ids = charact
       }
       if (!is.null(s$body) && !nzchar(trimws(s$body))) {
         stop(where, " [", s$id, "]: section has an empty `body`")
+      }
+      # `title` is optional: a section that omits it renders its items with no
+      # heading, which is how the Extreme Heat screen is built - every heading
+      # on that page belongs to a group, not a section.
+      #
+      # An untitled section with nothing in it is a different thing, and always
+      # a mistake: it renders as literally nothing, so neither the author nor
+      # the page can tell it is there.
+      has_title <- !is.null(s$title) && nzchar(trimws(s$title))
+      has_items <- length(s$items %||% list()) > 0
+      has_body  <- !is.null(s$body) && nzchar(trimws(s$body))
+      if (!has_title && !has_items && !has_body) {
+        stop(where, " [", s$id, "]: section has no title, no items and no ",
+             "body, so it renders as nothing. Give it content or remove it.")
       }
       # A stub section may legitimately be empty while content is being
       # written; a section with items must have well-formed ones.
@@ -244,7 +296,29 @@ MAX_ITEM_DEPTH <- 2
 # permissive enough that a typo shipped: `bdoy:` would have validated, been
 # copied into the JSON, and rendered as nothing. An unknown key is far more
 # likely to be a misspelling than a deliberate extension.
-ITEM_KEYS <- c("label", "url", "items", "note", "body", "tel", "tty")
+ITEM_KEYS <- c("label", "link_label", "url", "items", "note", "body", "tel", "tty")
+
+# `link_label` is the destination's own name, shown beside the item's heading:
+#
+#     Get personalized flood guidance          Blue Dots
+#     Based on your property type and location
+#
+# Added 2026-09-23 for the two authored hazard screens, which carry three
+# strings per item where the schema carried two.
+#
+# It is the SECOND string, not the first, and that is the point. `label` stays
+# the item's heading for every shape - a note's heading, a phone's provider, a
+# group's name, a link's heading - so one key never means two things. The
+# alternative considered was moving the heading into a new key and leaving
+# `label` as the link text, which would have given `label` one meaning on
+# notes and another on links, and required rewriting every existing item.
+#
+# Optional, so the twenty items authored before it render unchanged: the
+# frontend wraps the whole element in the anchor, which means `label` + `url`
+# with no `link_label` is still a working link, just without the sub-label.
+#
+# Requires a url - see validate_item(). A destination name with no destination
+# is the same silent failure `note: true` exists to prevent.
 
 # A phone number is the fourth item type, added 2026-09-22 for the utility
 # contacts on the extreme-heat page.
@@ -308,6 +382,16 @@ validate_item <- function(it, where, section_id, depth) {
   }
   if (has_url && is_note) {
     stop(at, ": ", lbl, " is marked `note: true` but has a url")
+  }
+
+  # A `link_label` names where the item goes, so an item that goes nowhere
+  # must not carry one. Unchecked it would render a blue, underlined string
+  # that does nothing when tapped - the same class of silent failure as a
+  # dropped url, which is why `note: true` has to be claimed explicitly.
+  has_link_label <- !is.null(it$link_label) && nzchar(it$link_label)
+  if (has_link_label && !has_url) {
+    stop(at, ": ", lbl, " has a `link_label` ('", it$link_label, "') but no ",
+         "url. The link label names a destination - give it one, or drop it.")
   }
 
   # A phone item is one thing. Mixing it with a url, sub-items or `note: true`

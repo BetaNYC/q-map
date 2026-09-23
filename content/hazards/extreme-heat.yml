@@ -1,70 +1,85 @@
-# Extreme Heat — Example for the hazard content schema.
+# Extreme Heat
+#
+# Structured to match the Figma screen "03 Hazard - Mobile/Extreme Heat"
+# (node 40:200).
+#
+# NO SECTION CARRIES A TITLE. Every heading on that screen is a GROUP label —
+# bold, with its children indented beside a rule — and the sections exist only
+# to order the page. A section with no `title` renders no heading, which is the
+# whole difference between this page and the Heavy Rain one.
+#
 
 slug: extreme-heat
 label: Extreme Heat
 jra_category: temperature-extremes
 
-summary: >
-  Heat is the deadliest weather hazard in New York City. Most heat deaths happen
-  indoors, in homes without air conditioning. Risk is highest for older adults,
-  people with chronic illness, and people living alone.
-
 sections:
-  - id: preparedness
-    title: Before a heat wave
+  - id: cooling
     items:
-      - label: Get prepared for emergencies in NYC
-        url: https://www.nyc.gov/site/em/ready/get-prepared.page
-      - label: Beat the heat — NYC Emergency Management
-        url: https://www.nyc.gov/site/em/ready/extreme-heat.page
-      - label: Help paying your energy bill
-        url: https://www.nyc.gov/site/hra/help/energy-assistance.page
+      - label: Access air conditioning or green spaces to keep your body temperature at safe levels
+        items:
+          - label: Find a cooling center
+            link_label: Cool Options NYC
+            url: https://finder.nyc.gov/coolingcenters
+            body: >
+              Cooling options and centers provide free access to indoor air
+              conditioning
+          - label: Locate outdoor cooling solutions
+            link_label: Cool it! NYC
+            url: https://www.nycgovparks.org/about/health-and-safety-guide/cool-it-nyc
+            body: >
+              Outdoor cooling resources include water features, shade trees,
+              and more
+          - label: Consider alternative cooling locations
+            note: true
+            body: Like movie theaters, museums, or shopping malls
+          - label: Follow indoor heat safety guidance
+            link_label: NYC Emergency Management
+            url: https://www.nyc.gov/site/em/ready/extreme-heat.page
+            body: Recommended steps if indoor temperature reaches above 90°
+
+      - label: Apply for assistance
+        items:
+          - label: Apply for a free air conditioner (NYC)
+            link_label: Home Energy Assistance Program (HEAP)
+            url: https://www.nyc.gov/site/hra/help/energy-assistance.page
+            body: >
+              HEAP is a program from the NYC Human Resouces Administration Department of Social Services
+          - label: Apply for a free air conditioner (NY State)
+            link_label: Essential Plan Cooling Program
+            url: https://info.nystateofhealth.ny.gov/CoolingProgram
+            body: > 
+              Air conditioners are available to qualifying New York State Essential Plan members on a first-come, first-serve basis
+          - label: Receive a utility bill discount
+            link_label: Con Edison
+            url: https://www.coned.com/en/accounts-billing/payment-plans-assistance/help-paying-your-bill
+            body: Enroll in Con Edison's financial assistance program
 
   - id: response
-    title: During a heat wave
     items:
-      - label: Find a cooling center near you
-        url: https://finder.nyc.gov/coolingcenters
-      - label: Check the current heat advisory
-        url: https://www.weather.gov/okx/
+      - label: Practice safe outdoor activities
+        note: true
+        body: >
+          Ensure you drink plenty of water even if you are not thirsty, wear
+          light, loose fitting clothes, and avoid drinks with alcohol, caffeine
+          or sugar and strenuous physical activity when possible
 
+  # The phones sit under a group label, not a section title, so the heading
+  # renders with the indent and rule the frame shows.
   - id: utility-interruptions
-    title: Report utility interruptions immediately
     items:
-      - label: Con Edison
-        tel: "1-800-752-6633"
-        tty: "1-800-642-2308"
-      - label: National Grid
-        tel: "1-718-643-4050"
-        tty: "1-718-297-2857"
-      - label: PSEG Long Island
-        tel: "1-800-490-0025"
-        tty: "1-631-755-6660"
+      - label: Report utility interruptions immediately
+        items:
+          - label: Con Edison
+            tel: "1-800-752-6633"
+            tty: "1-800-642-2308"
+          - label: National Grid
+            tel: "1-718-643-4050"
+            tty: "1-718-297-2857"
+          - label: PSEG Long Island
+            tel: "1-800-490-0025"
+            tty: "1-631-755-6660"
 
-  - id: general
-    title: General information
-    items:
-      - label: Heat Vulnerability Index — Environment & Health Data Portal
-        url: https://a816-dohbesp.nyc.gov/IndicatorPublic/key-topics/climatehealth/hvi/
-      - label: Climate and health data explorer
-        url: https://a816-dohbesp.nyc.gov/IndicatorPublic/data-explorer/climate/
-      - label: Beat the Heat NYC
-        url: https://www.nyc.gov/assets/em/html/beat-the-heat/beattheheat.html
-
-  - id: signs-of-heat-illness
-    title: Signs of heat illness
-    body: >
-      Call 911 immediately for hot dry skin, confusion, fainting, or a
-      temperature above 103°F. Heat exhaustion — heavy sweating, weakness,
-      nausea, headache — can become heat stroke quickly. Move to a cool place
-      and drink water.
-
-  - id: prevention
-    title: Staying safe indoors
-    body: >
-      Use air conditioning if you have it, even briefly. A fan alone is not
-      enough above about 95°F. Check on neighbours who live alone, are older,
-      or have a chronic illness.
-
-map_layers:
-  - hvi_choropleth
+# `map_layers: []` on one line. `- []` is a list whose single entry is an empty
+# list, which is a different thing and used to fail with an unreadable error.
+map_layers: []
