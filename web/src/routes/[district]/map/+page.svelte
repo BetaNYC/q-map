@@ -4,8 +4,11 @@
   import { base } from '$app/paths';
   import { page } from '$app/state';
   import LayerRow from '$lib/components/LayerRow.svelte';
+  import Popup from '$lib/components/Popup.svelte';
   import ResourceRow from '$lib/components/ResourceRow.svelte';
+  import { dataUrl } from '$lib/data';
   import { listableLayers } from '$lib/layers';
+  import type { Resource } from '$lib/types';
 
   let { data } = $props();
 
@@ -105,6 +108,69 @@
 
     goto(url, { replaceState: true, noScroll: true, keepFocus: true });
   }
+
+  /* ---- The popup join -------------------------------------------------- */
+
+  /**
+   * resources/<slug>.json, fetched IN THE BROWSER rather than in a load.
+   *
+   * This is the third data-loading shape in the app, and it exists because of a
+   * measurement. A universal load would serialise the whole ~114 KB response
+   * into the prerendered HTML — 194 KB once escaped, on each of 14 map pages,
+   * for a file the page does not need until someone opens a popup. A server
+   * load could slice it, but the map needs the WHOLE list client-side: every
+   * feature's popup joins against it (§7.4), so slicing defeats the purpose.
+   *
+   * So: prerender the page without it, fetch it when the map mounts. The map
+   * needs JS regardless — MapLibre is not optional — so this adds no new
+   * requirement.
+   */
+  let resources = $state<Resource[] | null>(null);
+
+  $effect(() => {
+    let cancelled = false;
+
+    fetch(dataUrl(`resources/${data.district.slug}.json`))
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
+      .then((payload) => {
+        if (!cancelled) resources = payload.resources;
+      })
+      .catch(() => {
+        // §7.7's governing rule, applied here: degrade to nothing. A failed
+        // join means no popup, never a broken page.
+        if (!cancelled) resources = [];
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  });
+
+  /** ?resource=<resource_id> — the permalink for a FacDB record (§7.4). */
+  const requestedResource = $derived(browser ? page.url.searchParams.get('resource') : null);
+
+  const selectedResource = $derived(
+    requestedResource && resources
+      ? (resources.find((r) => r.resource_id === requestedResource) ?? null)
+      : null
+  );
+
+  /**
+   * The category LABEL. The record carries only a slug, and the labels live in
+   * the district payload this page already loaded — the third leg of the join.
+   */
+  const categoryLabel = $derived(
+    selectedResource
+      ? (data.district.resource_categories.find((c) => c.slug === selectedResource.category)
+          ?.label ?? selectedResource.category)
+      : ''
+  );
+
+  function closePopup() {
+    const url = new URL(page.url);
+    url.searchParams.delete('resource');
+    goto(url, { replaceState: true, noScroll: true, keepFocus: true });
+  }
 </script>
 
 <!-- SCAFFOLD ONLY. The map itself, the bottom sheet and the popup are steps 8
@@ -120,6 +186,17 @@
      ?categories= parameter controls is which are ON, not which exist. -->
 <!-- The Resources / Layers tab bar is step 9. Both lists render here for now so
      each component is exercised; they are not meant to sit together. -->
+
+<!-- §5: an unknown ?resource= id opens the map with no popup and no error. That
+     falls out of the find() returning undefined rather than needing a branch. -->
+{#if selectedResource}
+  <Popup
+    resource={selectedResource}
+    {categoryLabel}
+    districtSlug={data.district.slug}
+    onClose={closePopup}
+  />
+{/if}
 
 <h2>Resources</h2>
 <ul class="rows">

@@ -46,6 +46,54 @@ export interface DistrictPayload {
   hazards: Hazard[];
   /** Derived per district — do not hardcode a global list. */
   resource_categories: ResourceCategory[];
+  /** Up to 3, one per ranked hazard. */
+  gaps_displayed: DisplayedGap[];
+}
+
+/**
+ * DATA_CONTRACT.md §3, `gaps_displayed[]`.
+ *
+ * The sentence is NOT in the payload — `sentence_template` plus `facts` are,
+ * and $lib/gaps interpolates. Exactly three per district today.
+ */
+export interface DisplayedGap {
+  gap_id: number;
+  hazard_slug: string;
+  hazard_label: string;
+  label: string;
+  value: number;
+  unit: string;
+  /** `higher_is_worse` or `higher_is_better`. Data, not a UI assumption. */
+  polarity: string;
+  status: string;
+  sentence_template: string;
+  /** Keys vary by gap — interpolate by name, never a fixed set. */
+  facts: Record<string, string | number>;
+  /** The rank of the hazard this gap measures. Always 1-3. */
+  risk_rank: number;
+  /** Only on a cross-cutting gap filling a ranked hazard's empty slot.
+   *  Absent on all 42 sentences today. */
+  fallback_from?: string;
+}
+
+/**
+ * DATA_CONTRACT.md §4, `resources[]` — the fields the popup and detail screens
+ * read. The full record carries phone, website, languages, fees and more;
+ * those land with the resource detail screen.
+ */
+export interface Resource {
+  /** Stable across rebuilds — permalinks depend on it. `source:slug`. */
+  resource_id: string;
+  name: string;
+  /** Present on 3,441 of 3,795 — absent on every QNPD and FRANC record. */
+  operator?: string;
+  /** A slug; the label comes from the district's resource_categories. */
+  category: string;
+  source: string;
+  /** Missing on 82 records — all 79 FRANC, plus 3 FacDB. */
+  address?: string;
+  lon: number;
+  lat: number;
 }
 
 /**

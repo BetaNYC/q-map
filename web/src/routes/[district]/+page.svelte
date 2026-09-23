@@ -1,6 +1,7 @@
 <script lang="ts">
   import { base } from '$app/paths';
   import CategoryRow from '$lib/components/CategoryRow.svelte';
+  import GapSentence from '$lib/components/GapSentence.svelte';
   import HazardRow from '$lib/components/HazardRow.svelte';
   import InfoIcon from '$lib/icons/InfoIcon.svelte';
 
@@ -53,9 +54,18 @@
   {/each}
 </ul>
 
+<!-- The ResourceGap section proper is step 5. Exactly three per district, one
+     per ranked hazard, already ordered by risk_rank. -->
+<ul class="gaps">
+  {#each data.district.gaps_displayed as gap (gap.gap_id)}
+    <li><GapSentence {gap} /></li>
+  {/each}
+</ul>
+
 <style>
   .hazards,
-  .categories {
+  .categories,
+  .gaps {
     list-style: none;
     margin: 0;
     padding: 0;
@@ -67,5 +77,13 @@
     display: flex;
     flex-direction: column;
     gap: var(--space-200);
+  }
+
+  /* Figma spaces GapSentence instances ~24px apart (pitch 69 on a 45px
+     two-line sentence, 52 on a 28px one-liner). */
+  .gaps {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-600);
   }
 </style>

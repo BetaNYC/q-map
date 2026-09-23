@@ -1,0 +1,168 @@
+<script lang="ts">
+  import { base } from '$app/paths';
+  import ArrowRightIcon from '$lib/icons/ArrowRightIcon.svelte';
+  import { detailLinkText, detailPath, subtitleFor } from '$lib/resources';
+  import type { Resource } from '$lib/types';
+
+  /**
+   * The map popup. Three lines — name, subtitle, address — plus a conditional
+   * detail link.
+   *
+   * Figma: Popup, node 77:1708.
+   *
+   * IT NEEDS A JOIN. The map feature carries only resource_id, name, category,
+   * source and is_coad_member. `address` and `operator` are not on the feature
+   * and come from resources/<slug>.json, joined on resource_id. The category
+   * LABEL is a third lookup, from the district payload's resource_categories —
+   * the feature and the record both carry only the slug.
+   *
+   * This component takes the joined result rather than doing the join, so it
+   * stays renderable from a list, a permalink or a map click without knowing
+   * which.
+   *
+   * THREE BOOLEANS IN FIGMA, TWO HERE. Figma exposes hasAddress, hasDetail and
+   * hasOperator. The first two are real. The third is not: the subtitle is
+   * never empty, because `category` is present on all 3,795 records, so the
+   * fallback always resolves. §7.4 is explicit that this is why there is no
+   * boolean for it. Modelling one would invite a caller to hide a line that
+   * cannot be empty.
+   */
+
+  interface Props {
+    resource: Resource;
+    /** Resolved from the district's resource_categories — the record has only a slug. */
+    categoryLabel: string;
+    districtSlug: string;
+    /** Fired by the close control. Focus returns to the trigger in the caller. */
+    onClose?: () => void;
+  }
+
+  let { resource, categoryLabel, districtSlug, onClose }: Props = $props();
+
+  const subtitle = $derived(subtitleFor(resource, categoryLabel));
+  const href = $derived(detailPath(resource, districtSlug));
+</script>
+
+<div class="popup">
+  <div class="lines">
+    <p class="name">{resource.name}</p>
+
+    <!-- Unconditional. Operator where it differs from the name, category label
+         otherwise — see $lib/resources for the comparison rule. -->
+    <p class="subtitle">{subtitle}</p>
+
+    <!-- Missing on 82 of 3,795 records: all 79 FRANC, plus 3 FacDB. -->
+    {#if resource.address}
+      <p class="address">{resource.address}</p>
+    {/if}
+  </div>
+
+  {#if href}
+    <!-- §10: link text must stand alone. The visible text is §7.4's wording,
+         and the resource name is appended in the accessible name so a screen
+         reader hears "Contact and services, Greek Cultural Center, Inc."
+         rather than a string that could belong to any of 248 links. -->
+    <!-- detailPath() returns a site-relative path; `base` is applied here, the
+         same as every other link in the app. Without it this resolves to the
+         origin root and 404s under /q-map/. -->
+    <a class="detail" href="{base}{href}">
+      <span aria-hidden="true">{detailLinkText(resource)}</span>
+      <span class="visually-hidden">{detailLinkText(resource)}, {resource.name}</span>
+      <ArrowRightIcon />
+    </a>
+  {/if}
+
+  {#if onClose}
+    <!-- §10 requires a visible close control; dismissing by tapping the map is
+         not enough, and Escape alone is not reachable by touch. Figma draws no
+         close control on the Popup component — flagged in web/README.md. -->
+    <button type="button" class="close" onclick={onClose}>
+      <span class="visually-hidden">Close {resource.name}</span>
+      <span aria-hidden="true">&times;</span>
+    </button>
+  {/if}
+</div>
+
+<style>
+  .popup {
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-200);
+    width: 280px;
+
+    padding-inline: var(--space-300);
+    padding-block: var(--space-200);
+
+    border: 0.4px solid var(--color-text-primary);
+    border-radius: 1px; /* Figma's literal; no token for it */
+
+    /* Figma applies opacity: 0.95 to the whole frame. Here it is 95% on the
+     * BACKGROUND only, so the text composites at full strength.
+     *
+     * The distinction matters because this sits over map imagery. §10 already
+     * flags it: "the popup's 95% white fill sits over map imagery, so the
+     * composite is what matters." Fading the text as well makes its contrast a
+     * function of whatever tiles happen to be underneath, which cannot be
+     * measured or guaranteed. The fill still reads as translucent.
+     *
+     * Revert to `opacity: .95` on the element for literal fidelity. */
+    background: rgb(254 252 250 / 0.95); /* --color-off-white/primary at 95% */
+
+    font-size: var(--font-size-small);
+    line-height: var(--line-height-tight);
+  }
+
+  .lines {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-200);
+    min-width: 0;
+  }
+
+  .lines p {
+    margin: 0;
+    overflow-wrap: break-word;
+  }
+
+  .name {
+    font-size: var(--font-size-body);
+    font-weight: var(--font-weight-bold);
+  }
+
+  .detail {
+    display: flex;
+    align-items: center;
+    gap: var(--space-100);
+    flex: 1 0 0;
+    min-width: 0;
+    justify-content: flex-end;
+
+    font-size: var(--font-size-caption);
+    color: inherit;
+    white-space: nowrap;
+  }
+
+  .close {
+    position: absolute;
+    top: 0;
+    right: 0;
+
+    /* 44px hit area (WCAG 2.5.5) on a glyph that draws far smaller. The popup
+     * is 280px wide, so this overlaps the detail link's right edge — the close
+     * control is on top, which is the order a touch should resolve in. */
+    width: var(--touch-target-min);
+    height: var(--touch-target-min);
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background: none;
+    border: 0;
+    font: inherit;
+    font-size: var(--font-size-body);
+    color: var(--color-text-primary);
+    cursor: pointer;
+  }
+</style>
