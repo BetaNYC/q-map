@@ -213,7 +213,8 @@ NOTES_IDX <- list(
   slug = "**The URL segment.** Stored, not derived - a published link must never drift.",
   point_on_surface = "`[lon, lat]`. **Not a centroid** - guaranteed inside the polygon. QN14's true centroid falls in Jamaica Bay.",
   bbox = "`[xmin, ymin, xmax, ymax]`, EPSG:4326.",
-  coad = "`null` for 13 of 14 districts. Design for null as the common case."
+  coad = "`null` for 13 of 14 districts. Design for null as the common case.",
+  coad_name = "The COAD's full name, for \"{display_name} is served by the {coad_name}\". Null exactly where `coad` is null."
 )
 
 NOTES_DISTRICT <- list(
@@ -397,6 +398,29 @@ field_table(section_records, list(
   body = "Prose block. Empty string for link sections and for stubs."
 )),
 "",
+"#### What an `items[]` entry can be",
+"",
+paste("Every entry carries a `label`. Beyond that it is exactly one of four",
+      "shapes, and the pipeline rejects an entry that is none of them or more",
+      "than one:"),
+"",
+"| Shape | Carries | Render as |",
+"|---|---|---|",
+"| Link | `label` + `url` | the label, linked |",
+"| Group | `label` + `items` | a label above its children; nests one level only |",
+"| Note | `label` + `note: true` | prose, not a link |",
+"| Phone | `label` + `tel`, optionally `tty` | the label with the number as a `tel:` link; `tty` is a second line beneath |",
+"",
+paste("Any shape may also carry `body`, a sentence of context rendered beneath",
+      "the label."),
+"",
+paste("**`tel` and `tty` are the one thing the link checker does not cover.**",
+      "Every `url` in hazard content is fetched on each build and a dead one",
+      "fails it; there is no equivalent for a telephone number. The format is",
+      "asserted (`1-NXX-NXX-XXXX`) so a mangled number cannot ship, but a",
+      "number that has simply changed hands will pass. Treat phone numbers as",
+      "the least-verified content on the page."),
+"",
 "## 7. `conditions.json`",
 "",
 paste("Citywide respiratory illness. Feeds the chip on screen 01 and the",
@@ -468,6 +492,13 @@ field_table(read1(Sys.glob(file.path(PROCESSED, "layers/resources/*.geojson"))[1
   category = "The toggle key. Matches `resource_categories[].slug`.",
   resource_id = "Join to `resources/<slug>.json` for the full record."
 )),
+"",
+paste("**The map popup needs a join.** It shows name, category and address,",
+      "but a feature carries no `address` - the properties above are the whole",
+      "set. Join `resource_id` into `resources/<slug>.json`, which the district",
+      "page already loads for the category list, so the popup costs no extra",
+      "fetch. Adding `address` and `operator` to the features instead would",
+      "roughly triple their properties across every district file."),
 "",
 "## 9. Join model",
 "",

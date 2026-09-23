@@ -36,6 +36,17 @@ PUMA_SHARED_ALLOWLIST <- c("4121", "4165", "4221", "4263")
 # district is coad = NA, which is the common case the 02 screen must handle.
 COAD_BY_CDTA <- c("QN14" = "FRANC")
 
+# The COAD's full name, for the sentence the district screen renders:
+# "{display_name} is served by the {coad_name}". Carried alongside the short
+# code rather than replacing it - `coad` is a documented string in both
+# districts.json and the district payload, and `is_coad_member` on resources
+# keys off the same short form, so swapping it for an object would break three
+# consumers to add one field.
+#
+# Arverne, not Averne. It is the Rockaways neighbourhood the coalition is
+# named for, and the misspelling is common enough to be worth pinning here.
+COAD_NAME <- c("FRANC" = "Far Rockaway Arverne Non-Profit Coalition")
+
 # Fetch all 59 community-district CDTAs, citywide.
 #
 # CDTAType = 0 excludes the 12 Joint Interest Areas (parks and airports:

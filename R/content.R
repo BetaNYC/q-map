@@ -34,6 +34,9 @@ REQUIRED_SECTIONS <- c("preparedness", "response", "general")
 OPTIONAL_SECTIONS <- c(
   "signs-of-heat-illness", "prevention", "evacuation", "after",
   "flooding-basements", "air-quality", "power-outage",
+  # Utility contact numbers. The only section built from PHONE items, and the
+  # reason the item schema grew `tel`/`tty` - see NANP_PHONE below.
+  "utility-interruptions",
   # A section with no authored content: the frontend renders the citywide
   # respiratory-illness readout from conditions.json in its place.
   "current-conditions"
@@ -222,11 +225,12 @@ validate_hazard_content <- function(content, model_slugs, registry_ids = charact
   TRUE
 }
 
-# An item is one of three things, and which one must be deliberate:
+# An item is one of four things, and which one must be deliberate:
 #
 #   a LINK      label + url
 #   a GROUP     label + items (one level of nesting only)
 #   a NOTE      label alone, with note: true
+#   a PHONE     label + tel, optionally + tty
 #
 # `note: true` is required rather than inferred from the absence of a url. The
 # failure this guards against is a link somebody meant to add and did not - a
@@ -240,7 +244,28 @@ MAX_ITEM_DEPTH <- 2
 # permissive enough that a typo shipped: `bdoy:` would have validated, been
 # copied into the JSON, and rendered as nothing. An unknown key is far more
 # likely to be a misspelling than a deliberate extension.
-ITEM_KEYS <- c("label", "url", "items", "note", "body")
+ITEM_KEYS <- c("label", "url", "items", "note", "body", "tel", "tty")
+
+# A phone number is the fourth item type, added 2026-09-22 for the utility
+# contacts on the extreme-heat page.
+#
+# It is the ONLY content type the link checker cannot reach: check_link()
+# speaks HTTP and there is no equivalent for a telephone number.
+# flatten_items() collects only items carrying a `url`, so a phone item is
+# skipped structurally rather than by an exclusion list - which also means a
+# wrong number ships green. Two deliberate consequences:
+#
+#   1. The format is asserted below, so a truncated or mangled number fails
+#      the build. That catches the typo class, not the disconnected class -
+#      the destination itself stays unverified.
+#   2. METHODOLOGY.md records phone numbers as the project's first unverified
+#      content class, so nobody later reads a green link check as covering
+#      them.
+#
+# The form is the one the hazard pages render: 1-NXX-NXX-XXXX. NANP forbids
+# 0 or 1 as the leading digit of an area code or exchange, so a pattern that
+# allows them would accept numbers that cannot exist.
+NANP_PHONE <- "^1-[2-9][0-9]{2}-[2-9][0-9]{2}-[0-9]{4}$"
 
 # Same for sections. `body` was already in use on extreme-heat and the Rockaways
 # override and had never been validated at all.
@@ -273,14 +298,38 @@ validate_item <- function(it, where, section_id, depth) {
   has_url <- !is.null(it$url) && nzchar(it$url)
   has_kids <- !is.null(it$items) && length(it$items) > 0
   is_note <- isTRUE(it$note)
+  has_tel <- !is.null(it$tel) && nzchar(it$tel)
+  has_tty <- !is.null(it$tty) && nzchar(it$tty)
 
-  if (!has_url && !has_kids && !is_note) {
-    stop(at, ": ", lbl, " has no url, no sub-items, and is not marked ",
-         "`note: true`. If it is prose rather than a link, say so explicitly - ",
-         "a dropped url would look identical.")
+  if (!has_url && !has_kids && !is_note && !has_tel) {
+    stop(at, ": ", lbl, " has no url, no sub-items, no `tel`, and is not ",
+         "marked `note: true`. If it is prose rather than a link, say so ",
+         "explicitly - a dropped url would look identical.")
   }
   if (has_url && is_note) {
     stop(at, ": ", lbl, " is marked `note: true` but has a url")
+  }
+
+  # A phone item is one thing. Mixing it with a url, sub-items or `note: true`
+  # leaves the renderer guessing which affordance the label carries, and the
+  # design gives a phone row a distinct treatment (number right-aligned, TTY
+  # beneath) that has no meaning applied to a link.
+  if (has_tel && (has_url || has_kids || is_note)) {
+    stop(at, ": ", lbl, " carries `tel` alongside a url, sub-items or ",
+         "`note: true`. A phone item is one thing - split it into two items.")
+  }
+  # A TTY line with no voice number renders as a bare accessibility number
+  # with nothing to fall back to, which is worse than omitting it.
+  if (has_tty && !has_tel) {
+    stop(at, ": ", lbl, " has `tty` but no `tel`.")
+  }
+  for (nm in c("tel", "tty")) {
+    v <- it[[nm]]
+    if (!is.null(v) && nzchar(v) && !grepl(NANP_PHONE, v)) {
+      stop(at, ": ", lbl, " has a malformed `", nm, "` ('", v, "'). Expected ",
+           "1-NXX-NXX-XXXX - the form the hazard pages render, and the only ",
+           "one a `tel:` href can be built from without guessing.")
+    }
   }
 
   if (has_url) {

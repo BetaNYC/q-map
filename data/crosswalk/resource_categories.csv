@@ -3,16 +3,16 @@ facdb,facsubgrp,SOUP KITCHENS AND FOOD PANTRIES,food-assistance,Food assistance,
 facdb,facsubgrp,SENIOR SERVICES,older-adults,Older adults,
 facdb,facsubgrp,LEGAL AND INTERVENTION SERVICES,benefits-and-legal,Benefits and legal help,
 facdb,facsubgrp,PROGRAMS FOR PEOPLE WITH DISABILITIES,disability-and-access,Disability and access,
-facdb,facsubgrp,WORKFORCE DEVELOPMENT,education-and-jobs,Education and jobs,
+facdb,facsubgrp,WORKFORCE DEVELOPMENT,benefits-and-legal,Benefits and legal help,"Excluded 2026-09-22: not a resource a household turns to in an emergency. education-and-jobs retired 2026-09-22: schools and colleges excluded, literacy/workforce re-homed."
 facdb,facsubgrp,IMMIGRANT SERVICES,immigration-and-language,Immigration and language,
 facdb,facsubgrp,COMMUNITY CENTERS AND COMMUNITY PROGRAMS,libraries-and-community,Libraries and community,
 facdb,facsubgrp,NON-RESIDENTIAL HOUSING AND HOMELESS SERVICES,housing-and-shelter,Housing and shelter,
 facdb,facsubgrp,FINANCIAL ASSISTANCE AND SOCIAL SERVICES,benefits-and-legal,Benefits and legal help,
-facdb,facsubgrp,MENTAL HEALTH,mental-health-and-recovery,Mental health and recovery,
+facdb,facsubgrp,MENTAL HEALTH,health-care,Health care,Folded into health-care 2026-09-22: the district screen shows one Health care row.
 facdb,facsubgrp,HOSPITALS AND CLINICS,health-care,Health care,
 facdb,facsubgrp,RESIDENTIAL HEALTH CARE,health-care,Health care,
 facdb,facsubgrp,OTHER HEALTH CARE,health-care,Health care,
-facdb,facsubgrp,SUBSTANCE USE DISORDER TREATMENT PROGRAMS,mental-health-and-recovery,Mental health and recovery,
+facdb,facsubgrp,SUBSTANCE USE DISORDER TREATMENT PROGRAMS,health-care,Health care,Folded into health-care 2026-09-22: the district screen shows one Health care row.
 facdb,facgroup,LIBRARIES,libraries-and-community,Libraries and community,
 facdb,facgroup,CULTURAL INSTITUTIONS,libraries-and-community,Libraries and community,
 facdb,facgroup,EMERGENCY SERVICES,emergency-services,Emergency services,
@@ -22,9 +22,9 @@ facdb,facgroup,YOUTH SERVICES,children-and-youth,Children and youth,
 facdb,facgroup,DAY CARE AND PRE-KINDERGARTEN,exclude,,"Same. 1,088 in Queens - the single largest block in the category."
 facdb,facgroup,CHILD SERVICES AND WELFARE,children-and-youth,Children and youth,
 facdb,facgroup,CAMPS,exclude,,Seasonal and recreational. 86 in Queens.
-facdb,facgroup,ADULT SERVICES,education-and-jobs,Education and jobs,Adult and immigrant literacy
-facdb,facgroup,VOCATIONAL AND PROPRIETARY SCHOOLS,education-and-jobs,Education and jobs,
-facdb,facgroup,HIGHER EDUCATION,education-and-jobs,Education and jobs,
+facdb,facgroup,ADULT SERVICES,immigration-and-language,Immigration and language,"Adult and immigrant literacy education-and-jobs retired 2026-09-22: schools and colleges excluded, literacy/workforce re-homed."
+facdb,facgroup,VOCATIONAL AND PROPRIETARY SCHOOLS,exclude,,"Excluded 2026-09-22: not a resource a household turns to in an emergency. education-and-jobs retired 2026-09-22: schools and colleges excluded, literacy/workforce re-homed."
+facdb,facgroup,HIGHER EDUCATION,exclude,,"Excluded 2026-09-22: not a resource a household turns to in an emergency. education-and-jobs retired 2026-09-22: schools and colleges excluded, literacy/workforce re-homed."
 facdb,facgroup,PARKS AND PLAZAS,parks-and-environment,Parks and environment,
 facdb,facgroup,HISTORICAL SITES,parks-and-environment,Parks and environment,
 facdb,facgroup,"OFFICES, TRAINING, AND TESTING",government-offices,Government offices,
@@ -39,11 +39,11 @@ qnpd,organization_type,Food Insecurity,food-assistance,Food assistance,
 qnpd,organization_type,Healthcare,health-care,Health care,
 qnpd,organization_type,Senior Services,older-adults,Older adults,
 qnpd,organization_type,Housing Rights,housing-and-shelter,Housing and shelter,
-qnpd,organization_type,Mental Health Services & Recovery Support,mental-health-and-recovery,Mental health and recovery,
-qnpd,organization_type,Substance Abuse,mental-health-and-recovery,Mental health and recovery,
+qnpd,organization_type,Mental Health Services & Recovery Support,health-care,Health care,Folded into health-care 2026-09-22: the district screen shows one Health care row.
+qnpd,organization_type,Substance Abuse,health-care,Health care,Folded into health-care 2026-09-22: the district screen shows one Health care row.
 qnpd,organization_type,Youth Development & Empowerment,children-and-youth,Children and youth,
-qnpd,organization_type,Education,education-and-jobs,Education and jobs,
-qnpd,organization_type,Workforce Development,education-and-jobs,Education and jobs,
+qnpd,organization_type,Education,libraries-and-community,Libraries and community,"Excluded 2026-09-22: not a resource a household turns to in an emergency. education-and-jobs retired 2026-09-22: schools and colleges excluded, literacy/workforce re-homed."
+qnpd,organization_type,Workforce Development,benefits-and-legal,Benefits and legal help,"Excluded 2026-09-22: not a resource a household turns to in an emergency. education-and-jobs retired 2026-09-22: schools and colleges excluded, literacy/workforce re-homed."
 qnpd,organization_type,Immigration Integration,immigration-and-language,Immigration and language,
 qnpd,organization_type,Environmental Issues,parks-and-environment,Parks and environment,
 qnpd,organization_type,Civic Engagement,government-offices,Government offices,

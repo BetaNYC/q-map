@@ -48,6 +48,12 @@ build_district_payloads <- function(crosswalk, hazards, measures, chp, lep,
       cd_label = row$cd_label,
       boro = row$boro_name,
       coad = if (is.na(row$coad)) NULL else row$coad,
+      # The full name, for "{display_name} is served by the {coad_name}".
+      # Derived from COAD_NAME rather than carried as a crosswalk column: it
+      # is a pure function of `coad`, and a second column would be one more
+      # thing to keep in step in a committed CSV. Null in 13 of 14 districts,
+      # exactly like `coad`.
+      coad_name = if (is.na(row$coad)) NULL else unname(COAD_NAME[row$coad]),
 
       ## A - hazards, ordered ------------------------------------------------
       hazards = lapply(seq_len(nrow(hz)), function(j) {
