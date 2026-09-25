@@ -538,13 +538,23 @@ on emptiness, never on `status === 'stub'` — status is *absent* on the two
 authored hazards, so testing the string treats authored content as a stub.
 Both keys always exist and one is always empty.
 
-**`HazardElement`'s header has a slot the payload cannot fill.** Figma draws a
-wrapping space-between row with a bold label *and* a separate blue link —
-"Apply for a free air conditioner" beside "Home Energy Assistance Program
-(HEAP)". A Link item is `label` + `url` and nothing else, and
-`DATA_CONTRACT.md` §6 says to render "the label, linked". So the label is the
-link and the right-hand slot goes unused. Either the design expects a field the
-pipeline does not emit, or the two-part header should collapse to one.
+**`HazardElement`'s header is a two-part row, and the payload now fills both.**
+Figma draws a wrapping space-between row with a bold label *and* a separate
+blue link — "Apply for a free air conditioner" beside "Home Energy Assistance
+Program (HEAP)". That slot went unused when a Link item was `label` + `url` and
+nothing else; `link_label` was added to the item schema on 2026-09-23 to fill
+it (`R/content.R`, optional, and an error without a `url`). All six link items
+on Extreme Heat carry one.
+
+The 20px between the two halves is the frame's "min-gap spacer" (`60:88`), a
+20×5px invisible node — Figma's way of writing a minimum column gap. It is
+transcribed as `gap: var(--space-300) 20px`, not as an element.
+
+**The whole element is the anchor, not just the blue text.** In the frame only
+the destination name is styled as a link, which at 14px is about a 17px tap
+target, under the 44px every row component in this app was fixed to. The blue
+and the underline stay, because they are the only cue naming where the block
+goes. Accessible name: `"Get personalized flood guidance, Blue Dots"`.
 
 **Phone links carry their own context.** §10 requires it — "a screen reader
 announces two phone numbers with no way to tell them apart". Verified from the
