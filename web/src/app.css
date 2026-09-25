@@ -1,10 +1,15 @@
-/* Placeholder only.
+/* Global element defaults. Component styling lives with its component.
  *
- * The design tokens — colours, spacing, typography — are pulled from the Figma
- * variables in build step 3 and land here as CSS custom properties. Nothing
- * visual should be invented before then; the layouts are Andrew's.
+ * The two imports come first — everything below reads from them, and no literal
+ * colour, size or spacing value should appear in this file or any other.
+ * @import has to precede all other rules, which is why these are the first
+ * lines of CSS rather than imports in +layout.svelte.
  *
- * What is here is the minimum needed for a scaffold that renders text. */
+ * fonts.css before tokens.css so the @font-face rules are registered before
+ * --font-sans names the family. Order is not strictly required by CSS here, but
+ * declaration-before-use is the readable order. */
+@import './fonts.css';
+@import './tokens.css';
 
 *,
 *::before,
@@ -14,12 +19,51 @@
 
 body {
   margin: 0;
-  font-family: system-ui, sans-serif;
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+
+  font-family: var(--font-sans);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-regular);
+
+  /* Prose is the default because most of what this app renders wraps — gap
+   * sentences, hazard bodies, the COAD sentence, resource missions. Labels,
+   * chips and single-line rows opt back down to --line-height-tight locally,
+   * which is the direction that fails safe: a label set too loose is untidy,
+   * a paragraph set at 1.0 is hard to read. */
+  line-height: var(--line-height-prose);
+
+  /* Stop iOS Safari inflating type in landscape, which would break the 358px
+   * measure the design was drawn against. */
+  -webkit-text-size-adjust: 100%;
+}
+
+a {
+  color: var(--color-link);
+}
+
+/* Visible to a screen reader, not to the eye. For words a sighted reader gets
+ * from context but a link's accessible name has to spell out — a bare "134"
+ * beside a category label is unambiguous on screen and meaningless read aloud.
+ *
+ * Not `display: none` or `visibility: hidden`, which remove it from the
+ * accessibility tree too. This is the standard clip-rect technique. */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
 }
 
 /* Focus rings are an accessibility contract item (handoff §10) and are not
- * designed in Figma, so they are implemented in CSS or they are missing. The
- * real token lands in step 3; this keeps the default visible until then. */
+ * designed in Figma — implemented in CSS or missing entirely. currentColor
+ * rather than a token because the file defines no focus colour; when one is
+ * added this becomes a var() like everything else. */
 :focus-visible {
   outline: 2px solid currentColor;
   outline-offset: 2px;

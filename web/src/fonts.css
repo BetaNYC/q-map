@@ -1,0 +1,47 @@
+/* AUTHENTIC Sans Pro — self-hosted, same-origin, licensed for this project.
+ *
+ * Two static cuts, not a variable font. Figma names them by the foundry's own
+ * axis numbering (style 90 and style 130) and reports their weights as 433 and
+ * 611; those are the numbers declared here, so one weight value runs unbroken
+ * from the Figma token through tokens.css to the face that serves it.
+ *
+ * d26 ships the same two files declared at 400/600 under the family name
+ * 'AUTHENTIC Sans'. That works, but it means the design's stated weight and the
+ * CSS disagree, and the family name does not match the file. Not inherited.
+ *
+ * CSS font matching still resolves every weight a browser or UA stylesheet will
+ * ask for: <strong> requests 700 and falls back to 611; a UA default of 400
+ * resolves up to 433; the title token's 600 resolves to 611.
+ *
+ * The condensed cuts (authentic-sans-pro-condensed-90/-130) exist in d26 but no
+ * frame in Final-UI uses them, so they are not carried here.
+ *
+ * The files live in src/, NOT in static/, so Vite resolves and fingerprints
+ * them. Two reasons, and the first is a bug avoided rather than a nicety:
+ *
+ *   A url('/fonts/…') in static/ is root-relative to the ORIGIN, so it
+ *   resolves to betanyc.github.io/fonts/… and 404s — the site is at /q-map/.
+ *   Writing '/q-map/fonts/…' instead would hardcode a base path that
+ *   svelte.config.js owns. Vite emits the correct base-prefixed URL itself.
+ *
+ *   A fingerprinted file under _app/immutable/ is served with a far-future
+ *   cache header. Anything in static/ gets Pages' max-age=600 like the data. */
+
+@font-face {
+  font-family: 'AUTHENTIC Sans Pro';
+  src: url('./fonts/authentic-sans-pro-90.woff2') format('woff2');
+  font-weight: 433; /* Figma: style 90 — body/default, body/small, caption/metadata */
+  font-style: normal;
+  /* swap, not optional: this is an emergency-preparedness tool and the text
+   * must be readable immediately, even if the face arrives a beat later. Both
+   * files are ~19 KB and same-origin, so the swap window is short. */
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'AUTHENTIC Sans Pro';
+  src: url('./fonts/authentic-sans-pro-130.woff2') format('woff2');
+  font-weight: 611; /* Figma: style 130 — body/*-bold, and title/map-heading's 600 */
+  font-style: normal;
+  font-display: swap;
+}
