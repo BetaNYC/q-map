@@ -1,5 +1,7 @@
 <script lang="ts">
+  import { browser } from '$app/environment';
   import CdtaCard from '$lib/components/CdtaCard.svelte';
+  import DistrictPicker from '$lib/components/DistrictPicker.svelte';
   import EntryHeader from '$lib/components/EntryHeader.svelte';
 
   let { data } = $props();
@@ -24,10 +26,6 @@
                       reserved for it, so there is no placeholder either.
                       ALERTS_SERVICE.md is the brief for when it lands.
 
-     Map picker       358x350 in the frame, and named "MapPlaceholder" there
-                      too. It needs MapLibre, cdta.geojson and the PMTiles
-                      protocol — build step 8.
-
      Address input    Both belong to the same half of this screen: finding your
      "Use my location" district by LOCATION rather than by name. The address
                       field needs a geocoder, which nothing in the pipeline or
@@ -35,11 +33,18 @@
                       API plus point-in-polygon against cdta.geojson, which
                       arrives with the map.
 
-     What is left works: the 14 cards are a complete picker on their own. Three
-     dead controls above them would promise something the build cannot do yet,
-     which is worse than a shorter screen. See web/README.md. -->
+     The map picker IS built — it needed nothing the address field and the
+     location button need. The 14 cards remain the accessible picker; the map
+     is a decorative shortcut to the same destinations. See web/README.md. -->
 <div class="screen">
   <EntryHeader />
+
+  <!-- Client-only: MapLibre needs a DOM and a WebGL context, and a
+       prerendered page has neither. The cards below render regardless, so the
+       screen is complete without JS. -->
+  {#if browser}
+    <DistrictPicker districts={data.all} />
+  {/if}
 
   <!-- districts.json covers all 59 CDTAs citywide; only the Queens 14 have
        pages, so the load filters on `boro` rather than on a slug prefix. -->
