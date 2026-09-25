@@ -45,7 +45,14 @@
     display: flex;
     flex-direction: column;
     gap: var(--space-400);
-    padding: var(--space-300);
+
+    /* VERTICAL ONLY, like the elements it holds. The frames are consistent
+       about who owns the horizontal inset: whatever sits directly on the page
+       supplies 12px, and nothing nested inside repeats it. This same component
+       is drawn `p-12px` at page level (61:638) and `py` only inside a Section
+       (58:413) — one rule, two contexts. The route's .untitled and Section
+       supply the 12px, so a group label and a bare element beside it line up. */
+    padding-block: var(--space-300);
   }
 
   .label {
@@ -74,7 +81,11 @@
     flex: 1 0 0;
     min-width: 0;
     flex-direction: column;
-    gap: var(--space-600);
+
+    /* NO GAP, and the frame's 24px is still what renders. The children pad
+       themselves 12px top and bottom, so consecutive items sit 12 + 12 = 24px
+       apart — the same arithmetic .items on the route already relies on.
+       Setting the gap here as well as the padding is what produced 48px. */
     padding-left: var(--space-200);
   }
 </style>

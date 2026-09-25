@@ -415,13 +415,66 @@ on its default of every category showing. This also makes the handoff's open
 question 1 — "children-and-youth is in no hazard's `default_resource_categories`"
 — moot until the field exists.
 
-#### Two pieces have no design
+#### The 2026-09-25 revision
 
-Neither hazard frame draws a **resource-map button**, but §7.3 is explicit that
-it renders even for the five hazards with no layers, "the resources are the
-point". It borrows screen 01's Location control — solid `#707070`, off-white
-text, 3px radius — rather than inventing a style. `#fefcfa` on `#707070` is
-4.84:1, and the padding is lifted to clear 44px.
+Both hazard frames were re-cut (`40:200` Extreme Heat, `58:403` Heavy Rain),
+and `13:839` was updated to mirror the section-title change. What moved:
+
+| | Before | After |
+|---|---|---|
+| Measure line | rendered on every page | **gone** |
+| Summary paragraph | rendered where present | **gone** |
+| Map button | a sibling on the route, solid `#707070` | inside `HazardHeader`, sunken `#f5f7f9` card |
+| Rules | none on the page at all | after the back link, after the header, between titled sections |
+| Section title | 14px | **16px** (`--font-size-section`, new token) |
+| `.screen` gap | 12px | 4px |
+| Gap between elements in a group | **48px** | 24px |
+
+**The measure was a duplicate.** `measureLine()` produces both `HazardRow`'s
+subtitle on the district screen and what was this page's first paragraph, in
+the same size and the same grey — so arriving from a district row showed the
+identical sentence twice, one tap apart. `measureLine()` itself stays;
+`HazardRow` still uses it.
+
+**`content.summary` now renders nowhere.** It is still emitted, still on
+`HazardContent`, and four hazards carry one (coastal-storm, hazmat,
+infectious-disease, mass-casualty). Neither revised frame draws it. Recorded
+here rather than quietly dropped: either a frame should place it or the
+pipeline should stop emitting it.
+
+**The 48px gap was double-counted spacing.** `NestedContainer`'s slot set
+`gap: 24px` *and* every `HazardElement` padded itself 12px all round, so
+siblings sat 48px apart — and `PhoneElement`, which had no padding at all, sat
+24px apart and 12px further left in the same group. Now the padding owns the
+rhythm alone (slot gap 0, every child `padding-block: 12px`), which is what
+`.items` on the route already assumed. Measured on the built page: 24px between
+all three groups' children on Extreme Heat, every child at the same left edge.
+
+**Who owns the horizontal inset.** The frames are consistent once you read
+them as "whatever sits directly on the page supplies 12px, and nothing nested
+repeats it" — the same `NestedContainer` is drawn `p-12px` at page level
+(`61:638`) and `py` only inside a Section (`58:413`). So `.untitled` and
+`Section` supply it, and `HazardElement`, `PhoneElement` and `NestedContainer`
+are all `padding-block` only. Without this the bare "Practice safe outdoor
+activities" note sat 12px left of the group labels beside it.
+
+**Two deltas taken deliberately:**
+
+- `Section` keeps its 10px padding, the district frames' literal; the hazard
+  frames draw 12px. Costs the hazard screen 2px a side and keeps screen 02
+  untouched.
+- `HazardHeader` loses its 8px horizontal inset, per the frame. That is also
+  what puts the header's rule and the route's section rules on one line — both
+  land 26px from the viewport edge (16px gutter + `HorizontalRule`'s own 10px);
+  keeping the 8px would have put two rules on one page at different insets.
+  Consequences: the hazard `<h1>` sits 8px left of the district and resource
+  `<h1>`s, and **screen 04 moves with it**, since the map screen renders the
+  same component. One line to revert.
+
+`mapHref` is optional for that reason — omitted, the rule and the button go
+with it, which is the map screen's header.
+
+#### One piece still has no design
 
 `ConditionsPanel` follows the **Conditions** component (node 14:1142), which
 appears in none of the five screens. A 24px fill holding an arrow, beside a
