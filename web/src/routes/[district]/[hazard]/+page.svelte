@@ -3,8 +3,8 @@
   import ConditionsPanel from '$lib/components/ConditionsPanel.svelte';
   import HazardHeader from '$lib/components/HazardHeader.svelte';
   import HazardItem from '$lib/components/HazardItem.svelte';
+  import HorizontalRule from '$lib/components/HorizontalRule.svelte';
   import Section from '$lib/components/Section.svelte';
-  import { measureLine } from '$lib/hazards';
   import type { ConditionsMetric } from '$lib/types';
 
   let { data } = $props();
@@ -64,38 +64,44 @@
 
 <!-- Screen 03. Figma: "03 Hazard - Mobile", nodes 40:200 and 58:403. -->
 <div class="screen">
+  <!-- The header owns the map button and the rule beneath the back link (§7.3
+       renders that button even for the five hazards with no layers at all —
+       the resources are the point of the map).
+
+       NEITHER THE MEASURE NOR THE SUMMARY RENDERS HERE ANY MORE. The measure
+       ("Heat Vulnerability Index: 4 out of 5") was the same measureLine()
+       string, in the same type, that HazardRow already shows on the district
+       screen one tap above. The summary went with it on the same call. Both
+       are absent from the revised frames. `content.summary` is still emitted
+       by the pipeline and now renders nowhere in the app — noted in
+       web/README.md so it is a known gap rather than a silent drop. -->
   <HazardHeader
     label={content.label}
     districtSlug={district.slug}
     districtName={district.display_name}
+    {mapHref}
   />
 
-  <!-- The measure and score for a ranked hazard, the reason for a pinned one.
-       measureLine() swaps in the score-0 copy where a number would mislead. -->
-  <p class="measure">{measureLine(data.hazard)}</p>
-
-  {#if content.summary}
-    <p class="summary">{content.summary}</p>
-  {/if}
-
-  <!-- §7.3: render this even for the five hazards with no layers at all —
-       the resources are the point of the map.
-
-       UNDESIGNED: neither hazard frame draws this button. It borrows the
-       visual language of screen 01's "Use my location" control rather than
-       inventing one. Flagged in web/README.md. -->
-  <a class="map-button" href={mapHref}>
-    See resources on the map
-  </a>
+  <HorizontalRule />
 
   {#if sections.length === 0}
     <p class="empty">Guidance for this hazard has not been written yet.</p>
   {/if}
 
-  {#each sections as section (section.id)}
+  {#each sections as section, i (section.id)}
+    <!-- A RULE ONLY BEFORE A TITLED SECTION, and never before the first.
+         The two frames disagree on purpose: Heavy Rain (58:403) separates its
+         two headed sections with a rule, while Extreme Heat (40:200) runs its
+         three unheaded groups together with none. A heading earns the
+         boundary; an unheaded group is a continuation. -->
+    {#if i > 0 && section.title}
+      <HorizontalRule />
+    {/if}
+
     <!-- A hazard section's title is optional: the Extreme Heat page carries
-         every heading on a group instead. Section renders one only when there
-         is one. -->
+         every heading on a group instead. Those render unwrapped — the frame
+         has no container around them, and the NestedContainers inside bring
+         their own 12px. -->
     {#if section.title}
       <Section title={section.title}>
         {@render sectionBody(section)}
@@ -130,22 +136,15 @@
   .screen {
     display: flex;
     flex-direction: column;
-    gap: var(--space-300);
+    /* 4px, per both frames. Was 12px, which stacked on top of every block's
+       own padding and opened each interval a step wider than drawn. */
+    gap: var(--space-100);
     max-width: 390px;
     margin-inline: auto;
     padding-inline: var(--gutter);
     padding-block: var(--space-600);
   }
 
-  .measure {
-    margin: 0;
-    padding-inline: var(--space-200);
-    font-size: var(--font-size-small);
-    color: var(--color-text-secondary);
-    line-height: var(--line-height-prose);
-  }
-
-  .summary,
   .prose,
   .empty {
     margin: 0;
@@ -153,32 +152,23 @@
     overflow-wrap: break-word;
   }
 
-  .summary,
   .empty {
     padding-inline: var(--space-200);
   }
 
-  /* Screen 01's Location control: solid secondary fill, off-white text, 3px
-     radius, 12px padding. #fefcfa on #707070 is 4.84:1 — AA for text under
-     24px. Padding lifted to clear the 44px minimum. */
-  .map-button {
-    display: block;
-    margin-inline: var(--space-200);
-    padding: var(--space-300);
-    min-height: var(--touch-target-min);
+  /* An unheaded section has no wrapper in the frame — its contents sit
+     directly on the page — so this supplies exactly what the page would: the
+     12px horizontal inset every top-level block carries, and nothing else. It
+     is Section without the heading and without Section's 10px.
 
-    background: var(--color-text-secondary);
-    color: var(--color-surface);
-    border-radius: 3px;
-    text-decoration: none;
-    line-height: var(--line-height-prose);
-  }
-
+     The inset lives here rather than on the children because both kinds of
+     child appear at this level: a NestedContainer group and a bare
+     HazardElement note are siblings on the Extreme Heat frame, and they line
+     up only if the container insets them together. */
   .untitled {
     display: flex;
     flex-direction: column;
-    gap: var(--space-300);
-    padding: 10px;
+    padding-inline: var(--space-300);
   }
 
   .items {

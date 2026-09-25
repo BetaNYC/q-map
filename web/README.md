@@ -415,13 +415,66 @@ on its default of every category showing. This also makes the handoff's open
 question 1 — "children-and-youth is in no hazard's `default_resource_categories`"
 — moot until the field exists.
 
-#### Two pieces have no design
+#### The 2026-09-25 revision
 
-Neither hazard frame draws a **resource-map button**, but §7.3 is explicit that
-it renders even for the five hazards with no layers, "the resources are the
-point". It borrows screen 01's Location control — solid `#707070`, off-white
-text, 3px radius — rather than inventing a style. `#fefcfa` on `#707070` is
-4.84:1, and the padding is lifted to clear 44px.
+Both hazard frames were re-cut (`40:200` Extreme Heat, `58:403` Heavy Rain),
+and `13:839` was updated to mirror the section-title change. What moved:
+
+| | Before | After |
+|---|---|---|
+| Measure line | rendered on every page | **gone** |
+| Summary paragraph | rendered where present | **gone** |
+| Map button | a sibling on the route, solid `#707070` | inside `HazardHeader`, sunken `#f5f7f9` card |
+| Rules | none on the page at all | after the back link, after the header, between titled sections |
+| Section title | 14px | **16px** (`--font-size-section`, new token) |
+| `.screen` gap | 12px | 4px |
+| Gap between elements in a group | **48px** | 24px |
+
+**The measure was a duplicate.** `measureLine()` produces both `HazardRow`'s
+subtitle on the district screen and what was this page's first paragraph, in
+the same size and the same grey — so arriving from a district row showed the
+identical sentence twice, one tap apart. `measureLine()` itself stays;
+`HazardRow` still uses it.
+
+**`content.summary` now renders nowhere.** It is still emitted, still on
+`HazardContent`, and four hazards carry one (coastal-storm, hazmat,
+infectious-disease, mass-casualty). Neither revised frame draws it. Recorded
+here rather than quietly dropped: either a frame should place it or the
+pipeline should stop emitting it.
+
+**The 48px gap was double-counted spacing.** `NestedContainer`'s slot set
+`gap: 24px` *and* every `HazardElement` padded itself 12px all round, so
+siblings sat 48px apart — and `PhoneElement`, which had no padding at all, sat
+24px apart and 12px further left in the same group. Now the padding owns the
+rhythm alone (slot gap 0, every child `padding-block: 12px`), which is what
+`.items` on the route already assumed. Measured on the built page: 24px between
+all three groups' children on Extreme Heat, every child at the same left edge.
+
+**Who owns the horizontal inset.** The frames are consistent once you read
+them as "whatever sits directly on the page supplies 12px, and nothing nested
+repeats it" — the same `NestedContainer` is drawn `p-12px` at page level
+(`61:638`) and `py` only inside a Section (`58:413`). So `.untitled` and
+`Section` supply it, and `HazardElement`, `PhoneElement` and `NestedContainer`
+are all `padding-block` only. Without this the bare "Practice safe outdoor
+activities" note sat 12px left of the group labels beside it.
+
+**Two deltas taken deliberately:**
+
+- `Section` keeps its 10px padding, the district frames' literal; the hazard
+  frames draw 12px. Costs the hazard screen 2px a side and keeps screen 02
+  untouched.
+- `HazardHeader` loses its 8px horizontal inset, per the frame. That is also
+  what puts the header's rule and the route's section rules on one line — both
+  land 26px from the viewport edge (16px gutter + `HorizontalRule`'s own 10px);
+  keeping the 8px would have put two rules on one page at different insets.
+  Consequences: the hazard `<h1>` sits 8px left of the district and resource
+  `<h1>`s, and **screen 04 moves with it**, since the map screen renders the
+  same component. One line to revert.
+
+`mapHref` is optional for that reason — omitted, the rule and the button go
+with it, which is the map screen's header.
+
+#### One piece still has no design
 
 `ConditionsPanel` follows the **Conditions** component (node 14:1142), which
 appears in none of the five screens. A 24px fill holding an arrow, beside a
@@ -485,18 +538,64 @@ on emptiness, never on `status === 'stub'` — status is *absent* on the two
 authored hazards, so testing the string treats authored content as a stub.
 Both keys always exist and one is always empty.
 
-**`HazardElement`'s header has a slot the payload cannot fill.** Figma draws a
-wrapping space-between row with a bold label *and* a separate blue link —
-"Apply for a free air conditioner" beside "Home Energy Assistance Program
-(HEAP)". A Link item is `label` + `url` and nothing else, and
-`DATA_CONTRACT.md` §6 says to render "the label, linked". So the label is the
-link and the right-hand slot goes unused. Either the design expects a field the
-pipeline does not emit, or the two-part header should collapse to one.
+**`HazardElement`'s header is a two-part row, and the payload now fills both.**
+Figma draws a wrapping space-between row with a bold label *and* a separate
+blue link — "Apply for a free air conditioner" beside "Home Energy Assistance
+Program (HEAP)". That slot went unused when a Link item was `label` + `url` and
+nothing else; `link_label` was added to the item schema on 2026-09-23 to fill
+it (`R/content.R`, optional, and an error without a `url`). All six link items
+on Extreme Heat carry one.
+
+The 20px between the two halves is the frame's "min-gap spacer" (`60:88`), a
+20×5px invisible node — Figma's way of writing a minimum column gap. It is
+transcribed as `gap: var(--space-300) 20px`, not as an element.
+
+**The whole element is the anchor, not just the blue text.** In the frame only
+the destination name is styled as a link, which at 14px is about a 17px tap
+target, under the 44px every row component in this app was fixed to. The blue
+and the underline stay, because they are the only cue naming where the block
+goes. Accessible name: `"Get personalized flood guidance, Blue Dots"`.
 
 **Phone links carry their own context.** §10 requires it — "a screen reader
 announces two phone numbers with no way to tell them apart". Verified from the
 accessibility tree: `"Con Edison phone, 1-800-752-6633"` and
 `"Con Edison TTY, 1-800-642-2308"`. Numbers dial as E.164 (`tel:+18007526633`).
+
+### ResourceHeader — the back link returns to the map
+
+The back link points at `/q{NN}/map`, not the district page, and reopens the
+view the resource was tapped in:
+
+```
+/q14/map?categories=food-assistance&resource=franc%3Athe-campaign-…
+```
+
+Built by `mapReturnPath()` in `$lib/resources` — the inverse of `detailPath()`,
+and it lives beside it so the two stay in step. Both parameters are §5's, used
+exactly as the map page reads them: `?categories=` narrows the visible points to
+the one that was tapped, `?resource=` is §7.4's permalink and reopens the popup.
+`URLSearchParams` does the encoding, because `resource_id` carries a colon that
+must arrive as `%3A`.
+
+**Derived from the record, not round-tripped.** The alternative was to carry the
+map's live query string through the popup's detail link and read it back, which
+would preserve a wider selection and any `?layers=`/`?hazard=`. Rejected on two
+grounds:
+
+- It needs this derivation as a fallback anyway. **The popup is the only route
+  into a resource page** — nothing else in the app calls `detailPath()` — so
+  every other arrival is a shared or bookmarked link with no state to
+  round-trip, and a back link that behaves one way from the map and another
+  from a link is worse than one that always behaves the same.
+- The page is prerendered. Derived, the href is static and correct in the built
+  HTML; round-tripped, it could only resolve on hydration, so the no-JS and
+  pre-hydration answer would be a *different destination*.
+
+The label stays the district name — it names where you are going back to, and
+the map is district-scoped, so "The Rockaways" is true of both.
+
+The href is passed in rather than built by the component, so the destination is
+visible at the call site instead of buried in a header.
 
 ### ResourceCard
 
@@ -588,6 +687,24 @@ data-loading shape in this app. A universal load would inline 194 KB of escaped
 JSON into each of 14 map pages for a file not needed until a popup opens; a
 server load could slice it, but every feature's popup joins against the whole
 list, so slicing defeats the purpose. The map needs JS regardless.
+
+**Layout: a column.** Node `77:1708` was re-cut on 2026-09-25 and the detail
+link moved from the right of the three lines to below them:
+
+```
+flex-direction: column        gap: 16px (space/400)   between lines and link
+  .lines                      gap:  8px               between name/category/address
+  .detail                     left-aligned under the address
+```
+
+Measured against the built CSS: `280px` wide, `column`, `16px` and `8px`. The
+lines block is `align-self: stretch` — Figma's text nodes are `w-full`, which
+fell out of the row layout for free but makes a column hug its longest word.
+
+That move put the close control over the **name** instead of the detail link,
+so `.lines` reserves `16px` on the right. The glyph's ink measures x 252.6–261.4
+inside a 280px box; the longest wrapping name reaches 242.1, so there is 10.5px
+of clearance. The 44px hit area still overhangs, which is the point of it.
 
 Four deviations from the frame, each deliberate:
 

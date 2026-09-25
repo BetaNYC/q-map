@@ -124,6 +124,43 @@ export function detailPath(resource: Resource, districtSlug: string): string | n
 }
 
 /**
+ * The inverse of detailPath(): from a resource page back to the map showing
+ * that resource — its category on, its popup open.
+ *
+ *   /q14/map?categories=food-assistance&resource=franc%3Athe-campaign-…
+ *
+ * DERIVED FROM THE RECORD, NOT ROUND-TRIPPED. The alternative was to carry the
+ * map's live query string through the popup's detail link and read it back
+ * here, which preserves a wider selection and any `?layers=`/`?hazard=`. That
+ * was rejected:
+ *
+ *   - It needs this derivation as a fallback anyway. Nothing else in the app
+ *     links to a resource page — the popup is the only route in (§7.4) — so
+ *     every other arrival is a shared or bookmarked link with no state to
+ *     round-trip, and a back link that works on one and not the other is worse
+ *     than one that always behaves the same.
+ *   - The page is prerendered. Derived, the href is static and correct in the
+ *     built HTML; round-tripped, it can only resolve on hydration, so the
+ *     no-JS and pre-hydration answer would be a different destination.
+ *
+ * Both parameters are §5's, used exactly as the map page reads them: the
+ * category filter narrows the visible points to the one that was tapped, and
+ * `?resource=` is §7.4's permalink, which reopens the popup on arrival.
+ *
+ * URLSearchParams does the encoding — `resource_id` carries a colon, which
+ * must arrive as %3A. Hand-concatenating it is how that gets missed.
+ *
+ * Unlike detailPath() this never returns null: every record has a category and
+ * a resource_id, and a FacDB record has no page to link back FROM.
+ */
+export function mapReturnPath(resource: Resource, districtSlug: string): string {
+  const params = new URLSearchParams();
+  params.set('categories', resource.category);
+  params.set('resource', resource.resource_id);
+  return `/${districtSlug}/map?${params}`;
+}
+
+/**
  * Actionable contact values.
  *
  * DEPARTURE FROM THE FRAME, and a deliberate one. Figma draws the resource

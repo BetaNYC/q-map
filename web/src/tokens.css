@@ -103,6 +103,7 @@
   --font-mono-icon: 'NewComputerModernMono10', ui-monospace, SFMono-Regular, Menlo, monospace;
 
   --font-size-title: 18px;   /* title/map-heading */
+  --font-size-section: 16px; /* title/section */
   --font-size-body: 14px;    /* body/default, body/default-bold, body/default-link */
   --font-size-small: 12px;   /* body/small, body/small-bold, body/small-link, icon/default */
   --font-size-caption: 11px; /* caption/metadata */

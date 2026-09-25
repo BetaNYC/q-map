@@ -11,6 +11,16 @@
    * than a history.back() that has nowhere to go when someone arrives from a
    * shared link.
    *
+   * It points at the MAP, not the district page — back to the view this
+   * resource was tapped in, with its category filtered and its popup reopened.
+   * The caller supplies the href (see mapReturnPath in $lib/resources) rather
+   * than this component building one, so the destination is visible at the
+   * call site instead of buried in a header.
+   *
+   * The LABEL is still the district name. That is deliberate: it names where
+   * you are going back to, and the map is district-scoped, so "The Rockaways"
+   * is true of both the district page and the district's map.
+   *
    * Same shape as DistrictHeader; see that file for why the back link is drawn
    * in primary black rather than link blue.
    */
@@ -19,11 +29,12 @@
     name: string;
     /** The resolved category label, not the slug. */
     categoryLabel: string;
-    districtSlug: string;
+    /** Site-relative, without `base` — applied here as everywhere else. */
+    backHref: string;
     districtName: string;
   }
 
-  let { name, categoryLabel, districtSlug, districtName }: Props = $props();
+  let { name, categoryLabel, backHref, districtName }: Props = $props();
 </script>
 
 <header class="header">
@@ -31,7 +42,7 @@
   <p class="category">{categoryLabel}</p>
 
   <div class="body">
-    <a class="back" href="{base}/{districtSlug}">
+    <a class="back" href="{base}{backHref}">
       <ArrowLeftIcon />
       {districtName}
     </a>

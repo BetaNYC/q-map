@@ -58,6 +58,13 @@
     display: flex;
     flex-direction: column;
     gap: var(--space-200);
+
+    /* Matches HazardElement, so the two carry the same rhythm and the same
+       left edge inside a group. Without it a group of phones sat 24px apart
+       while a group of links sat 48px apart and 12px further right — visible
+       on Extreme Heat, where `utility-interruptions` and `cooling` are
+       siblings. See NestedContainer's .slot. */
+    padding-block: var(--space-300);
   }
 
   .row {

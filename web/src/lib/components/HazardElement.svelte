@@ -64,7 +64,19 @@
     display: flex;
     flex-direction: column;
     gap: var(--space-300);
-    padding: var(--space-300);
+
+    /* VERTICAL ONLY. The frame gives this element no padding at all and spaces
+       instances with a 24px gap on the parent; the padding here is doing two
+       jobs the frame does not have to think about — it is what keeps a
+       header-only element (one 14px line, ~17px) above the 44px minimum, and
+       12 + 12 between neighbours reproduces that 24px gap without a second
+       source of spacing.
+
+       Horizontal padding was the part with no justification: it inset every
+       element 12px further right than drawn, and by a different amount than
+       PhoneElement, which had none. The anchor still fills the full width, so
+       the hit area is unchanged. */
+    padding-block: var(--space-300);
   }
 
   .is-link {
@@ -77,7 +89,21 @@
     flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
-    gap: var(--space-200);
+
+    /* 12px between rows, 20px between label and link. The 20px is the frame's
+       "min-gap spacer" (60:88) — a 20x5px invisible node sitting between the
+       two text nodes, which is how Figma writes a minimum column gap. It is a
+       gap, not an element, so it is not transcribed as one.
+
+       The wrap is kept for every variant. 40:134 draws a non-wrapping header,
+       but its label and link are both `white-space: nowrap`, so a long pair
+       would overflow the 358px measure rather than break. Wrapping is the safe
+       reading of the same intent, and `overflow-wrap: break-word` below is
+       kept over the frame's nowrap for the same reason.
+
+       Figma's `min-width: 220px` on this row is not carried: it exists to make
+       the frame wrap at the right point, which flex-wrap does on its own. */
+    gap: var(--space-300) 20px;
     width: 100%;
   }
 
