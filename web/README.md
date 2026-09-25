@@ -498,6 +498,42 @@ announces two phone numbers with no way to tell them apart". Verified from the
 accessibility tree: `"Con Edison phone, 1-800-752-6633"` and
 `"Con Edison TTY, 1-800-642-2308"`. Numbers dial as E.164 (`tel:+18007526633`).
 
+### ResourceHeader — the back link returns to the map
+
+The back link points at `/q{NN}/map`, not the district page, and reopens the
+view the resource was tapped in:
+
+```
+/q14/map?categories=food-assistance&resource=franc%3Athe-campaign-…
+```
+
+Built by `mapReturnPath()` in `$lib/resources` — the inverse of `detailPath()`,
+and it lives beside it so the two stay in step. Both parameters are §5's, used
+exactly as the map page reads them: `?categories=` narrows the visible points to
+the one that was tapped, `?resource=` is §7.4's permalink and reopens the popup.
+`URLSearchParams` does the encoding, because `resource_id` carries a colon that
+must arrive as `%3A`.
+
+**Derived from the record, not round-tripped.** The alternative was to carry the
+map's live query string through the popup's detail link and read it back, which
+would preserve a wider selection and any `?layers=`/`?hazard=`. Rejected on two
+grounds:
+
+- It needs this derivation as a fallback anyway. **The popup is the only route
+  into a resource page** — nothing else in the app calls `detailPath()` — so
+  every other arrival is a shared or bookmarked link with no state to
+  round-trip, and a back link that behaves one way from the map and another
+  from a link is worse than one that always behaves the same.
+- The page is prerendered. Derived, the href is static and correct in the built
+  HTML; round-tripped, it could only resolve on hydration, so the no-JS and
+  pre-hydration answer would be a *different destination*.
+
+The label stays the district name — it names where you are going back to, and
+the map is district-scoped, so "The Rockaways" is true of both.
+
+The href is passed in rather than built by the component, so the destination is
+visible at the call site instead of buried in a header.
+
 ### ResourceCard
 
 Rows are assembled from the record, not passed as eight booleans — an empty
@@ -588,6 +624,24 @@ data-loading shape in this app. A universal load would inline 194 KB of escaped
 JSON into each of 14 map pages for a file not needed until a popup opens; a
 server load could slice it, but every feature's popup joins against the whole
 list, so slicing defeats the purpose. The map needs JS regardless.
+
+**Layout: a column.** Node `77:1708` was re-cut on 2026-09-25 and the detail
+link moved from the right of the three lines to below them:
+
+```
+flex-direction: column        gap: 16px (space/400)   between lines and link
+  .lines                      gap:  8px               between name/category/address
+  .detail                     left-aligned under the address
+```
+
+Measured against the built CSS: `280px` wide, `column`, `16px` and `8px`. The
+lines block is `align-self: stretch` — Figma's text nodes are `w-full`, which
+fell out of the row layout for free but makes a column hug its longest word.
+
+That move put the close control over the **name** instead of the detail link,
+so `.lines` reserves `16px` on the right. The glyph's ink measures x 252.6–261.4
+inside a 280px box; the longest wrapping name reaches 242.1, so there is 10.5px
+of clearance. The 44px hit area still overhangs, which is the point of it.
 
 Four deviations from the frame, each deliberate:
 

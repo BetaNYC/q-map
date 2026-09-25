@@ -127,9 +127,16 @@
        the whole card for a mouse user who never asked for it. :focus-visible
        still applies to the controls inside. */
     outline: none;
+
+    /* A COLUMN, not a row. The frame used to put the detail link to the right
+       of the three lines; it now sits below them, under a 16px gap. The lines
+       therefore get the full 256px measure instead of splitting it with the
+       link, which is what stops a three-line name from becoming a five-line
+       one. */
     display: flex;
+    flex-direction: column;
     align-items: flex-start;
-    gap: var(--space-200);
+    gap: var(--space-400);
     width: 280px;
 
     padding-inline: var(--space-300);
@@ -155,10 +162,25 @@
   }
 
   .lines {
+    /* Figma's text nodes are `w-full`. In a row that fell out of the layout;
+       in a column the block would hug its longest word instead, so it is
+       stretched explicitly. Without this, names wrap at unpredictable widths. */
+    align-self: stretch;
+
     display: flex;
     flex-direction: column;
     gap: var(--space-200);
     min-width: 0;
+
+    /* Reserve the close glyph's ink. The control is a 44px box pinned to the
+       top-right, but the × inside it draws about 8px wide centred at 22px in,
+       so it covers the last ~14px of the content box. In the old row layout
+       that overlapped the detail link, which was short and right-aligned and
+       never reached it. In a column it would sit on top of the NAME, and names
+       are long. 16px is the next token up from the 14px actually needed.
+
+       Figma draws no close control at all — see the note on .close. */
+    padding-right: var(--space-400);
   }
 
   .lines p {
@@ -175,10 +197,12 @@
     display: flex;
     align-items: center;
     gap: var(--space-100);
-    flex: 1 0 0;
-    min-width: 0;
-    justify-content: flex-end;
 
+    /* `flex: 1 0 0` and `justify-content: flex-end` are gone with the row: the
+       link no longer claims the leftover width, it hugs its text at the left
+       edge under the address. Figma still carries `justify-end` on this frame,
+       but the frame hugs its content inside an `items-start` column, so it has
+       nothing to distribute and no visible effect. */
     font-size: var(--font-size-caption);
     color: inherit;
     white-space: nowrap;
@@ -189,9 +213,10 @@
     top: 0;
     right: 0;
 
-    /* 44px hit area (WCAG 2.5.5) on a glyph that draws far smaller. The popup
-     * is 280px wide, so this overlaps the detail link's right edge — the close
-     * control is on top, which is the order a touch should resolve in. */
+    /* 44px hit area (WCAG 2.5.5) on a glyph that draws far smaller. The box
+     * extends past the text it sits beside; `.lines` reserves the glyph's ink
+     * so nothing renders underneath it, and the button is last in the source
+     * so a touch in the overlap resolves to close. */
     width: var(--touch-target-min);
     height: var(--touch-target-min);
 

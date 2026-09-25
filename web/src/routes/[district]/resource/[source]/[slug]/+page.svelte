@@ -2,8 +2,13 @@
   import HorizontalRule from '$lib/components/HorizontalRule.svelte';
   import ResourceCard from '$lib/components/ResourceCard.svelte';
   import ResourceHeader from '$lib/components/ResourceHeader.svelte';
+  import { mapReturnPath } from '$lib/resources';
 
   let { data } = $props();
+
+  /* Back to the map this resource was tapped in, not to the district page.
+     Derived from the record, so it is static in the prerendered HTML. */
+  const backHref = $derived(mapReturnPath(data.resource, data.district.slug));
 </script>
 
 <svelte:head>
@@ -15,7 +20,7 @@
   <ResourceHeader
     name={data.resource.name}
     categoryLabel={data.categoryLabel}
-    districtSlug={data.district.slug}
+    {backHref}
     districtName={data.district.display_name}
   />
 
