@@ -1,0 +1,64 @@
+name: record-alerts
+
+# Notify NYC publishes a rolling window of roughly the last hour. Anything that
+# falls out of it is gone permanently and cannot be recovered from any source.
+# This job is the only thing standing between the project and losing it.
+#
+# It records; it does not serve. alerts/record.py explains why the archive is
+# kept raw. The live service (ALERTS_SERVICE.md) is a separate, later deploy.
+#
+# Every 15 minutes, off the hour. GitHub delays scheduled runs - worst on the
+# hour - and sometimes drops them. With a ~64-minute window, 15 minutes keeps
+# the gap near 30 minutes even with one run lost; hourly would leave none.
+# See METHODOLOGY.md, "The alerts recorder runs before the service".
+#
+# Same shape as archive-respiratory.yml: fetch, append, commit only if changed.
+# No dispatch: nothing in the pipeline reads this archive.
+
+on:
+  schedule:
+    - cron: '7,22,37,52 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+# Two overlapping runs would both see the same guids as new and write them
+# twice. Queue rather than cancel: a cancelled run can lose a CAP download.
+concurrency:
+  group: record-alerts
+  cancel-in-progress: false
+
+jobs:
+  record:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      # Standard library only - the runner's python3 is enough.
+      - name: Record the feed
+        run: python3 alerts/record.py
+
+      # Runs even when the recorder exits 1, so whatever it did record is kept
+      # while the run still shows red.
+      - name: Commit
+        if: ${{ !cancelled() }}
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/archive/alerts
+          if git diff --staged --quiet; then
+            echo "Nothing new to commit"
+            exit 0
+          fi
+          git commit -m "chore(archive): record Notify NYC alerts"
+          # The pipeline may have pushed since checkout. Rebase and retry
+          # rather than fail: this job's commits only ever add files under
+          # data/archive/alerts, so they cannot conflict with it.
+          for attempt in 1 2 3; do
+            git pull --rebase --quiet && git push && exit 0
+            sleep $((attempt * 10))
+          done
+          echo "::error::push failed after 3 attempts"
+          exit 1
