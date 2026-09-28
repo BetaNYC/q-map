@@ -48,7 +48,10 @@ jobs:
           path: .uvr/library
           key: uvr-${{ runner.os }}-${{ hashFiles('uvr.lock') }}
 
-      - run: uvr sync --frozen
+      # No --frozen; see the note on the same step in pipeline.yml. This job is
+      # the one that cannot afford a spurious failure: a missed Saturday leaves
+      # a permanent hole in the archive.
+      - run: uvr sync
 
       - name: Append this week to the archive
         run: uvr run scripts/06_archive_respiratory.R
