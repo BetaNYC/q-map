@@ -47,11 +47,13 @@ jobs:
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/archive/alerts
-          if git diff --staged --quiet; then
+          # Check with status, not add: until the first alert is recorded the
+          # directory does not exist, and `git add` on a missing path is fatal.
+          if [ -z "$(git status --porcelain -- data/archive/alerts)" ]; then
             echo "Nothing new to commit"
             exit 0
           fi
+          git add data/archive/alerts
           git commit -m "chore(archive): record Notify NYC alerts"
           # The pipeline may have pushed since checkout. Rebase and retry
           # rather than fail: this job's commits only ever add files under
