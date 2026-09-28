@@ -84,9 +84,10 @@ export async function serve(request: Request, env: Env): Promise<Response> {
   if (stored === null) {
     // Never polled - a fresh deploy. The app treats any non-2xx as
     // unavailable, which is exactly right: nothing is known yet.
+    // no-store: a cached 503 would outlive the first successful poll.
     return new Response(JSON.stringify({ error: "no poll has completed" }), {
       status: 503,
-      headers: HEADERS,
+      headers: { ...HEADERS, "Cache-Control": "no-store" },
     });
   }
   return new Response(stored, { headers: HEADERS });

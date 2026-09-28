@@ -1,8 +1,15 @@
 import { sveltekit } from '@sveltejs/kit/vite';
-import { defineConfig } from 'vite';
+import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
-  plugins: [sveltekit()]
+  plugins: [sveltekit()],
+
+  // Vitest reads this same config, so $lib and import.meta.env resolve in
+  // tests exactly as in the app. Unit tests live beside the module they test.
+  // No DOM environment: nothing tested so far renders.
+  test: {
+    include: ['src/**/*.test.ts']
+  }
 
   // No publicDir override. SvelteKit owns `static/`, and `static/data` is a
   // symlink to ../../data/processed — see web/README.md for why, and

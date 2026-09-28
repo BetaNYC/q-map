@@ -235,6 +235,10 @@ jobs:
           # whenever the deployed data changes - unlike DATA_VERSION, which
           # names the Tier-2 *input* mirror release. See web/src/lib/data.ts.
           VITE_DATA_VERSION: ${{ github.sha }}
+          # The alerts Worker (alerts/worker/). Public, so not a secret. Read
+          # in the browser only - see web/src/lib/alerts.ts. PR builds in
+          # web.yml leave it unset, which renders as "unavailable".
+          VITE_ALERTS_URL: https://q-map-alerts.lab-betanyc.workers.dev/
         run: |
           npm ci
           npm run build

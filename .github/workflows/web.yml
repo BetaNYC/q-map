@@ -57,6 +57,12 @@ jobs:
         working-directory: web
         run: npm run check
 
+      # Unit tests. So far only $lib/alerts.ts, whose wrong answer is a false
+      # all-clear. No network: the suite never reaches the live Worker.
+      - name: Test
+        working-directory: web
+        run: npm test
+
       # The real proof. adapter-static runs strict, so this fails if any route
       # cannot be prerendered, and prerender.handleHttpError is 'fail', so it
       # also fails on a dead internal link.
