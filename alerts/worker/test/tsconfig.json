@@ -1,0 +1,10 @@
+{
+  // Tests run in Node under vitest, so they get Node's types. The Worker's own
+  // tsconfig does not: a node: import in src/ must fail the check, because
+  // the Workers runtime would reject it.
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "types": ["@cloudflare/workers-types", "node"]
+  },
+  "include": [".", "../src"]
+}
