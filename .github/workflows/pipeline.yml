@@ -131,8 +131,18 @@ jobs:
           key: targets-${{ runner.os }}-${{ github.run_id }}
           restore-keys: targets-${{ runner.os }}-
 
+      # NO --frozen. It does not mean "install what the lockfile pins" — plain
+      # `uvr sync` already does that, installs nothing else, and leaves
+      # uvr.lock untouched. --frozen adds a staleness gate that re-resolves
+      # uvr.toml against the live CRAN index and fails when the result differs
+      # from the lock. Every dependency here is declared "*", so that gate
+      # fires on CRAN's release schedule rather than on anything in this repo:
+      # it failed five scheduled runs between 2026-09-14 and 2026-09-28, each
+      # time over a transitive package (s2, secretbase) that no one declared.
+      # Pinning uvr.toml does not fix it — transitive deps are resolved from
+      # their parents' requirements, not from the manifest. See METHODOLOGY.md.
       - name: Restore the locked library
-        run: uvr sync --frozen   # fails if uvr.lock is stale
+        run: uvr sync
 
       - name: Rehydrate Tier-2 mirrors
         env:
