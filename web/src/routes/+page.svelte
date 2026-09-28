@@ -20,11 +20,10 @@
      THREE OF THE FRAME'S ELEMENTS ARE NOT HERE, and the omissions are
      deliberate rather than unfinished:
 
-     AlertBanner      Never renders in v1 (§7.7). Its boolean is always false,
-                      there is no endpoint, and the Notify NYC poller is
-                      unbuilt. §7.7 is explicit that no layout space should be
-                      reserved for it, so there is no placeholder either.
-                      ALERTS_SERVICE.md is the brief for when it lands.
+     AlertBanner      Awaiting design. The endpoint exists and
+                      $lib/alerts.ts reads it into three states; the component
+                      that renders them does not. §7.7 still holds: no layout
+                      space is reserved, so there is no placeholder.
 
      Address input    Both belong to the same half of this screen: finding your
      "Use my location" district by LOCATION rather than by name. The address

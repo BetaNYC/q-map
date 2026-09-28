@@ -55,6 +55,7 @@ describe("serve", () => {
     const res = await serve(get(), fakeEnv());
     expect(res.status).toBe(503);
     expect(res.headers.get("Access-Control-Allow-Origin")).toBe("*");
+    expect(res.headers.get("Cache-Control")).toBe("no-store");
   });
 
   it("serves the stored envelope verbatim", async () => {
