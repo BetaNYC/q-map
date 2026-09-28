@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!-- SYNTHETIC. Element names follow the 2026-08-03 sample documented in
+     test/notify-nyc-considerations.md; values are invented. Replace with a
+     real snapshot from data/archive/alerts/rss/ once one exists. -->
+<rss version="2.0"><channel><title>Notify NYC CAP RSS Feed</title>
+<item><title>Flood Advisory - Manhattan, The Bronx &amp; Staten Island</title>
+<description>text</description><guid>2655390911272538</guid>
+<pubDate>Mon, 03 Aug 2026 14:55:01 GMT</pubDate><category>Geo</category>
+<author>NYCEM [English]</author>
+<link>https://example.invalid/cap/2655390911272538.xml</link>
+<enclosure url="https://example.invalid/cap/2655390911272538.xml" type="application/xml"/></item>
+<item><title>Aviso de inundación</title><guid isPermaLink="false">26553909112725389</guid>
+<author>NYCEM [Spanish]</author><link>https://example.invalid/cap/2.xml</link></item>
+</channel></rss>

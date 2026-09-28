@@ -24,7 +24,9 @@ _targets/
 
 # Local scratch — dataset research, prototypes, throwaway downloads.
 # Nothing in here is a pipeline input.
-test/
+# Anchored: unanchored `test/` also swallowed alerts/worker/test/, so the
+# Worker's tests were never committed and its CI failed on a missing file.
+/test/
 
 # Queens Nonprofit Directory scrape stays local for now
 non-profit-directory/
