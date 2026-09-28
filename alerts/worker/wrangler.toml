@@ -1,0 +1,19 @@
+# q-map alerts service. Brief: ALERTS_SERVICE.md.
+name = "q-map-alerts"
+main = "src/index.ts"
+# Must not be newer than the workerd bundled with the pinned wrangler.
+compatibility_date = "2026-04-01"
+workers_dev = true
+
+[triggers]
+# The brief asks for 2-5 minutes; 2 keeps a count-based window safe in a storm.
+crons = ["*/2 * * * *"]
+
+[[kv_namespaces]]
+binding = "ALERTS"
+# Created once with `npx wrangler kv namespace create ALERTS` on the BetaNYC
+# account. Not a secret: an id is useless without an account token.
+id = "786a8810e2d040429184c78562b1e094"
+
+[observability]
+enabled = true

@@ -1,0 +1,78 @@
+name: alerts-worker
+
+# Tests the alerts Worker on every PR that touches it, and deploys it to
+# Cloudflare (BetaNYC account, workers.dev) when that PR merges to main.
+#
+# The Worker is the only runtime dependency of an otherwise static site, and it
+# deploys independently of both the pipeline and the web app - a change here
+# never rebuilds either. Brief: ALERTS_SERVICE.md.
+#
+# Deploy needs two repository secrets, set once by an account admin:
+#   CLOUDFLARE_API_TOKEN   "Edit Cloudflare Workers" template token
+#   CLOUDFLARE_ACCOUNT_ID  from the Workers dashboard sidebar
+
+on:
+  pull_request:
+    paths:
+      - 'alerts/worker/**'
+      - '.github/workflows/alerts-worker.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'alerts/worker/**'
+      - '.github/workflows/alerts-worker.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Never let two deploys race; a newer commit supersedes an older PR check.
+concurrency:
+  group: alerts-worker-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+defaults:
+  run:
+    working-directory: alerts/worker
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: alerts/worker/package-lock.json
+
+      - run: npm ci
+
+      # Two tsconfigs: src/ against Workers types only, test/ with Node's too.
+      - run: npm run check
+
+      - run: npm test
+
+  deploy:
+    needs: test
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: alerts/worker/package-lock.json
+
+      - run: npm ci
+
+      # Uses the wrangler pinned in package-lock.json, not the action's own.
+      - uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: alerts/worker
+          command: deploy
