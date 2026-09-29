@@ -36,47 +36,49 @@ export const STALE_AFTER_MS = 15 * 60 * 1000;
 /** A banner that appears 8 s late is fine; a page that waits on it is not. */
 const TIMEOUT_MS = 8000;
 
-export type Severity = 'Extreme' | 'Severe' | 'Moderate' | 'Minor' | 'Unknown';
-export type Urgency = 'Immediate' | 'Expected' | 'Future' | 'Past' | 'Unknown';
-/** `Unlikely` is filtered by the service and never arrives. */
-export type Certainty = 'Observed' | 'Likely' | 'Possible' | 'Unknown';
-
 /**
- * ALERTS_SERVICE.md, "Feature properties". The Worker does not emit features
- * yet (no CAP layer), so nothing here has been observed in a real response.
+ * ALERTS_SERVICE.md, "Feature properties" - revised against the first five
+ * real alerts. Examples below are from those alerts.
  */
 export interface AlertProperties {
   id: string;
   guid: string;
+  /** Verbatim: "Notify NYC - Three Alarm Fire - Hillside Avenue (QN)". 37-62 chars observed. */
   headline: string;
-  description: string;
-  /** Unverified whether NYCEM populates it. Design for null. */
-  instruction: string | null;
-  /** Display-only. Not a label for a polygon alert - see `counties`. */
-  area_desc: string;
+  /** "Three Alarm Fire" - the type label. Null only if the headline was malformed. */
+  event: string | null;
+  /** "Hillside Avenue". Display verbatim; often null. Never a map position. */
+  location: string | null;
+  /**
+   * Branch the WORDING on this: "in Queens" or "citywide". 'unknown' means the
+   * borough tag was unrecognised - the alert is kept rather than risk hiding a
+   * Queens one, so word it neutrally.
+   */
+  scope: 'queens' | 'citywide' | 'unknown';
+  /** CAP category: "Fire", "Safety", "Infra", "Geo" observed. The only structured field that varies. */
+  category: string;
+  /**
+   * Plain text. Paragraphs split on blank lines; single newlines are
+   * meaningful (NWS "What:/Where:" lines, "- " bullets). Links and phone
+   * numbers arrive as bare text - linkify here. 300-1,000 chars observed.
+   */
+  body: string;
+  /** Notify NYC's page with this alert in ASL and 12 languages. 4 of 5 observed. */
+  translations_url: string | null;
   /** ISO 8601 with offset. */
   sent: string;
-  /** ISO 8601 with offset. Re-checked here; see isExpired(). */
+  /** ISO 8601 with offset. Always sent + 2 h observed. Re-checked here; see isExpired(). */
   expires: string;
-  severity: Severity;
-  urgency: Urgency;
-  certainty: Certainty;
-  /**
-   * Branch the WORDING on this, never on districts.length. 'county' means the
-   * source said "Queens" and nothing more precise.
-   */
-  area_precision: 'polygon' | 'county';
-  /** Queens district slugs. All 14 when area_precision is 'county'. */
-  districts: string[];
-  /** One of the 8 hazard slugs, or null - null routes to the district page. */
+  /** One of the 8 hazard slugs, or null. Null is the common case - link nowhere hazard-specific. */
   hazard_slug: string | null;
-  /** SAME-derived county FIPS. Never a label for a polygon alert. */
-  counties: string[];
+  /** Queens district slugs, for polygon alerts only. Empty for every alert observed. */
+  districts: string[];
 }
 
 export interface AlertFeature {
   type: 'Feature';
-  geometry: GeoJSON.MultiPolygon;
+  /** Null unless the alert carried a CAP polygon - none of the five observed did. */
+  geometry: GeoJSON.MultiPolygon | null;
   properties: AlertProperties;
 }
 

@@ -1,8 +1,7 @@
 // The discovery tier: the Notify NYC RSS feed, parsed and assessed.
 //
-// Nothing here reads CAP. Status, msgType, expiry, geometry - rules 1-8 in
-// ALERTS_SERVICE.md - arrive with the CAP layer, which is deliberately not
-// built until data/archive/alerts/ holds real CAP files to test it against.
+// Nothing here reads CAP. It decides only what the RSS alone can: whether the
+// feed is quiet, broken, or holding English alerts for cap.ts to read.
 
 import { XMLParser } from "fast-xml-parser";
 
@@ -60,32 +59,28 @@ function text(value: unknown): string {
 }
 
 export interface Assessment {
-  healthy: boolean;
-  /** Diagnostics only. The app branches on `healthy`, never on this string. */
-  detail: string | null;
-  english: number;
+  /**
+   * What the RSS tier alone can conclude:
+   *   empty            no items at all - a quiet feed, healthy
+   *   english_missing  items, none English - the filter string changed
+   *   english_present  go on to the CAP tier
+   */
+  verdict: "empty" | "english_missing" | "english_present";
+  english: FeedItem[];
   total: number;
 }
 
 export function assessFeed(items: FeedItem[]): Assessment {
-  const english = items.filter((i) => i.author === ENGLISH_AUTHOR).length;
+  const english = items.filter((i) => i.author === ENGLISH_AUTHOR);
   const total = items.length;
 
-  // An empty feed is a quiet hour, not an outage - observed 2026-09-28 17:04
-  // UTC. The one state in which this phase can truthfully say "no alerts".
-  if (total === 0) {
-    return { healthy: true, detail: null, english, total };
-  }
+  // An empty feed is a quiet period, not an outage - observed 2026-09-28
+  // 17:04 UTC.
+  if (total === 0) return { verdict: "empty", english, total };
 
   // English missing while other languages are present: the filter string has
   // changed, not the weather.
-  if (english === 0) {
-    return { healthy: false, detail: "english_missing", english, total };
-  }
+  if (english.length === 0) return { verdict: "english_missing", english, total };
 
-  // Alerts exist, and this phase cannot interpret them - it has no CAP layer
-  // to apply rules 1-8. Serving an empty list here would be a false all-clear
-  // during a real alert. Unavailable is the honest answer until the CAP layer
-  // lands; the app already renders it as "no banner".
-  return { healthy: false, detail: "alerts_uninterpreted", english, total };
+  return { verdict: "english_present", english, total };
 }

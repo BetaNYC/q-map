@@ -36,27 +36,21 @@ describe("parseFeed", () => {
 });
 
 describe("assessFeed", () => {
-  it("empty feed: healthy - the only state that may say 'no alerts'", () => {
-    expect(assessFeed([])).toMatchObject({ healthy: true, detail: null });
+  it("empty feed: a quiet period, not an outage", () => {
+    expect(assessFeed([])).toMatchObject({ verdict: "empty", total: 0 });
   });
 
   it("other languages but no English: the filter string changed", () => {
-    expect(assessFeed([item("NYCEM [Spanish]")])).toMatchObject({
-      healthy: false,
-      detail: "english_missing",
-    });
+    expect(assessFeed([item("NYCEM [Spanish]")]).verdict).toBe("english_missing");
   });
 
-  it("English alerts present: unhealthy, never a false all-clear", () => {
-    expect(assessFeed([item("NYCEM [English]"), item("NYCEM [Spanish]")])).toMatchObject({
-      healthy: false,
-      detail: "alerts_uninterpreted",
-      english: 1,
-      total: 2,
-    });
+  it("English present: on to the CAP tier, carrying only the English items", () => {
+    const a = assessFeed([item("NYCEM [English]"), item("NYCEM [Spanish]")]);
+    expect(a).toMatchObject({ verdict: "english_present", total: 2 });
+    expect(a.english.map((i) => i.author)).toEqual(["NYCEM [English]"]);
   });
 
   it("matches the author exactly", () => {
-    expect(assessFeed([item("NYCEM [English (US)]")]).detail).toBe("english_missing");
+    expect(assessFeed([item("NYCEM [English (US)]")]).verdict).toBe("english_missing");
   });
 });

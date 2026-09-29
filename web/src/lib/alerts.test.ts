@@ -73,7 +73,7 @@ describe('unavailable: no claim either way', () => {
   });
 
   it('when the Worker reports itself unhealthy', async () => {
-    const body = envelope({ feed_healthy: false, health_detail: 'alerts_uninterpreted' });
+    const body = envelope({ feed_healthy: false, health_detail: 'cap_unreadable' });
     expect(reason(await run(replying(body)))).toBe('unhealthy');
   });
 
@@ -127,5 +127,56 @@ describe('active', () => {
       '2026-09-28T16:00:00-04:00',
       '2026-09-28T15:30:00-04:00'
     ]);
+  });
+});
+
+describe('a real Worker envelope', () => {
+  // Served by the Worker's CAP layer from the live feed, 2026-09-29 14:42 UTC.
+  const real = {
+    type: 'FeatureCollection',
+    generated_at: '2026-09-29T14:42:11.559Z',
+    feed_healthy: true,
+    health_detail: null,
+    features: [
+      {
+        type: 'Feature',
+        geometry: null,
+        properties: {
+          id: '2758435766629296',
+          guid: '2758435766629296',
+          headline: 'Notify NYC - Police Activity - Cross Bay Boulevard (QN)',
+          event: 'Police Activity',
+          location: 'Cross Bay Boulevard',
+          scope: 'queens',
+          category: 'Safety',
+          body: 'Due to police activity, expect traffic delays, road closures, mass transit disruptions and a heavy presence of emergency personnel in the area of the Cross Bay Boulevard and 165th Avenue in Queens. Use alternate routes to avoid the area and allow for additional travel time.',
+          translations_url: null,
+          sent: '2026-09-29T08:56:30-04:00',
+          expires: '2026-09-29T10:56:30-04:00',
+          hazard_slug: null,
+          districts: []
+        }
+      }
+    ]
+  };
+
+  it('is active while the alert is live', async () => {
+    const state = await fetchAlerts({
+      fetchFn: replying(real),
+      now: new Date('2026-09-29T14:45:00Z'),
+      url: URL
+    });
+    if (state.status !== 'active') throw new Error(`expected active, got ${state.status}`);
+    expect(state.alerts[0].properties).toMatchObject({ scope: 'queens', location: 'Cross Bay Boulevard' });
+    expect(state.alerts[0].geometry).toBeNull();
+  });
+
+  it('is none once it expires at 14:56:30 UTC, though the snapshot is fresh', async () => {
+    const state = await fetchAlerts({
+      fetchFn: replying({ ...real, generated_at: '2026-09-29T14:56:00Z' }),
+      now: new Date('2026-09-29T14:57:00Z'),
+      url: URL
+    });
+    expect(state.status).toBe('none');
   });
 });
