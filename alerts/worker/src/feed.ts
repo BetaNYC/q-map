@@ -17,6 +17,8 @@ export interface FeedItem {
   author: string;
   title: string;
   link: string;
+  /** RFC 822, as the feed sends it: "Tue, 29 Sep 2026 12:58:15 GMT". */
+  pubDate: string;
 }
 
 const parser = new XMLParser({
@@ -46,6 +48,7 @@ export function parseFeed(xml: string): FeedItem[] {
       author: text(item.author),
       title: text(item.title),
       link: text(item.link),
+      pubDate: text(item.pubDate),
     };
   });
 }
@@ -61,26 +64,41 @@ function text(value: unknown): string {
 export interface Assessment {
   /**
    * What the RSS tier alone can conclude:
-   *   empty            no items at all - a quiet feed, healthy
-   *   english_missing  items, none English - the filter string changed
+   *   quiet            nothing English to serve - an empty feed, or only the
+   *                    translations of an alert whose English has expired
+   *   english_missing  recent translations with no English - the filter
+   *                    string changed
    *   english_present  go on to the CAP tier
    */
-  verdict: "empty" | "english_missing" | "english_present";
+  verdict: "quiet" | "english_missing" | "english_present";
   english: FeedItem[];
   total: number;
 }
 
-export function assessFeed(items: FeedItem[]): Assessment {
+// How recent a translation must be for its missing English to mean a broken
+// filter rather than an expired alert. Observed: translations are published
+// ~2 minutes after the English (12:56:30 -> 12:58:15 on 2026-09-29), and each
+// version expires 2 hours after its own pubDate. So for ~2 minutes after
+// every English alert expires, the feed holds only its translations - which
+// the first version of this check reported as an outage, live, at 14:56 UTC.
+//
+// A translation published within the last hour has an English original about
+// two minutes older, which should still be in the feed for close to another
+// hour. The margins are wide both ways: a 2-minute lag against a 2-hour life.
+export const RECENT_MS = 60 * 60 * 1000;
+
+export function assessFeed(items: FeedItem[], now: Date): Assessment {
   const english = items.filter((i) => i.author === ENGLISH_AUTHOR);
   const total = items.length;
+  if (english.length > 0) return { verdict: "english_present", english, total };
 
   // An empty feed is a quiet period, not an outage - observed 2026-09-28
-  // 17:04 UTC.
-  if (total === 0) return { verdict: "empty", english, total };
-
-  // English missing while other languages are present: the filter string has
-  // changed, not the weather.
-  if (english.length === 0) return { verdict: "english_missing", english, total };
-
-  return { verdict: "english_present", english, total };
+  // 17:04 UTC. So are translations outliving their English by minutes.
+  const recent = items.some((i) => {
+    const published = Date.parse(i.pubDate);
+    // Unparseable counts as recent: a false "unavailable" is the safe error,
+    // a broken filter reported as "no alerts" is not.
+    return Number.isNaN(published) || now.getTime() - published < RECENT_MS;
+  });
+  return { verdict: recent ? "english_missing" : "quiet", english, total };
 }

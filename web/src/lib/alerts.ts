@@ -69,15 +69,14 @@ export interface AlertProperties {
   sent: string;
   /** ISO 8601 with offset. Always sent + 2 h observed. Re-checked here; see isExpired(). */
   expires: string;
-  /** One of the 8 hazard slugs, or null. Null is the common case - link nowhere hazard-specific. */
-  hazard_slug: string | null;
-  /** Queens district slugs, for polygon alerts only. Empty for every alert observed. */
-  districts: string[];
 }
 
 export interface AlertFeature {
   type: 'Feature';
-  /** Null unless the alert carried a CAP polygon - none of the five observed did. */
+  /**
+   * Null unless the alert carried a CAP polygon - none observed so far. Drawn
+   * for display only: alerts are not resolved to districts or hazards.
+   */
   geometry: GeoJSON.MultiPolygon | null;
   properties: AlertProperties;
 }
