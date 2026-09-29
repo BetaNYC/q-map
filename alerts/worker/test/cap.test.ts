@@ -150,12 +150,6 @@ describe("interpret: the rules on real alerts, altered where the rule is unobser
       expect(cap.areas[0].areaDesc).toBe("Bronx,Kings,New York,Queens,Staten Island");
     }
   });
-
-  it("hazard_slug is null while the table is empty, and the event is logged", () => {
-    const { features, log } = run(fire);
-    expect(features[0].properties.hazard_slug).toBeNull();
-    expect(log.join()).toMatch(/no hazard for event "Three Alarm Fire"/);
-  });
 });
 
 describe("rule 5: CAP polygons -> GeoJSON (unobserved in the archive)", () => {

@@ -22,8 +22,6 @@ export interface AlertProperties {
   translations_url: string | null;
   sent: string;
   expires: string;
-  hazard_slug: string | null;
-  districts: string[];
 }
 
 export interface AlertFeature {
@@ -31,12 +29,6 @@ export interface AlertFeature {
   geometry: { type: "MultiPolygon"; coordinates: number[][][][] } | null;
   properties: AlertProperties;
 }
-
-// event -> hazard slug. Deliberately empty: the one candidate
-// (Coastal Flood Statement -> coastal-storm) is undecided, and a wrong hazard
-// page is worse than none. Unmatched events are logged so the table grows
-// from real alerts. Keys are exact `event` strings.
-const EVENT_HAZARDS: Record<string, string> = {};
 
 export interface Interpretation {
   features: AlertFeature[];
@@ -94,17 +86,11 @@ export function interpret(
       log.push(`kept ${label}: unrecognised tag ${JSON.stringify(headline.tag)} - add it to headline.ts`);
     }
 
-    // Rule 5. Kept for display. Polygon alerts do not yet resolve to
-    // districts (no cdta.geojson intersection), so they are filtered by
-    // headline like any other - flagged, because none has been seen and the
-    // August sample's polygon headline did not fit the grammar.
+    // Rule 5. Drawn for display only. Alerts are not resolved to districts
+    // (decided 2026-09-29), so a polygon alert is filtered by its headline
+    // like any other. Logged, because none has been seen yet.
     const geometry = toMultiPolygon(cap, log);
-    if (geometry) log.push(`polygon alert ${label}: districts not resolved (not built)`);
-
-    const hazard_slug = headline.event ? (EVENT_HAZARDS[headline.event] ?? null) : null;
-    if (headline.event && hazard_slug === null) {
-      log.push(`no hazard for event ${JSON.stringify(headline.event)}`);
-    }
+    if (geometry) log.push(`polygon alert ${label}: drawn, filtered by headline`);
 
     features.push({
       type: "Feature",
@@ -120,8 +106,6 @@ export function interpret(
         ...cleanBody(cap.description),
         sent: cap.sent,
         expires: cap.expires,
-        hazard_slug,
-        districts: [],
       },
     });
   }

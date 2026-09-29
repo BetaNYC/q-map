@@ -37,6 +37,7 @@ import time
 import urllib.request
 import xml.etree.ElementTree as ET
 from datetime import datetime, timezone
+from email.utils import parsedate_to_datetime
 from pathlib import Path
 
 FEED_URL = "https://feeds.everbridge.net/feeds/453003085617722/rss/rss.xml"
@@ -55,6 +56,10 @@ ITEMS_COLUMNS = ["guid", "author", "title", "category", "pub_date", "link", "fir
 GUID_PATTERN = re.compile(r"^[0-9]+$")
 
 TIMEOUT_S = 30
+
+# How recent a translation must be for missing English to mean a broken
+# filter rather than an expired alert. See the monitor in main().
+RECENT_S = 60 * 60
 
 
 def fetch(url):
@@ -91,6 +96,18 @@ def parse_items(feed_bytes):
                     or (enclosure.get("url", "") if enclosure is not None else ""),
         })
     return items
+
+
+def is_recent(pub_date, now):
+    """Published within RECENT_S of now. Unparseable counts as recent: a false
+    alarm is the safe error, a broken filter recorded as silence is not."""
+    try:
+        published = parsedate_to_datetime(pub_date)
+    except (TypeError, ValueError):
+        return True
+    if published.tzinfo is None:
+        published = published.replace(tzinfo=timezone.utc)
+    return (now - published).total_seconds() < RECENT_S
 
 
 def read_seen(items_path):
@@ -132,14 +149,19 @@ def main():
     english = [i for i in items if i["author"] == ENGLISH_AUTHOR]
     print(f"Feed: {len(items)} items, {len(english)} English")
 
-    # An empty feed is a quiet hour, not an outage - observed 2026-09-28 17:04
-    # UTC. The outage signal is English missing while other languages are
-    # present: the filter string has changed, not the weather.
-    monitor_tripped = bool(items) and not english
+    # An empty feed is a quiet period, not an outage - observed 2026-09-28
+    # 17:04 UTC. So are translations outliving their English: they are
+    # published ~2 minutes after it and each expires 2 hours after its own
+    # pubDate, which failed this run at 14:57 UTC on 2026-09-29. The outage
+    # signal is English missing while a translation is RECENT - its English
+    # original would still be in the feed. Same rule as the Worker's
+    # assessFeed() (alerts/worker/src/feed.ts); keep the two in step.
+    recent = [i for i in items if is_recent(i["pub_date"], now)]
+    monitor_tripped = bool(recent) and not english
     if monitor_tripped:
-        authors = sorted({i["author"] for i in items})
-        print(f"::error::{len(items)} items but none authored {ENGLISH_AUTHOR!r}. "
-              f"Authors seen: {authors}")
+        authors = sorted({i["author"] for i in recent})
+        print(f"::error::{len(recent)} items published in the last hour but none "
+              f"authored {ENGLISH_AUTHOR!r}. Authors seen: {authors}")
 
     bad = [i["guid"] for i in items if not GUID_PATTERN.match(i["guid"])]
     if bad:

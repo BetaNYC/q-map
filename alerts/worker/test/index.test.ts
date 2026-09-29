@@ -79,8 +79,6 @@ describe("poll, replaying real archived snapshots", () => {
         translations_url: "http://on.nyc.gov/1kdbhe2",
         sent: "2026-09-29T05:17:36-04:00",
         expires: "2026-09-29T07:17:36-04:00",
-        hazard_slug: null,
-        districts: [],
       },
     });
   });

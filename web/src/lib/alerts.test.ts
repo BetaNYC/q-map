@@ -152,9 +152,7 @@ describe('a real Worker envelope', () => {
           body: 'Due to police activity, expect traffic delays, road closures, mass transit disruptions and a heavy presence of emergency personnel in the area of the Cross Bay Boulevard and 165th Avenue in Queens. Use alternate routes to avoid the area and allow for additional travel time.',
           translations_url: null,
           sent: '2026-09-29T08:56:30-04:00',
-          expires: '2026-09-29T10:56:30-04:00',
-          hazard_slug: null,
-          districts: []
+          expires: '2026-09-29T10:56:30-04:00'
         }
       }
     ]

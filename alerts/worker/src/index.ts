@@ -68,7 +68,7 @@ async function fetchText(url: string, timeoutMs: number): Promise<string> {
 export async function poll(env: Env, now: Date = new Date()): Promise<Envelope> {
   // A failure here throws: nothing is written, generated_at ages, and the
   // app's 15-minute staleness rule takes over.
-  const assessment = assessFeed(parseFeed(await fetchText(FEED_URL, 20_000)));
+  const assessment = assessFeed(parseFeed(await fetchText(FEED_URL, 20_000)), now);
 
   const previous = await env.ALERTS.get<State>(STATE_KEY, "json");
   const cache: Record<string, CapAlert> = {};
