@@ -1,10 +1,11 @@
 <script lang="ts">
-  import maplibregl from 'maplibre-gl';
+  import * as maplibregl from 'maplibre-gl';
   import 'maplibre-gl/dist/maplibre-gl.css';
   import { dataUrl } from '$lib/data';
   import { BASEMAP_STYLE, INITIAL_CENTER, INITIAL_ZOOM } from '$lib/map/basemap';
   import { overlaySpecs } from '$lib/map/overlays';
   import { registerMapProtocols } from '$lib/map/protocols';
+  import { configureMapWorker } from '$lib/map/worker';
   import type { DistrictIndexEntry } from '$lib/types';
 
   /**
@@ -48,6 +49,7 @@
   $effect(() => {
     if (!container) return;
 
+    configureMapWorker();
     registerMapProtocols();
 
     const instance = new maplibregl.Map({

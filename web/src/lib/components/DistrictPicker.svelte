@@ -1,10 +1,11 @@
 <script lang="ts">
-  import maplibregl from 'maplibre-gl';
+  import * as maplibregl from 'maplibre-gl';
   import 'maplibre-gl/dist/maplibre-gl.css';
   import { goto } from '$app/navigation';
   import { base } from '$app/paths';
   import { dataUrl } from '$lib/data';
   import { BASEMAP_STYLE } from '$lib/map/basemap';
+  import { configureMapWorker } from '$lib/map/worker';
   import type { DistrictIndexEntry } from '$lib/types';
 
   /**
@@ -79,6 +80,8 @@
 
   $effect(() => {
     if (!container || queens.length === 0) return;
+
+    configureMapWorker();
 
     const map = new maplibregl.Map({
       container,
