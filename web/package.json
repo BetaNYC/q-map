@@ -26,7 +26,7 @@
     "vitest": "^4.1.11"
   },
   "dependencies": {
-    "maplibre-gl": "^5.24.0",
+    "maplibre-gl": "^6.11.2",
     "pmtiles": "^4.4.1"
   }
 }
