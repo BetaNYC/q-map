@@ -139,7 +139,9 @@
         type: 'line',
         source: 'cdta',
         filter: ['==', ['get', 'cdta2020'], district.cdta2020],
-        paint: { 'line-color': '#0a0a0a', 'line-width': 2 }
+        // #3258a3 (color/blue/700), matching the entry map's district outlines
+        // (Andrew, 2026-10-01). Was #0a0a0a.
+        paint: { 'line-color': '#3258a3', 'line-width': 2 }
       });
 
       // bbox is [xmin, ymin, xmax, ymax] in EPSG:4326, straight from
