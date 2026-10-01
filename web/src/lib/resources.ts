@@ -184,26 +184,7 @@ export function mapReturnPath(resource: Resource, districtSlug: string): string 
  *            which is why a naive multi-value check on "/" is wrong here.
  */
 
-/** `tel:` for a value that is unambiguously one North American number. */
-export function telHref(value: string): string | null {
-  // Any separator means more than one number, or a number with commentary.
-  if (/[,;/]| or | and /i.test(value)) return null;
 
-  const digits = value.replace(/\D/g, '');
-  if (digits.length === 10) return `tel:+1${digits}`;
-  if (digits.length === 11 && digits.startsWith('1')) return `tel:+${digits}`;
-  // 13 digits is an extension or a non-NANP number; dialling the first ten of
-  // it would be a guess.
-  return null;
-}
-
-/** `mailto:` for a value that is unambiguously one address. */
-export function mailtoHref(value: string): string | null {
-  const trimmed = value.trim();
-  if (/[,;/\s]/.test(trimmed)) return null;
-  if ((trimmed.match(/@/g) ?? []).length !== 1) return null;
-  return `mailto:${trimmed}`;
-}
 
 /** An absolute URL. Values arrive bare ("hercareinc.org"), so a scheme is
  *  added — without one the browser resolves it as a relative path. */

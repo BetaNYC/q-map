@@ -9,7 +9,6 @@
   import Map from '$lib/components/Map.svelte';
   import TabBar from '$lib/components/TabBar.svelte';
   import Popup from '$lib/components/Popup.svelte';
-  import ResourceCard from '$lib/components/ResourceCard.svelte';
   import ResourceRow from '$lib/components/ResourceRow.svelte';
   import { dataUrl } from '$lib/data';
   import { listableLayers } from '$lib/layers';
