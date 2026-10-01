@@ -2,6 +2,7 @@
   import { base } from '$app/paths';
   import HorizontalRule from '$lib/components/HorizontalRule.svelte';
   import ArrowLeftIcon from '$lib/icons/ArrowLeftIcon.svelte';
+  import ArrowRightIcon from '$lib/icons/ArrowRightIcon.svelte';
 
   /**
    * The hazard screen's header. Figma: HazardHeader, nodes 40:204 and 58:404 —
@@ -18,6 +19,10 @@
    * anything to copy. The 2026-09-25 revision draws it in both frames, inside
    * this component, below a rule, as screen 01's sunken CDTA Card instead. The
    * open question is closed; the styling below is the answer.
+   *
+   * RESTYLED IN CYCLE 2, STEP 7 to Figma's MapLink (node 185:47): the outlined
+   * button of the entry page's panels, full width, with an arrow — it goes to
+   * another page rather than opening anything, so not the panels' chevron.
    */
 
   interface Props {
@@ -50,12 +55,11 @@
   {#if mapHref}
     <HorizontalRule />
 
-    <!-- The frame wraps the card in a 10px-inset frame (I40:204;133:742)
-         rather than padding the card itself, so the rule above runs wider than
-         the button below it. Kept as drawn. -->
-    <div class="map-frame">
-      <a class="map-button" href={mapHref}>See resources on the map</a>
-    </div>
+    <!-- Figma: MapLink, full width (it replaced the 10px-inset frame). -->
+    <a class="map-button" href={mapHref}>
+      <span class="map-label">See resources on the map</span>
+      <ArrowRightIcon />
+    </a>
   {/if}
 </header>
 
@@ -111,38 +115,36 @@
     margin-block: calc((var(--touch-target-min) - 1lh) / -2);
   }
 
-  /* 10px, Figma's literal. The space scale has no 10 — the same gap Coad,
-     Section and HorizontalRule already work around. */
-  .map-frame {
-    padding-inline: 10px;
-  }
-
-  /* CdtaCard's visual with one line instead of two: sunken grey fill, 12px
-     padding, the same bare 3px radius that file records as the only corner in
-     the design with no variable behind it. Not the component itself — that
-     takes a DistrictIndexEntry and renders a name over a cd_label.
-
-     Replaces the old solid-#707070 fill with off-white text, which was
-     improvised from screen 01's Location control while this button was
-     undesigned. */
+  /* MapLink: the outlined button shared with EntryPanel and LocateButton -
+     sunken fill, 0.5px secondary outline, 3px radius, 12px padding, at least
+     44px tall (WCAG 2.5.5). #0a0a0a on #f5f7f9 is 18.4:1. */
   .map-button {
     display: flex;
     align-items: center;
-
+    justify-content: space-between;
+    gap: var(--space-200);
     padding: var(--space-300);
-    /* One line of 14px lands at about 41px. The card is a primary control on
-       this screen, so it is padded out to the 44px minimum rather than left
-       3px short (WCAG 2.5.5). */
     min-height: var(--touch-target-min);
-
+    box-sizing: border-box;
     background: var(--color-surface-sunken);
+    border: 0.5px solid var(--color-text-secondary);
     border-radius: 3px;
-
-    /* #0a0a0a on #f5f7f9 is 18.4:1. */
     color: inherit;
     font-weight: var(--font-weight-bold);
     text-decoration: none;
     line-height: var(--line-height-tight);
     overflow-wrap: break-word;
+  }
+
+  /* Optical centring, as in EntryPanel - see the note there. */
+  .map-label {
+    text-box: trim-both cap alphabetic;
+  }
+
+  @supports not (text-box: trim-both cap alphabetic) {
+    .map-label {
+      position: relative;
+      top: 0.1em;
+    }
   }
 </style>
