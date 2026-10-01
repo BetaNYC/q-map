@@ -1,9 +1,14 @@
 <script lang="ts">
   import '../app.css';
+  import { provideAlerts } from '$lib/alertsContext';
 
   let { children } = $props();
+
+  // One alerts poller for the visit - see $lib/alertsContext.ts. start() only
+  // runs in the browser ($effect never runs during prerender) and returns its
+  // own cleanup.
+  const alerts = provideAlerts();
+  $effect(() => alerts.start());
 </script>
 
-<!-- The app shell lands in build step 5. For now the layout exists only to own
-     the global stylesheet and the prerender declaration in +layout.ts. -->
 {@render children()}

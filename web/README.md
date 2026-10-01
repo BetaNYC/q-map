@@ -24,6 +24,8 @@ is exercised from the first minute rather than discovered at deploy.
 | `npm run build` | prerender every route to `build/`, same guard |
 | `npm run preview` | serve `build/` as Pages will |
 | `npm run check` | `svelte-check` |
+| `npm test` | Vitest unit tests |
+| `node scripts/mock-alerts.mjs` | a stand-in alerts Worker on `:8790` with switchable scenarios — run the app with `VITE_ALERTS_URL=http://localhost:8790/` |
 
 ## The data path
 

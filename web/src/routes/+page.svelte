@@ -1,5 +1,6 @@
 <script lang="ts">
   import { browser } from '$app/environment';
+  import AlertBanner from '$lib/components/AlertBanner.svelte';
   import CdtaCard from '$lib/components/CdtaCard.svelte';
   import DistrictPicker from '$lib/components/DistrictPicker.svelte';
   import EntryHeader from '$lib/components/EntryHeader.svelte';
@@ -17,13 +18,9 @@
 
 <!-- Screen 01. Figma: "01 Entry - Mobile", node 86:1910.
 
-     THREE OF THE FRAME'S ELEMENTS ARE NOT HERE, and the omissions are
+     TWO OF THE FRAME'S ELEMENTS ARE NOT HERE, and the omissions are
      deliberate rather than unfinished:
 
-     AlertBanner      Awaiting design. The endpoint exists and
-                      $lib/alerts.ts reads it into three states; the component
-                      that renders them does not. §7.7 still holds: no layout
-                      space is reserved, so there is no placeholder.
 
      Address input    Both belong to the same half of this screen: finding your
      "Use my location" district by LOCATION rather than by name. The address
@@ -37,6 +34,10 @@
      is a decorative shortcut to the same destinations. See web/README.md. -->
 <div class="screen">
   <EntryHeader />
+
+  <!-- Renders only while an alert is active; nothing, and no reserved space,
+       otherwise (§7.7). Reads the visit's AlertsStore from the root layout. -->
+  <AlertBanner />
 
   <!-- Client-only: MapLibre needs a DOM and a WebGL context, and a
        prerendered page has neither. The cards below render regardless, so the
