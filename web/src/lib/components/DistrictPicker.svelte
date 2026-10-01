@@ -310,9 +310,10 @@
     white-space: nowrap;
     pointer-events: none;
     /* A halo: the labels sit over fills, boundaries and streets. */
+    -webkit-text-stroke: 0.4em #fefcfa;
+    paint-order: stroke fill;
     text-shadow:
-      0 0 2px #fefcfa,
-      0 0 2px #fefcfa,
-      0 0 3px #fefcfa;
+      0 0 2px #fefcfa;
   }
 </style>
+ 
