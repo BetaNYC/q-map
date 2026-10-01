@@ -32,7 +32,7 @@
    * already loaded for the cards.
    *
    * THE MAP IS A SHORTCUT, THE CARDS ARE THE PICKER. The same fourteen
-   * destinations sit immediately below as real links, and the canvas is
+   * destinations are real links in the entry page's other panel, and the canvas is
    * `tabindex="-1"` so a keyboard user is not stranded on a target they
    * cannot operate — the cards are the route.
    *
@@ -216,7 +216,7 @@
   });
 </script>
 
-<!-- A shortcut to the fourteen cards below, which are the accessible picker. -->
+<!-- A shortcut to the fourteen cards in the other panel, which are the accessible picker. -->
 <div class="picker" bind:this={container}></div>
 
 <style>
