@@ -37,6 +37,7 @@
 
   --color-surface: #fefcfa;        /* color/off-white/primary — the page ground */
   --color-surface-sunken: #f5f7f9; /* color/grey/50 — section fills */
+  --color-surface-muted: #e8ecf1;  /* color/grey/100 — the entry map's "can't be shown" panel */
   --color-surface-alert: #f8e8dc;  /* color/orange/100 — AlertBanner only, which never
                                     * renders in v1 (handoff §7.7). Declared because the
                                     * token exists, not because anything uses it yet. */
