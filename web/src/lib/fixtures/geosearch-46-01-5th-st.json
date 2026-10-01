@@ -1,0 +1,29 @@
+{
+ "geocoding": {
+  "query": {
+   "text": "46-01 5th St"
+  },
+  "timestamp": 1790874504133
+ },
+ "type": "FeatureCollection",
+ "features": [
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -73.954843,
+     40.747074
+    ]
+   },
+   "properties": {
+    "label": "46-01 5 STREET, Long Island City, NY, USA",
+    "name": "46-01 5 STREET",
+    "borough": "Queens",
+    "neighbourhood": "Long Island City",
+    "postalcode": "11101",
+    "layer": "venue"
+   }
+  }
+ ]
+}
