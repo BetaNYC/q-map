@@ -1,5 +1,6 @@
 <script lang="ts">
   import { browser } from '$app/environment';
+  import AddressSearch from '$lib/components/AddressSearch.svelte';
   import AlertBanner from '$lib/components/AlertBanner.svelte';
   import CdtaCard from '$lib/components/CdtaCard.svelte';
   import DistrictPicker from '$lib/components/DistrictPicker.svelte';
@@ -26,9 +27,8 @@
      exclusive accordion (EntryPanel): opening one closes the other, the map is
      open by default, and both may be closed.
 
-     NOT HERE YET: the address field (FRONTEND_PLAN.md step 4, the geocoder). It
-     arrives when it works, rather than as a disabled control in the meantime.
-     "Use my location" (step 3) sits where it will follow it. -->
+     The address field (step 4) and "Use my location" (step 3) come first:
+     finding a district by where you are, before choosing it by name. -->
 <div class="screen">
   <EntryHeader />
 
@@ -42,7 +42,10 @@
     quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
   </p>
 
-  <!-- Goes straight to the district it finds; says why when it can't. -->
+  <!-- Both go straight to the district they find, and say why when they
+       can't. The address field uses NYC GeoSearch; neither renders without
+       JavaScript, and the panels below always work. -->
+  <AddressSearch districts={data.all} />
   <LocateButton districts={data.all} />
 
   <EntryPanel name="entry-view" label="Choose Community District">

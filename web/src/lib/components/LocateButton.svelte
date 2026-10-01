@@ -1,8 +1,8 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
   import { base } from '$app/paths';
-  import { dataUrl } from '$lib/data';
-  import { placePoint, type CdtaFeature } from '$lib/geo';
+  import { loadBoundaries } from '$lib/boundaries';
+  import { placePoint } from '$lib/geo';
   import type { DistrictIndexEntry } from '$lib/types';
 
   /**
@@ -44,17 +44,6 @@
   });
 
   const LIST = 'Choose a district from the list.';
-
-  /** Fetched on first use, then reused. 126 KB, cached by the browser after. */
-  let boundaries: Promise<CdtaFeature[]> | undefined;
-  function loadBoundaries(): Promise<CdtaFeature[]> {
-    boundaries ??= fetch(dataUrl('cdta.geojson')).then((r) => {
-      if (!r.ok) throw new Error(`cdta.geojson: ${r.status}`);
-      return r.json().then((j) => j.features as CdtaFeature[]);
-    });
-    boundaries.catch(() => (boundaries = undefined)); // let a later click retry
-    return boundaries;
-  }
 
   function position(): Promise<GeolocationPosition> {
     return new Promise((resolve, reject) =>

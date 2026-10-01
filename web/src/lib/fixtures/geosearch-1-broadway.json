@@ -1,0 +1,191 @@
+{
+ "geocoding": {
+  "query": {
+   "text": "1 Broadway"
+  },
+  "timestamp": 1790874527427
+ },
+ "type": "FeatureCollection",
+ "features": [
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -74.014613,
+     40.704967
+    ]
+   },
+   "properties": {
+    "label": "1 BROADWAY, New York, NY, USA",
+    "name": "1 BROADWAY",
+    "borough": "Manhattan",
+    "neighbourhood": "Financial District",
+    "postalcode": "10004",
+    "layer": "venue"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -73.830522,
+     40.658433
+    ]
+   },
+   "properties": {
+    "label": "1 B'WAY, Howard Beach, NY, USA",
+    "name": "1 B'WAY",
+    "borough": "Queens",
+    "neighbourhood": "Howard Beach",
+    "postalcode": "11414",
+    "layer": "venue"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -73.830522,
+     40.658433
+    ]
+   },
+   "properties": {
+    "label": "1 BROADWAY, Howard Beach, NY, USA",
+    "name": "1 BROADWAY",
+    "borough": "Queens",
+    "neighbourhood": "Howard Beach",
+    "postalcode": "11414",
+    "layer": "venue"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -74.014613,
+     40.704967
+    ]
+   },
+   "properties": {
+    "label": "1 B'WAY, New York, NY, USA",
+    "name": "1 B'WAY",
+    "borough": "Manhattan",
+    "neighbourhood": "Financial District",
+    "postalcode": "10004",
+    "layer": "venue"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -73.99787,
+     40.713234
+    ]
+   },
+   "properties": {
+    "label": "1 EAST B'WAY, New York, NY, USA",
+    "name": "1 EAST B'WAY",
+    "borough": "Manhattan",
+    "neighbourhood": "Chinatown",
+    "postalcode": "10038",
+    "layer": "venue"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -73.923486,
+     40.761376
+    ]
+   },
+   "properties": {
+    "label": "33-01 B'WAY, Astoria, NY, USA",
+    "name": "33-01 B'WAY",
+    "borough": "Queens",
+    "neighbourhood": "Astoria",
+    "postalcode": "11106",
+    "layer": "venue"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -73.923486,
+     40.761376
+    ]
+   },
+   "properties": {
+    "label": "33-01 BROADWAY, Astoria, NY, USA",
+    "name": "33-01 BROADWAY",
+    "borough": "Queens",
+    "neighbourhood": "Astoria",
+    "postalcode": "11106",
+    "layer": "venue"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -73.922724,
+     40.760981
+    ]
+   },
+   "properties": {
+    "label": "34-01 B'WAY, Astoria, NY, USA",
+    "name": "34-01 B'WAY",
+    "borough": "Queens",
+    "neighbourhood": "Astoria",
+    "postalcode": "11106",
+    "layer": "venue"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -73.920303,
+     40.759875
+    ]
+   },
+   "properties": {
+    "label": "37-01 BROADWAY, Astoria, NY, USA",
+    "name": "37-01 BROADWAY",
+    "borough": "Queens",
+    "neighbourhood": "Astoria",
+    "postalcode": "11103",
+    "layer": "venue"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -73.919512,
+     40.759489
+    ]
+   },
+   "properties": {
+    "label": "38-01 BROADWAY, Astoria, NY, USA",
+    "name": "38-01 BROADWAY",
+    "borough": "Queens",
+    "neighbourhood": "Astoria",
+    "postalcode": "11103",
+    "layer": "venue"
+   }
+  }
+ ]
+}

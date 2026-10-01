@@ -1041,3 +1041,14 @@ A push touching only `web/` skips the R pipeline — `web/**` is not in the
 `.github/workflows/web.yml` builds and type-checks on every pull request
 touching `web/`. `pipeline.yml` has no `pull_request` trigger, so without it a
 frontend PR gets no automated check at all.
+
+## Runtime dependencies
+
+Everything is same-origin except three services, each of which the app
+degrades around rather than depends on:
+
+| Service | Used by | When it fails |
+|---|---|---|
+| CARTO basemap tiles | both maps | maps draw without streets |
+| Alerts Worker (`VITE_ALERTS_URL`) | alert banner, `/alerts` | no banner; `/alerts` says "can't be loaded" |
+| NYC GeoSearch (NYC City Planning) | entry-page address field | the field says search is unavailable; the district list still works |
