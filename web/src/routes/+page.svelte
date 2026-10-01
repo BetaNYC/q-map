@@ -4,6 +4,7 @@
   import CdtaCard from '$lib/components/CdtaCard.svelte';
   import DistrictPicker from '$lib/components/DistrictPicker.svelte';
   import EntryPanel from '$lib/components/EntryPanel.svelte';
+  import LocateButton from '$lib/components/LocateButton.svelte';
   import EntryHeader from '$lib/components/EntryHeader.svelte';
 
   let { data } = $props();
@@ -25,9 +26,9 @@
      exclusive accordion (EntryPanel): opening one closes the other, the map is
      open by default, and both may be closed.
 
-     NOT HERE YET: the address field (FRONTEND_PLAN.md step 4, the geocoder) and
-     "Use my location" (step 3). They arrive when they work, rather than as
-     disabled controls in the meantime. -->
+     NOT HERE YET: the address field (FRONTEND_PLAN.md step 4, the geocoder). It
+     arrives when it works, rather than as a disabled control in the meantime.
+     "Use my location" (step 3) sits where it will follow it. -->
 <div class="screen">
   <EntryHeader />
 
@@ -40,6 +41,9 @@
     sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam,
     quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
   </p>
+
+  <!-- Goes straight to the district it finds; says why when it can't. -->
+  <LocateButton districts={data.all} />
 
   <EntryPanel name="entry-view" label="Choose Community District">
     <!-- districts.json covers all 59 CDTAs citywide; only the Queens 14 have
