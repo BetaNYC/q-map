@@ -7,47 +7,43 @@
   import { BASEMAP_STYLE } from '$lib/map/basemap';
   import { configureMapWorker } from '$lib/map/worker';
   import type { DistrictIndexEntry } from '$lib/types';
+  import CdtaCard from './CdtaCard.svelte';
 
   /**
-   * The entry screen's map picker. Figma: MapPlaceholder, node 86:1956 —
-   * 358x350, Queens' districts outlined on a plain ground.
+   * The entry screen's map picker, in the "Select on map" panel. Figma:
+   * MapPlaceholder, node 86:1956 — 358x350. Interactive since frontend cycle 2,
+   * step 5 (Andrew's spec, 2026-10-01 — described rather than drawn):
    *
-   * CARTO POSITRON, the same basemap as the district map — one style constant
-   * for both, in $lib/map/basemap. The frame draws district outlines on a
-   * plain ground with no streets, but streets are what let you recognise where
-   * you live, which is the whole job of a picker.
+   *   - THE FIRST TAP SELECTS, THE SECOND GOES. On a phone-sized map a first
+   *     tap that leaves the page is a mis-tap waiting to happen. The selected
+   *     district gets a heavier outline and its CdtaCard appears below the
+   *     map; tapping the same district again navigates to it, and so does the
+   *     card. Tapping another district moves the selection; tapping outside
+   *     Queens clears it.
+   *   - TWO FINGERS TO PAN AND ZOOM (`cooperativeGestures`), so a one-finger
+   *     swipe still scrolls the page; MapLibre's default overlay explains it.
+   *     +/− buttons for anyone who cannot pinch. Zoomed out no further than all
+   *     of Queens, and kept near it.
+   *   - IF THE MAP CANNOT BE DRAWN (no WebGL2 — maplibre 6 throws at
+   *     construction), the 358x350 space says so on grey/100 and points at the
+   *     list. Before cycle 2 this was an uncaught error and a blank box.
    *
-   * The fills are therefore TRANSLUCENT. An opaque district fill over a street
-   * basemap hides the thing the basemap was added for; the fill is here to
-   * give the polygon a click target and a tint, not to cover the map.
+   * CARTO POSITRON, the same basemap as the district map — streets are what let
+   * you recognise where you live. Fills are therefore translucent: a click
+   * target and a tint, not a cover.
    *
-   * LABELS ARE HTML MARKERS, NOT A SYMBOL LAYER. Positron's style does supply
-   * a `glyphs` URL, so a symbol layer with free collision detection is now
-   * available — but its fonts are Open Sans and Noto, and every other label in
-   * this app is AUTHENTIC Sans Pro. DOM markers keep the typography
-   * consistent; the cost is doing collision detection by hand, below.
+   * LABELS ARE HTML MARKERS, NOT A SYMBOL LAYER: a symbol layer needs fonts
+   * from a glyph CDN, and every other label in the app is AUTHENTIC Sans Pro.
+   * The cost is doing collision detection by hand — now on every zoom. Labels
+   * also grow as the map zooms in (LABEL below), so more names fit and they
+   * become readable as the districts get larger.
    *
-   * They also need a join: `cdta.geojson` carries only `cdta2020` and `slug`
-   * (§9), so the names come from districts.json — which the entry screen has
-   * already loaded for the cards.
+   * THE CARDS ARE STILL THE ACCESSIBLE PICKER. The canvas is tabindex="-1";
+   * the other panel holds the same fourteen destinations as real links. The
+   * zoom buttons are focusable, which is harmless.
    *
-   * THE MAP IS A SHORTCUT, THE CARDS ARE THE PICKER. The same fourteen
-   * destinations are real links in the entry page's other panel, and the canvas is
-   * `tabindex="-1"` so a keyboard user is not stranded on a target they
-   * cannot operate — the cards are the route.
-   *
-   * The container is NOT `aria-hidden`. It was, which is the tidier statement
-   * about a decorative map, but the attribution control puts focusable links
-   * inside it and `aria-hidden` around a focusable element is an axe
-   * `aria-hidden-focus` violation — a keyboard user tabbing into something a
-   * screen reader is told does not exist. A canvas with no fallback content
-   * is already invisible to assistive technology, so leaving the container
-   * plain costs nothing and keeps the attribution reachable.
-   *
-   * PAN AND ZOOM ARE OFF. A 350px map inside a scrolling page competes for
-   * every vertical swipe — MapLibre sets `touch-action: none` on its canvas,
-   * so a drag pans the map instead of scrolling the page. The frame is a fixed
-   * view of Queens, so this is one too. Clicks still fire.
+   * The container is NOT aria-hidden: the attribution and zoom controls put
+   * focusable elements inside it (axe `aria-hidden-focus`).
    */
 
   interface Props {
@@ -60,9 +56,22 @@
   const queens = $derived(districts.filter((d) => d.boro === 'Queens'));
 
   let container = $state<HTMLDivElement>();
+  let selectedSlug = $state<string | null>(null);
+  let unavailable = $state(false);
 
-  /** The union of the 14 district bboxes — the frame's extent. */
-  function queensBounds(entries: DistrictIndexEntry[]): maplibregl.LngLatBoundsLike {
+  const selected = $derived(queens.find((d) => d.slug === selectedSlug) ?? null);
+
+  /** Andrew's spec: the selected outline in #3258a3 at 90%. 3px so it reads
+   *  against the 1px outline every district already has. */
+  const SELECTED_LINE = { color: '#3258a3', opacity: 0.9, width: 3 };
+
+  /** Labels grow with the map: 7px at the opening view of Queens, x1.35 per
+   *  zoom level in, capped at 12px (body/small) - so names get readable as
+   *  districts get larger, without ever outgrowing the app's own small type. */
+  const LABEL = { basePx: 7, growth: 1.35, maxPx: 12 };
+
+  /** The union of the 14 district bboxes. */
+  function queensBounds(entries: DistrictIndexEntry[]): [[number, number], [number, number]] {
     const b = entries.reduce(
       (acc, d) => [
         Math.min(acc[0], d.bbox[0]),
@@ -83,141 +92,178 @@
 
     configureMapWorker();
 
-    const map = new maplibregl.Map({
-      container,
-      style: BASEMAP_STYLE,
-      bounds: queensBounds(queens),
-      fitBoundsOptions: { padding: 12, animate: false },
-      // See the note above: a picker, not a map to explore.
-      scrollZoom: false,
-      dragPan: false,
-      dragRotate: false,
-      touchZoomRotate: false,
-      keyboard: false,
-      doubleClickZoom: false,
-      // MapLibre's built-in control, as on the district map. Required by both
-      // CARTO and OpenStreetMap; compact keeps it to an "i" until tapped.
-      attributionControl: { compact: true }
-    });
+    const bounds = queensBounds(queens);
+    // Panning stops a little beyond Queens, so the map cannot be lost.
+    const [[w, s], [e, n]] = bounds;
+    const padX = (e - w) * 0.25;
+    const padY = (n - s) * 0.25;
 
-    // MapLibre gives its canvas tabindex="0". Inside an aria-hidden subtree
-    // that would be a focusable element a screen reader cannot describe.
+    let map: maplibregl.Map;
+    try {
+      map = new maplibregl.Map({
+        container,
+        style: BASEMAP_STYLE,
+        bounds,
+        fitBoundsOptions: { padding: 12, animate: false },
+        maxBounds: [
+          [w - padX, s - padY],
+          [e + padX, n + padY]
+        ],
+        maxZoom: 15,
+        cooperativeGestures: true,
+        dragRotate: false,
+        pitchWithRotate: false,
+        keyboard: false,
+        attributionControl: { compact: true }
+      });
+    } catch {
+      // maplibre 6 throws GPUInitializationError without WebGL2.
+      unavailable = true;
+      return;
+    }
+
+    map.touchZoomRotate.disableRotation();
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+    // MapLibre gives its canvas tabindex="0"; the cards are the keyboard route.
     map.getCanvas().setAttribute('tabindex', '-1');
 
     const markers: maplibregl.Marker[] = [];
 
-    map.on('load', () => {
-      map.addSource('cdta', {
-        type: 'geojson',
-        data: dataUrl('cdta.geojson'),
-        promoteId: 'cdta2020'
-      });
-
-      const queensIds = queens.map((d) => d.cdta2020);
-
-      // No layer for the other 45: Positron already draws the rest of the
-      // city, so Queens reads by being the tinted part rather than by the
-      // others being drawn differently.
-      map.addLayer({
-        id: 'queens-fill',
-        type: 'fill',
-        source: 'cdta',
-        filter: ['in', ['get', 'cdta2020'], ['literal', queensIds]],
-        // Translucent: the fill is a click target and a tint, not a cover.
-        paint: { 'fill-color': '#3258a3', 'fill-opacity': 0.1 }
-      });
-
-      map.addLayer({
-        id: 'queens-line',
-        type: 'line',
-        source: 'cdta',
-        filter: ['in', ['get', 'cdta2020'], ['literal', queensIds]],
-        paint: { 'line-color': '#3258a3', 'line-width': 1 }
-      });
-
-      map.on('click', 'queens-fill', (e) => {
-        const slug = e.features?.[0]?.properties?.slug;
-        if (typeof slug === 'string') goto(`${base}/${slug}`);
-      });
-
-      map.on('mouseenter', 'queens-fill', () => {
-        map.getCanvas().style.cursor = 'pointer';
-      });
-      map.on('mouseleave', 'queens-fill', () => {
-        map.getCanvas().style.cursor = '';
-      });
-
-      /**
-       * Labels, placed largest district first and skipped where they would
-       * collide.
-       *
-       * A MapLibre symbol layer would do this for free — collision detection
-       * is the main thing symbol layers are for — but it needs a `glyphs` URL
-       * and that means fetching a font from a CDN. Doing it by hand here is
-       * the price of the map having no third-party dependency at all.
-       *
-       * Largest first so that when two labels compete, the one with more room
-       * around it survives. The alternative — hiding by list order — drops
-       * labels arbitrarily.
-       *
-       * The map is static (pan and zoom are off), so positions are fixed and
-       * this runs once rather than on every frame.
-       *
-       * point_on_surface, not a centroid: guaranteed inside the polygon.
-       * QN14's true centroid falls in Jamaica Bay (§2).
-       */
-      const byArea = [...queens].sort((a, b) => {
-        const area = (d: DistrictIndexEntry) =>
-          (d.bbox[2] - d.bbox[0]) * (d.bbox[3] - d.bbox[1]);
-        return area(b) - area(a);
-      });
-
-      for (const d of byArea) {
-        const el = document.createElement('span');
-        el.className = 'picker-label';
-        el.textContent = d.display_name;
-        markers.push(
-          new maplibregl.Marker({ element: el }).setLngLat(d.point_on_surface).addTo(map)
-        );
-      }
-
-      // Measure after a frame, so the markers have been laid out.
+    /**
+     * Show as many labels as fit at this zoom: largest district first, so when
+     * two compete the one with more room survives; a clashing label is hidden,
+     * not removed — its district is still tappable, and the card names it.
+     */
+    const layoutLabels = () => {
+      for (const m of markers) m.getElement().style.display = '';
       requestAnimationFrame(() => {
         const placed: DOMRect[] = [];
         const PAD = 1;
-
         for (const marker of markers) {
           const el = marker.getElement();
           const r = el.getBoundingClientRect();
           const clash = placed.some(
-            (q) =>
-              r.left < q.right + PAD &&
-              r.right > q.left - PAD &&
-              r.top < q.bottom + PAD &&
-              r.bottom > q.top - PAD
+            (q) => r.left < q.right + PAD && r.right > q.left - PAD && r.top < q.bottom + PAD && r.bottom > q.top - PAD
           );
-
-          if (clash) {
-            // Hidden, not removed: the district is still tappable, and the
-            // card below carries its name. A half-legible pile of overlapping
-            // text is worse than fewer labels.
-            el.style.display = 'none';
-          } else {
-            placed.push(r);
-          }
+          if (clash) el.style.display = 'none';
+          else placed.push(r);
         }
       });
+    };
+
+    map.on('load', () => {
+      // Not zoomable out past the Queens view it opened on.
+      const baseZoom = map.getZoom();
+      map.setMinZoom(baseZoom);
+
+      const scaleLabels = () => {
+        const px = Math.min(LABEL.maxPx, LABEL.basePx * LABEL.growth ** (map.getZoom() - baseZoom));
+        container!.style.setProperty('--picker-label-size', `${px.toFixed(2)}px`);
+      };
+      scaleLabels();
+      map.on('zoom', scaleLabels);
+
+      map.addSource('cdta', { type: 'geojson', data: dataUrl('cdta.geojson'), promoteId: 'cdta2020' });
+
+      const queensIds = queens.map((d) => d.cdta2020);
+      const inQueens: maplibregl.FilterSpecification = ['in', ['get', 'cdta2020'], ['literal', queensIds]];
+
+      map.addLayer({
+        id: 'queens-fill',
+        type: 'fill',
+        source: 'cdta',
+        filter: inQueens,
+        paint: { 'fill-color': '#3258a3', 'fill-opacity': 0.1 }
+      });
+      map.addLayer({
+        id: 'queens-line',
+        type: 'line',
+        source: 'cdta',
+        filter: inQueens,
+        paint: { 'line-color': '#3258a3', 'line-width': 1 }
+      });
+      map.addLayer({
+        id: 'queens-selected',
+        type: 'line',
+        source: 'cdta',
+        filter: ['==', ['get', 'slug'], ''],
+        paint: {
+          'line-color': SELECTED_LINE.color,
+          'line-opacity': SELECTED_LINE.opacity,
+          'line-width': SELECTED_LINE.width
+        }
+      });
+
+      map.on('click', (e) => {
+        const hit = map.queryRenderedFeatures(e.point, { layers: ['queens-fill'] })[0];
+        const slug = typeof hit?.properties?.slug === 'string' ? hit.properties.slug : null;
+        // A second tap on the selected district goes there.
+        if (slug && slug === selectedSlug) {
+          goto(`${base}/${slug}`);
+          return;
+        }
+        selectedSlug = slug;
+      });
+      map.on('mouseenter', 'queens-fill', () => (map.getCanvas().style.cursor = 'pointer'));
+      map.on('mouseleave', 'queens-fill', () => (map.getCanvas().style.cursor = ''));
+
+      const byArea = [...queens].sort((a, b) => {
+        const area = (d: DistrictIndexEntry) => (d.bbox[2] - d.bbox[0]) * (d.bbox[3] - d.bbox[1]);
+        return area(b) - area(a);
+      });
+      for (const d of byArea) {
+        const el = document.createElement('span');
+        el.className = 'picker-label';
+        el.textContent = d.display_name;
+        // point_on_surface, not a centroid: QN14's centroid is in Jamaica Bay (§2).
+        markers.push(new maplibregl.Marker({ element: el }).setLngLat(d.point_on_surface).addTo(map));
+      }
+      layoutLabels();
+      map.on('zoomend', layoutLabels);
+    });
+
+    map.on('load', () => (mapRef = map));
+
+    /* Attribution collapsed to its (i) button from the start (Andrew,
+       2026-10-01). Compact mode opens it expanded and collapses it only on the
+       first drag - by removing this class, which is all this does. Once the
+       map is idle, so the credits have been written in and will not reopen it.
+       Tapping (i) still shows them. */
+    map.once('idle', () => {
+      container?.querySelector('.maplibregl-ctrl-attrib')?.classList.remove('maplibregl-compact-show');
     });
 
     return () => {
+      mapRef = undefined;
       for (const m of markers) m.remove();
       map.remove();
     };
   });
+
+  /** Set once the style and layers exist; the highlight effect needs both. */
+  let mapRef = $state<maplibregl.Map>();
+
+  // The selection drives the highlight outline.
+  $effect(() => {
+    mapRef?.setFilter('queens-selected', ['==', ['get', 'slug'], selectedSlug ?? '']);
+  });
 </script>
 
-<!-- A shortcut to the fourteen cards in the other panel, which are the accessible picker. -->
-<div class="picker" bind:this={container}></div>
+{#if unavailable}
+  <div class="picker unavailable" role="note">
+    <p>This map can't be shown on this device. Choose a district from the list.</p>
+  </div>
+{:else}
+  <!-- A shortcut to the fourteen cards in the other panel, which are the accessible picker. -->
+  <div class="picker" bind:this={container}></div>
+{/if}
+
+<!-- The selected district's card - the same card as in the list, and the link. -->
+<div class="selection" aria-live="polite">
+  {#if selected}
+    <CdtaCard district={selected} />
+  {/if}
+</div>
 
 <style>
   .picker {
@@ -230,20 +276,40 @@
     background: var(--color-surface-sunken);
   }
 
+  /* Andrew's spec: the message in the space the map would take, on grey/100.
+     Primary text: secondary grey is 4.0:1 on grey/100, under AA. */
+  .unavailable {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-400);
+    box-sizing: border-box;
+    background: var(--color-surface-muted);
+  }
+
+  .unavailable p {
+    margin: 0;
+    max-width: 24ch;
+    text-align: center;
+    font-size: var(--font-size-body);
+    line-height: var(--line-height-prose);
+  }
+
+  .selection:not(:empty) {
+    padding-top: var(--space-300);
+  }
+
   /* Marker elements are created imperatively and live outside this
      component's scoped markup, so the rule has to be global. */
   .picker :global(.picker-label) {
     font-family: var(--font-sans);
-    font-size: 7px;
+    font-size: var(--picker-label-size, 7px);
     line-height: var(--line-height-tight);
     color: var(--color-text-primary);
     text-align: center;
     white-space: nowrap;
     pointer-events: none;
-    /* The labels sit over the fills, and several districts are narrow. A halo
-       keeps them readable where a boundary runs underneath. */
-    /* A halo, now over streets rather than a flat ground — the basemap gives
-       the labels much more to compete with. */
+    /* A halo: the labels sit over fills, boundaries and streets. */
     text-shadow:
       0 0 2px #fefcfa,
       0 0 2px #fefcfa,
