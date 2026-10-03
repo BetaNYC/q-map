@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?><alert xmlns="urn:oasis:names:tc:emergency:cap:1.2"><identifier>2779429566691859</identifier><sender>2779429566691859</sender><sent>2026-10-03T15:00:10-04:00</sent><status>Actual</status><msgType>Alert</msgType><scope>Public</scope><code>CAPSv1.2</code><info><language>en-US</language><category>Transport</category><event>Civil Emergency Message</event><urgency>Immediate</urgency><severity>Extreme</severity><certainty>Observed</certainty><eventCode><valueName>SAME</valueName><value>CEM</value></eventCode><expires>2026-10-03T17:00:10-04:00</expires><senderName>NYCEM [English]</senderName><headline>Notify NYC - Planned Road Closure - 89th Pulaski Day Parade - 10/4 (MN)</headline><description>Notification issued 10-03-2026 at 03:00 PM.
+
+As part of the 89th Pulaski Day Parade, 5th Avenue will be closed from 36th Street to 54th Street in Manhattan, at the discretion of the NYPD.
+
+Consider alternate routes and allow for additional travel time. Additional road closures in the surrounding area are possible.
+
+For more information, please visit: on.nyc.gov/traffic
+
+To view this message in American Sign Language (ASL), العربية, বাঙালি, 中文, Français, Kreyòl Ayisyen, Italiano, 한국어, Polski, Pусский, Español, اردو or ייִדיש : http://on.nyc.gov/2gnRni5.Pусский, Español, اردو or ייִדיש : http://on.nyc.gov/2gnRni5.</description><parameter><valueName>timezone</valueName><value>EST</value></parameter><area><areaDesc>Bronx,Kings,New York,Queens,Staten Island</areaDesc><geocode><valueName>SAME</valueName><value>036005</value></geocode><geocode><valueName>SAME</valueName><value>036047</value></geocode><geocode><valueName>SAME</valueName><value>036061</value></geocode><geocode><valueName>SAME</valueName><value>036081</value></geocode><geocode><valueName>SAME</valueName><value>036085</value></geocode></area></info></alert>
