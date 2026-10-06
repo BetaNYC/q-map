@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?><alert xmlns="urn:oasis:names:tc:emergency:cap:1.2"><identifier>2780357279691242</identifier><sender>2780357279691242</sender><sent>2026-10-06T14:27:01-04:00</sent><status>Actual</status><msgType>Alert</msgType><scope>Public</scope><code>CAPSv1.2</code><info><language>en-US</language><category>Infra</category><event>Civil Emergency Message</event><urgency>Immediate</urgency><severity>Extreme</severity><certainty>Observed</certainty><eventCode><valueName>SAME</valueName><value>CEM</value></eventCode><expires>2026-10-06T16:27:01-04:00</expires><senderName>NYCEM [English]</senderName><headline>Notify NYC - Con Edison Power Outage - Staten Island  - 10308</headline><description>Notification issued 10-06-2026 at 02:26 PM.
+
+Con Edison is responding to a power outage in Staten Island ZIP code: 10308. 
+
+If you are affected by an outage:
+
+- Report it at www.coned.com/ReportOutage or call 1-800-75-CONED (26633), or if you have a speech or hearing disability, report outages to 1-800-642-2308.
+- Please stay safe. Never go near or touch a fallen power line. If you see a downed wire, call 1-800-75-CONED immediately.
+- Do not use generators indoors.
+- Keep refrigerator and freezer doors closed to prevent food spoilage.
+- If you are having a life-threatening medical emergency and need immediate assistance, please dial 9-1-1. 
+
+To view this message in American Sign Language (ASL), العربية, বাঙালি, 中文, Français, Kreyòl Ayisyen, Italiano, 한국어, Polski, Pусский, Español, اردو or ייִדיש :  http://on.nyc.gov/22lyehC.</description><parameter><valueName>timezone</valueName><value>EST</value></parameter><area><areaDesc>Bronx,Kings,New York,Queens,Staten Island</areaDesc><geocode><valueName>SAME</valueName><value>036005</value></geocode><geocode><valueName>SAME</valueName><value>036047</value></geocode><geocode><valueName>SAME</valueName><value>036061</value></geocode><geocode><valueName>SAME</valueName><value>036081</value></geocode><geocode><valueName>SAME</valueName><value>036085</value></geocode></area></info></alert>
