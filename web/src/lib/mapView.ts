@@ -42,7 +42,10 @@ export interface MapView {
 export const QUEENS_VIEW: MapView = { district: null, layers: [], categories: [] };
 
 /** What the map needs to know about a district. A DistrictIndexEntry is one. */
-export type MapDistrict = Pick<DistrictIndexEntry, 'cdta2020' | 'slug' | 'display_name' | 'bbox'>;
+export type MapDistrict = Pick<
+  DistrictIndexEntry,
+  'cdta2020' | 'slug' | 'display_name' | 'bbox' | 'point_on_surface'
+>;
 
 /**
  * The docked-layout breakpoint. At 1024px a 390px sidebar leaves a 634px map;
