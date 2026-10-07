@@ -1,5 +1,6 @@
 import { error } from '@sveltejs/kit';
 import { dataUrl } from '$lib/data';
+import type { MapView } from '$lib/mapView';
 import type { DistrictPayload } from '$lib/types';
 import type { PageLoad } from './$types';
 
@@ -31,5 +32,14 @@ export const load: PageLoad = async ({ fetch, params }) => {
   }
 
   const district: DistrictPayload = await response.json();
-  return { district };
+
+  /**
+   * The docked map's defaults on this page (see $lib/mapView.ts): the district
+   * outlined and fitted, with no overlays and no resource points. The page is a
+   * profile of the district, not a map of it. Points and layers belong to
+   * /q{NN}/map, which a CategoryRow or the hazard page links to.
+   */
+  const map: MapView = { district: params.district, layers: [], categories: [] };
+
+  return { district, map };
 };

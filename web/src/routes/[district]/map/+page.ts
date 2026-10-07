@@ -1,4 +1,5 @@
 import { dataUrl } from '$lib/data';
+import type { MapView } from '$lib/mapView';
 import type { DistrictPayload } from '$lib/types';
 import type { PageLoad } from './$types';
 
@@ -35,5 +36,12 @@ export const load: PageLoad = async ({ fetch, params, data }) => {
   // `data` is +page.server.ts's return — the layer registry, read from disk at
   // build time. Passed through rather than re-fetched: it is already in the
   // prerendered payload.
-  return { district, layers: data.layers, entry: data.entry };
+  /**
+   * The docked map's view as prerendered: the district with §5's defaults,
+   * every category and no overlays. The root layout applies the URL's
+   * `?layers=` and `?categories=` on top, in the browser.
+   */
+  const map: MapView = { district: params.district, layers: [], categories: null };
+
+  return { district, entry: data.entry, map };
 };

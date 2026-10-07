@@ -6,9 +6,24 @@
   import DistrictPicker from '$lib/components/DistrictPicker.svelte';
   import EntryPanel from '$lib/components/EntryPanel.svelte';
   import LocateButton from '$lib/components/LocateButton.svelte';
-  import EntryHeader from '$lib/components/EntryHeader.svelte';
+  import { DOCKED_QUERY } from '$lib/mapView';
+  import { MediaQuery } from 'svelte/reactivity';
 
   let { data } = $props();
+
+  /**
+   * Desktop (Andrew, 2026-10-07): the docked map is beside the page, so the
+   * "Select on map" panel is hidden and the district list opens instead.
+   *
+   * The list opens once JS has run, not in the prerendered HTML, which cannot
+   * know the window's width; on desktop it opens a moment after first paint.
+   *
+   * Both panels take their `open` from `docked`, as opposites. The two share a
+   * `name`, so opening either closes the other: if the map panel kept a fixed
+   * `open`, whichever panel applied its prop last would win, and on desktop
+   * that was the hidden map panel.
+   */
+  const docked = new MediaQuery(DOCKED_QUERY, false);
 </script>
 
 <svelte:head>
@@ -30,8 +45,6 @@
      The address field (step 4) and "Use my location" (step 3) come first:
      finding a district by where you are, before choosing it by name. -->
 <div class="screen">
-  <EntryHeader />
-
   <!-- Renders only while an alert is active; nothing, and no reserved space,
        otherwise (§7.7). Reads the visit's AlertsStore from the root layout. -->
   <AlertBanner />
@@ -48,7 +61,7 @@
   <AddressSearch districts={data.all} />
   <LocateButton districts={data.all} />
 
-  <EntryPanel name="entry-view" label="Choose Community District">
+  <EntryPanel name="entry-view" label="Choose Community District" open={docked.current}>
     <!-- districts.json covers all 59 CDTAs citywide; only the Queens 14 have
          pages, so the load filters on `boro` rather than on a slug prefix. -->
     <ul class="cards">
@@ -58,16 +71,22 @@
     </ul>
   </EntryPanel>
 
-  <EntryPanel name="entry-view" label="Select on map" open>
-    <!-- Client-only: MapLibre needs a DOM and a WebGL context, and a
-         prerendered page has neither. Without JavaScript the panel says so and
-         points at the list, which works without it. -->
-    {#if browser}
-      <DistrictPicker districts={data.all} />
-    {:else}
-      <p class="fallback">The map needs JavaScript. Choose your district from the list above.</p>
-    {/if}
-  </EntryPanel>
+  <!-- Hidden on desktop by CSS, so it is gone at first paint rather than
+       when JS arrives. The picker is not mounted there either: the docked map
+       does its job, and a second MapLibre in a hidden panel would still cost
+       a WebGL context. -->
+  <div class="picker-panel">
+    <EntryPanel name="entry-view" label="Select on map" open={!docked.current}>
+      <!-- Client-only: MapLibre needs a DOM and a WebGL context, and a
+           prerendered page has neither. Without JavaScript the panel says so and
+           points at the list, which works without it. -->
+      {#if browser && !docked.current}
+        <DistrictPicker districts={data.all} />
+      {:else}
+        <p class="fallback">The map needs JavaScript. Choose your district from the list above.</p>
+      {/if}
+    </EntryPanel>
+  </div>
 </div>
 
 <style>
@@ -81,6 +100,13 @@
     margin-inline: auto;
     padding-inline: var(--gutter);
     padding-block: var(--space-600);
+  }
+
+  /* DOCKED_QUERY, $lib/mapView.ts. */
+  @media (min-width: 1024px) {
+    .picker-panel {
+      display: none;
+    }
   }
 
   .about {

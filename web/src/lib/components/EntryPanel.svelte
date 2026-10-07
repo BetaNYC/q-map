@@ -37,9 +37,23 @@
   }
 
   let { label, name, open = false, children }: Props = $props();
+
+  let details = $state<HTMLDetailsElement>();
+
+  /**
+   * `open` can change after hydration: the entry page opens the district list
+   * on desktop, which prerender cannot know. Svelte does not repair an
+   * attribute that differs from the server's HTML during hydration, so the
+   * attribute alone would leave the list shut. This applies the prop to the
+   * element whenever it changes, and otherwise leaves the reader's own
+   * toggling alone.
+   */
+  $effect(() => {
+    if (details) details.open = open;
+  });
 </script>
 
-<details class="panel" {name} {open}>
+<details class="panel" {name} {open} bind:this={details}>
   <summary class="toggle">
     <span class="label">{label}</span>
     <ChevronDownIcon class="chevron" />

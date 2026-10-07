@@ -239,4 +239,30 @@
     scrollbar-gutter: stable;
     padding-right: max(0px, calc(var(--space-200) - var(--scrollbar-gutter-w)));
   }
+
+  /* Desktop: the sheet is the sidebar, a static block in the page's flow
+     (Andrew, 2026-10-07). No peek or expanded state, no drag, so the handle
+     is removed, from the accessibility tree too. The window scrolls the
+     content, as on every other docked page. DOCKED_QUERY, $lib/mapView.ts. */
+  @media (min-width: 1024px) {
+    .sheet,
+    .is-expanded {
+      position: static;
+      height: auto;
+      background: none;
+      border-radius: 0;
+      box-shadow: none;
+      transition: none;
+    }
+
+    .handle {
+      display: none;
+    }
+
+    .scroll {
+      overflow: visible;
+      scrollbar-gutter: auto;
+      padding-right: 0;
+    }
+  }
 </style>

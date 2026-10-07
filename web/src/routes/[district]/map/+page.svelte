@@ -4,14 +4,16 @@
   import { base } from '$app/paths';
   import { page } from '$app/state';
   import BottomSheet from '$lib/components/BottomSheet.svelte';
-  import HazardHeader from '$lib/components/HazardHeader.svelte';
+  import PageHeader from '$lib/components/PageHeader.svelte';
   import LayerRow from '$lib/components/LayerRow.svelte';
   import Map from '$lib/components/Map.svelte';
   import TabBar from '$lib/components/TabBar.svelte';
   import Popup from '$lib/components/Popup.svelte';
   import ResourceRow from '$lib/components/ResourceRow.svelte';
   import { dataUrl } from '$lib/data';
-  import { listableLayers } from '$lib/layers';
+  import { parseSelection, toggleSelection, withSelection } from '$lib/mapState';
+  import { DOCKED_QUERY } from '$lib/mapView';
+  import { MediaQuery } from 'svelte/reactivity';
   import { hasDetail } from '$lib/resources';
   import type { Resource } from '$lib/types';
 
@@ -30,15 +32,13 @@
    * "a parameter was given and nothing in it was recognised". §5 says absent
    * means default, and that unknown ids are dropped rather than fatal.
    */
-  const requested = $derived(browser ? page.url.searchParams.get('categories') : null);
+  const allCategories = $derived(data.district.resource_categories.map((c) => c.slug));
 
-  const known = $derived(new Set(data.district.resource_categories.map((c) => c.slug)));
-
-  /** The categories showing. null -> all of them, the default. */
-  const selected = $derived.by(() => {
-    if (requested === null) return null;
-    return requested.split(',').filter((slug) => known.has(slug));
-  });
+  /** The categories showing. null -> all of them, the default. Parsing and
+   *  writing are shared with the docked desktop map: $lib/mapState.ts. */
+  const selected = $derived(
+    parseSelection(browser ? page.url.searchParams.get('categories') : null, allCategories)
+  );
 
   function isOn(slug: string): boolean {
     return selected === null || selected.includes(slug);
@@ -54,24 +54,20 @@
    * stay where it is and keep focus — a toggle that moves the page or drops
    * focus to the body is unusable with a keyboard or a screen reader.
    *
-   * Order-independence (§5) falls out of deriving the parameter from the
-   * category list rather than from tap order.
+   * Switching everything back on removes the parameter (the default is all),
+   * rather than listing all twelve.
    */
   function toggle(slug: string) {
-    const current = selected === null ? data.district.resource_categories.map((c) => c.slug) : selected;
-
-    const next = current.includes(slug)
-      ? current.filter((s) => s !== slug)
-      : data.district.resource_categories.map((c) => c.slug).filter((s) => current.includes(s) || s === slug);
-
-    const url = new URL(page.url);
-    url.searchParams.set('categories', next.join(','));
+    const next = toggleSelection(selected ?? allCategories, slug, allCategories);
+    const url = withSelection(page.url, 'categories', next, null, allCategories);
     goto(url, { replaceState: true, noScroll: true, keepFocus: true });
   }
 
   /* ---- Layers ---------------------------------------------------------- */
 
-  const layers = $derived(listableLayers(data.layers));
+  /** The switchable layers, from the registry via the root layout's data. */
+  const layers = $derived(data.mapLayers);
+  const layerIds = $derived(layers.map((l) => l.layer_id));
 
   /**
    * `?layers=` reads the opposite way round from `?categories=`, and the
@@ -87,30 +83,15 @@
    * §5 says a bare /q14/map "has one fixed default" without naming it. This is
    * a reading, not a quotation — flagged in the handover.
    */
-  const layersRequested = $derived(browser ? page.url.searchParams.get('layers') : null);
-
-  const knownLayers = $derived(new Set(layers.map((l) => l.layer_id)));
-
-  const selectedLayers = $derived.by(() => {
-    if (layersRequested === null) return [];
-    // Unknown ids dropped, never fatal (§5) — a link shared before a layer was
-    // retired opens the map minus that layer.
-    return layersRequested.split(',').filter((id) => knownLayers.has(id));
-  });
+  const selectedLayers = $derived(
+    parseSelection(browser ? page.url.searchParams.get('layers') : null, layerIds) ?? []
+  );
 
   function toggleLayer(layerId: string) {
-    const next = selectedLayers.includes(layerId)
-      ? selectedLayers.filter((id) => id !== layerId)
-      : layers.map((l) => l.layer_id).filter((id) => selectedLayers.includes(id) || id === layerId);
-
-    const url = new URL(page.url);
-    if (next.length) url.searchParams.set('layers', next.join(','));
-    // Drop the parameter rather than writing an empty one: "" would be an
-    // explicit empty selection, which happens to render the same as the
-    // default but is a different statement, and the shorter URL is the one
-    // worth sharing.
-    else url.searchParams.delete('layers');
-
+    const next = toggleSelection(selectedLayers, layerId, layerIds);
+    // With nothing on, the parameter is dropped rather than written empty:
+    // that is this page's default, and the shorter URL is the one to share.
+    const url = withSelection(page.url, 'layers', next, [], layerIds);
     goto(url, { replaceState: true, noScroll: true, keepFocus: true });
   }
 
@@ -185,7 +166,7 @@
   }
 
   /**
-   * §5: `?hazard=` exists because the map screen shows a HazardHeader and
+   * §5: `?hazard=` exists because the map screen titles itself by hazard and
    * layer ids do not reverse-map to a hazard reliably. Nesting the route
    * instead would have prerendered 112 more pages for a header string.
    *
@@ -195,6 +176,39 @@
   const hazard = $derived(
     hazardParam ? (data.district.hazards.find((h) => h.slug === hazardParam) ?? null) : null
   );
+
+  /* ---- Desktop: forward to the page beside the map -------------------- */
+
+  /**
+   * On desktop this page has no job (Andrew, 2026-10-07): the map is beside
+   * every page and the toolbar under it does what the sheet does here. A link
+   * that lands here, shared from a phone or from a resource page's back link,
+   * forwards to the district page, or to the hazard page when `?hazard=` names
+   * one, carrying `?layers=`, `?categories=` and `?resource=` so the same map
+   * and popup open.
+   *
+   * One translation: this page's category default is every category, the
+   * district page's is none. So an absent `?categories=` is written out as
+   * the full list, keeping what the link meant.
+   *
+   * In the browser only, with `replaceState`, so Back skips this page. The
+   * prerendered page shows for a moment first; BottomSheet's static desktop
+   * styles keep that moment tidy.
+   */
+  const docked = new MediaQuery(DOCKED_QUERY, false);
+
+  $effect(() => {
+    if (!docked.current) return;
+    const params = new URLSearchParams(page.url.search);
+    const hazardSlug = params.get('hazard');
+    params.delete('hazard');
+    if (!params.has('categories')) {
+      params.set('categories', data.district.resource_categories.map((c) => c.slug).join(','));
+    }
+    const toHazard = hazardSlug && data.district.hazards.some((h) => h.slug === hazardSlug);
+    const path = toHazard ? `/${data.district.slug}/${hazardSlug}` : `/${data.district.slug}`;
+    goto(`${base}${path}?${params}`, { replaceState: true });
+  });
 
   function closePopup() {
     const url = new URL(page.url);
@@ -230,37 +244,41 @@
      body, and the header sits above it. A flex column of exactly one viewport
      so the stage cannot push itself below the fold. -->
 <div class="screen">
-  <header class="chrome">
-    {#if hazard}
-      <HazardHeader
-        label={hazard.label}
-        districtSlug={data.district.slug}
-        districtName={data.district.display_name}
-      />
-    {:else}
-      <HazardHeader
-        label="{data.district.display_name} map"
-        districtSlug={data.district.slug}
-        districtName={data.district.display_name}
-      />
-    {/if}
-  </header>
+  <!-- The heading is the district's name alone (Andrew, 2026-10-07): with
+       SiteHeader above it, "The Rockaways map" said "map" twice over. The
+       document <title> keeps "map", so this tab is still told apart from the
+       district page's. -->
+  <div class="chrome">
+    <PageHeader
+      title={hazard ? hazard.label : data.district.display_name}
+      back={{
+        href: `/${data.district.slug}`,
+        // With the district's name already the heading, the back link would
+        // repeat it (Andrew, 2026-10-07). Under a hazard heading the name still
+        // says where the link goes, so it stays.
+        label: hazard ? data.district.display_name : 'Back to District page'
+      }}
+    />
+  </div>
 
 <!-- The map is the stage; the sheet floats over it (§3). Both are client-only:
      MapLibre needs a DOM and a WebGL context, and a prerendered page has
      neither. -->
 <div class="stage">
   {#if browser}
-    <Map
-      district={data.entry}
-      visibleLayers={selectedLayers}
-      visibleCategories={selected}
-      onSelectResource={selectResource}
-    />
+    {#if !docked.current}
+      <Map
+        district={data.entry}
+        visibleLayers={selectedLayers}
+        visibleCategories={selected}
+        onSelectResource={selectResource}
+      />
+    {/if}
 
-    {#if selectedResource}
+    {#if selectedResource && !docked.current}
       <!-- §5: an unknown ?resource= id opens the map with no popup and no
-           error — that falls out of find() returning undefined. -->
+           error — that falls out of find() returning undefined. On desktop
+           the layout draws the popup, on the page this one forwards to. -->
       <div class="popup-layer">
         <Popup
           resource={selectedResource}
@@ -324,14 +342,16 @@
   .screen {
     display: flex;
     flex-direction: column;
-    height: 100svh;
+    /* SiteHeader sits above this page in the root layout. */
+    height: calc(100svh - var(--site-header-height));
     overflow: hidden;
   }
 
   .chrome {
     flex-shrink: 0;
     padding-inline: var(--gutter);
-    padding-top: var(--space-300);
+    /* 24, as on every other screen (was 12: the header audit, 2026-10-07). */
+    padding-top: var(--space-600);
   }
 
   /* The map screen opts out of the other screens' centred column — the map
@@ -358,5 +378,27 @@
     list-style: none;
     margin: 0;
     padding: 0;
+  }
+
+  /* Desktop: a page in the sidebar like any other. No viewport-tall stage;
+     the sheet is static (see BottomSheet), and the popup floats over the
+     docked map, centred in the space right of the 390px sidebar.
+     DOCKED_QUERY, $lib/mapView.ts. */
+  @media (min-width: 1024px) {
+    .screen {
+      height: auto;
+      overflow: visible;
+    }
+
+    .stage {
+      position: static;
+      overflow: visible;
+    }
+
+    .popup-layer {
+      position: fixed;
+      left: calc(50vw + 195px);
+      bottom: var(--space-600);
+    }
   }
 </style>
