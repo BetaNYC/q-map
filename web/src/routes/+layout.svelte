@@ -248,6 +248,7 @@
           <Map
             {district}
             overviewBbox={data.queensBbox}
+            overviewDistricts={data.mapDistricts}
             visibleLayers={view.layers}
             visibleCategories={view.categories}
             selectableDistricts={queensIds}

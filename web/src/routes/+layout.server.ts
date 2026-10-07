@@ -19,7 +19,8 @@ import type { LayoutServerLoad } from './$types';
  * districts.json's `boro`, not on a "QN" prefix on cdta2020, so the rule reads
  * the same field the route manifests do and cannot drift from them.
  *
- * Inlined into every prerendered page: 14 entries of four fields, about 1.7 KB.
+ * Inlined into every prerendered page: 14 entries of five fields, about 2.2 KB.
+ * `point_on_surface` places the district's name on the Queens overview.
  * Named `mapDistricts` because the entry page's own load already returns a
  * `queens`, and page data is merged over layout data.
  */
@@ -29,7 +30,13 @@ const index: DistrictIndexEntry[] = JSON.parse(
 
 const mapDistricts: MapDistrict[] = index
   .filter((d) => d.boro === 'Queens')
-  .map(({ cdta2020, slug, display_name, bbox }) => ({ cdta2020, slug, display_name, bbox }));
+  .map(({ cdta2020, slug, display_name, bbox, point_on_surface }) => ({
+    cdta2020,
+    slug,
+    display_name,
+    bbox,
+    point_on_surface
+  }));
 
 if (mapDistricts.length !== 14) {
   throw new Error(`expected 14 Queens districts in districts.json, found ${mapDistricts.length}`);

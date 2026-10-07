@@ -28,8 +28,9 @@
    * resource points are effects below, not one-off steps in `load`.
    *
    * `district` null is the Queens overview the docked map shows on pages not
-   * about one district: every Queens district outlined as the current one is,
-   * as the entry picker draws them, fitted to `overviewBbox`.
+   * about one district (entry, alerts, 404). It is drawn as the phone's entry
+   * picker draws Queens (Andrew, 2026-10-07): each district filled #3258a3 at
+   * 10% with a 1px outline, and named. Fitted to `overviewBbox`.
    */
 
   interface Props {
@@ -52,6 +53,8 @@
     /** cdta2020 ids that have pages (the Queens 14). Only these are clickable,
      *  and in the overview these are the districts outlined. */
     selectableDistricts?: string[];
+    /** The districts named on the overview, at their `point_on_surface`. */
+    overviewDistricts?: MapDistrict[];
   }
 
   let {
@@ -61,7 +64,8 @@
     visibleCategories,
     onSelectResource,
     onSelectDistrict,
-    selectableDistricts = []
+    selectableDistricts = [],
+    overviewDistricts = []
   }: Props = $props();
 
   /** The resource points layer id, used by the filter effect and the click
@@ -127,6 +131,16 @@
         source: 'cdta',
         filter: NOTHING,
         paint: { 'line-color': '#d7dce4', 'line-width': 0.75 }
+      });
+
+      // The overview's district fill: DistrictPicker's queens-fill exactly.
+      // Only Queens, only on the overview; the district effect sets the filter.
+      instance.addLayer({
+        id: 'queens-fill',
+        type: 'fill',
+        source: 'cdta',
+        filter: NOTHING,
+        paint: { 'fill-color': '#3258a3', 'fill-opacity': 0.1 }
       });
 
       // Opacity 0, not visibility none: a hidden layer is not hit-tested, a
@@ -206,6 +220,9 @@
         if (e.originalEvent) userMoved = true;
       });
 
+      instance.on('zoom', scaleLabels);
+      instance.on('zoomend', layoutLabels);
+
       map = instance;
       styleReady = true;
     });
@@ -231,6 +248,7 @@
       map = undefined;
       fitted = null;
       lastBounds = null;
+      labels = [];
       instance.remove();
     };
   });
@@ -267,6 +285,10 @@
     ];
     map.setFilter('cdta-current', isCurrent);
     map.setFilter('cdta-others', ['!', isCurrent]);
+    // Overview: the picker's 10% fill and 1px outline. A district: no fill,
+    // and the 2px outline that marks "you are here".
+    map.setFilter('queens-fill', district ? NOTHING : isCurrent);
+    map.setPaintProperty('cdta-current', 'line-width', district ? 2 : 1);
     map.setFilter(DISTRICT_HIT_LAYER, ['in', ['get', 'cdta2020'], ['literal', clickable]]);
 
     if (fitted === key || !bbox) return;
@@ -282,6 +304,83 @@
     map.fitBounds(lastBounds, { padding: 24, animate: fitted !== null && !reduceMotion });
     fitted = key;
     userMoved = false;
+  });
+
+  /* ---- District names on the overview -------------------------------- */
+
+  /**
+   * DistrictPicker's labels, carried over: HTML markers at each district's
+   * `point_on_surface` (not a centroid; QN14's falls in Jamaica Bay), the
+   * largest district placed first, any label that would overlap a placed one
+   * hidden. Its district is still clickable, and the entry page's list names
+   * it.
+   *
+   * SIZE BY MAP SCALE, NOT BY OPENING VIEW. The picker sizes labels 7px at its
+   * opening zoom, x1.35 per level in, capped at 12px. Its opening zoom is
+   * Queens fitted into a 358x350 box. The docked map opens about 1.4 levels
+   * closer in (Queens fitted into ~1035x900), so the same rule measured from
+   * the picker's opening zoom gives ~10.5px here: the same size for the same
+   * map scale on both maps.
+   */
+  const LABEL = { basePx: 7, growth: 1.35, maxPx: 12, pickerW: 358, pickerH: 350, pickerPad: 12 };
+
+  let labels: maplibregl.Marker[] = [];
+
+  /** The zoom at which `bbox` fits the phone picker's box: Web Mercator,
+   *  512px tiles, as MapLibre's own fitBounds computes it. */
+  function pickerZoom(bbox: MapDistrict['bbox']): number {
+    const mercY = (lat: number) => Math.log(Math.tan(Math.PI / 4 + (lat * Math.PI) / 360)) / (2 * Math.PI);
+    const dx = (bbox[2] - bbox[0]) / 360;
+    const dy = mercY(bbox[3]) - mercY(bbox[1]);
+    return Math.log2(
+      Math.min(
+        (LABEL.pickerW - 2 * LABEL.pickerPad) / (512 * dx),
+        (LABEL.pickerH - 2 * LABEL.pickerPad) / (512 * dy)
+      )
+    );
+  }
+
+  function scaleLabels() {
+    if (!map || !container || !overviewBbox) return;
+    const px = Math.min(LABEL.maxPx, LABEL.basePx * LABEL.growth ** (map.getZoom() - pickerZoom(overviewBbox)));
+    container.style.setProperty('--district-label-size', `${px.toFixed(2)}px`);
+  }
+
+  function layoutLabels() {
+    for (const m of labels) m.getElement().style.display = '';
+    requestAnimationFrame(() => {
+      const placed: DOMRect[] = [];
+      const PAD = 1;
+      for (const marker of labels) {
+        const el = marker.getElement();
+        const r = el.getBoundingClientRect();
+        const clash = placed.some(
+          (q) => r.left < q.right + PAD && r.right > q.left - PAD && r.top < q.bottom + PAD && r.bottom > q.top - PAD
+        );
+        if (clash) el.style.display = 'none';
+        else placed.push(r);
+      }
+    });
+  }
+
+  $effect(() => {
+    const show = district === null;
+    const list = overviewDistricts;
+    if (!styleReady || !map) return;
+
+    for (const m of labels) m.remove();
+    labels = [];
+    if (!show) return;
+
+    const area = (d: MapDistrict) => (d.bbox[2] - d.bbox[0]) * (d.bbox[3] - d.bbox[1]);
+    for (const d of [...list].sort((a, b) => area(b) - area(a))) {
+      const el = document.createElement('span');
+      el.className = 'district-label';
+      el.textContent = d.display_name;
+      labels.push(new maplibregl.Marker({ element: el }).setLngLat(d.point_on_surface).addTo(map));
+    }
+    scaleLabels();
+    layoutLabels();
   });
 
   /**
@@ -353,6 +452,21 @@
        390x844. */
     height: 100%;
     background: var(--color-surface-sunken);
+  }
+
+  /* DistrictPicker's label: the app's sans with a surface-coloured halo, as
+     the names sit over fills, outlines and streets. */
+  .map :global(.district-label) {
+    font-family: var(--font-sans);
+    font-size: var(--district-label-size, 10px);
+    line-height: var(--line-height-tight);
+    color: var(--color-text-primary);
+    text-align: center;
+    white-space: nowrap;
+    pointer-events: none;
+    -webkit-text-stroke: 0.4em #fefcfa;
+    paint-order: stroke fill;
+    text-shadow: 0 0 2px #fefcfa;
   }
 
   /* MapLibre's controls are 29px by default, under the 44px minimum. */
