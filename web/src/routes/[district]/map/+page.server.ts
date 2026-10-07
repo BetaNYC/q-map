@@ -1,7 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { assertInitialsDistinct } from '$lib/categories';
-import { readAvailableLayers } from '$lib/server/registry';
 import type { DistrictIndexEntry, DistrictPayload } from '$lib/types';
 import type { EntryGenerator, PageServerLoad } from './$types';
 
@@ -45,12 +44,12 @@ export const entries: EntryGenerator = () => {
 };
 
 /**
- * A SERVER load, not a universal one — this is the sliced case.
+ * A SERVER load, not a universal one — this is the sliced case: it reads
+ * districts.json from disk and serialises one entry of it.
  *
- * It reads `data/registry/map_layers.csv` from disk, which a universal load
- * cannot do, and only the returned value is serialised: ten small objects,
- * not the whole CSV with its source notes. Running at build time only is
- * correct here because the registry cannot change without a rebuild.
+ * The layer registry used to be read here too. It moved to the root
+ * +layout.server.ts (`mapLayers`) once every page's URL could carry
+ * `?layers=` for the docked desktop map.
  *
  * Its return merges into the universal load's `data` in +page.ts.
  */
@@ -63,5 +62,5 @@ export const load: PageServerLoad = ({ params }) => {
   const entry = index.find((d) => d.slug === params.district);
   if (!entry) throw new Error(`${params.district} is not in districts.json`);
 
-  return { layers: readAvailableLayers(), entry };
+  return { entry };
 };

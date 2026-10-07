@@ -1,9 +1,9 @@
 <script lang="ts">
   import { base } from '$app/paths';
   import ConditionsPanel from '$lib/components/ConditionsPanel.svelte';
-  import HazardHeader from '$lib/components/HazardHeader.svelte';
   import HazardItem from '$lib/components/HazardItem.svelte';
   import HorizontalRule from '$lib/components/HorizontalRule.svelte';
+  import PageHeader from '$lib/components/PageHeader.svelte';
   import Section from '$lib/components/Section.svelte';
   import type { ConditionsMetric } from '$lib/types';
 
@@ -75,10 +75,9 @@
        are absent from the revised frames. `content.summary` is still emitted
        by the pipeline and now renders nowhere in the app — noted in
        web/README.md so it is a known gap rather than a silent drop. -->
-  <HazardHeader
-    label={content.label}
-    districtSlug={district.slug}
-    districtName={district.display_name}
+  <PageHeader
+    title={content.label}
+    back={{ href: `/${district.slug}`, label: district.display_name }}
     {mapHref}
   />
 

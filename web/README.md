@@ -465,7 +465,8 @@ activities" note sat 12px left of the group labels beside it.
 - `Section` keeps its 10px padding, the district frames' literal; the hazard
   frames draw 12px. Costs the hazard screen 2px a side and keeps screen 02
   untouched.
-- `HazardHeader` loses its 8px horizontal inset, per the frame. That is also
+- *(Superseded 2026-10-07: one `PageHeader` now puts every title 24px from
+  the edge; see "Headers" below.)* `HazardHeader` loses its 8px horizontal inset, per the frame. That is also
   what puts the header's rule and the route's section rules on one line — both
   land 26px from the viewport edge (16px gutter + `HorizontalRule`'s own 10px);
   keeping the 8px would have put two rules on one page at different insets.
@@ -563,7 +564,7 @@ announces two phone numbers with no way to tell them apart". Verified from the
 accessibility tree: `"Con Edison phone, 1-800-752-6633"` and
 `"Con Edison TTY, 1-800-642-2308"`. Numbers dial as E.164 (`tel:+18007526633`).
 
-### ResourceHeader — the back link returns to the map
+### Resource page — the back link returns to the map
 
 The back link points at `/q{NN}/map`, not the district page, and reopens the
 view the resource was tapped in:
@@ -1052,3 +1053,34 @@ degrades around rather than depends on:
 | CARTO basemap tiles | both maps | maps draw without streets |
 | Alerts Worker (`VITE_ALERTS_URL`) | alert banner, `/alerts` | no banner; `/alerts` says "can't be loaded" |
 | NYC GeoSearch (NYC City Planning) | entry-page address field | the field says search is unavailable; the district list still works |
+
+## Headers
+
+Two components, both from Figma (2026-10-07):
+
+- **`SiteHeader`** — "Queens Resource Map" on every page, from the root
+  layout. Full width on a phone, the top of the sidebar on desktop. The h1 on
+  the entry page (which has no page header); a link home everywhere else.
+  44px tall (`--site-header-height`), which the phone map page subtracts from
+  the viewport.
+- **`PageHeader`** — every other page's header: title, optional grey
+  secondary line, optional back link, and on hazard pages the map button
+  (phone only). It replaced `EntryHeader`, `DistrictHeader`, `HazardHeader`
+  and `ResourceHeader`, whose spacing had drifted (titles at 16 or 24px, back
+  links at 36 or 44). Title 24px from the screen edge, secondary line and back
+  link 28px, 12px between rows and below.
+
+Page content renders inside `<main>` in the root layout. That is what keeps
+each page's `<header>` from being a second banner landmark beside
+`SiteHeader`'s.
+
+## The desktop map toolbar
+
+`MapToolbar` (Figma 222:514) and `MapToggle` (220:55), rendered by the root
+layout under the docked map, on desktop, on pages about one district. Toggles
+write `?categories=` / `?layers=` to the current page's URL; the layout reads
+them for every page. The point popup lives in the layout too. Desktop
+`/q{NN}/map` forwards to the district or hazard page with its parameters (an
+absent `?categories=` written out as all). 24px toggles: a recorded departure
+from §10, see `MapToggle.svelte`.
+

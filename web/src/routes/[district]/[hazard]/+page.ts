@@ -1,5 +1,6 @@
 import { error } from '@sveltejs/kit';
 import { dataUrl } from '$lib/data';
+import type { MapView } from '$lib/mapView';
 import type { Conditions, DistrictPayload, HazardContent } from '$lib/types';
 import type { PageLoad } from './$types';
 
@@ -61,5 +62,19 @@ export const load: PageLoad = async ({ fetch, params }) => {
     conditions = await response.json();
   }
 
-  return { district, hazard, content, conditions, isOverridden };
+  /**
+   * The docked map's defaults on this page: the district, with the hazard's
+   * own overlays on. The same `map_layers` the mobile map button writes into
+   * `?layers=`, the override's where one applies (q14's coastal storm opens
+   * with its evacuation zones and surge layers). No resource points; those
+   * are on /q{NN}/map. The map button itself is hidden on desktop (Andrew,
+   * 2026-10-07), so this is the only way the layers appear there.
+   */
+  const map: MapView = {
+    district: params.district,
+    layers: content.map_layers ?? [],
+    categories: []
+  };
+
+  return { district, hazard, content, conditions, isOverridden, map };
 };

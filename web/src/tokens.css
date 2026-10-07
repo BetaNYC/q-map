@@ -138,6 +138,11 @@
 
   --touch-target-min: 44px;
 
+  /* SiteHeader's height (Figma 229:956): 44px, the touch-target minimum,
+   * because the bar is the link home. A minimum on the bar itself; the phone
+   * map page subtracts it from the viewport to keep its stage one screen tall. */
+  --site-header-height: 44px;
+
   /* The bottom sheet's collapsed height. Figma's Peek frames put the sheet at
    * 123px. Lives here rather than in the component because the map positions
    * its controls against the sheet's edge, and d26's fix publishes the LIVE

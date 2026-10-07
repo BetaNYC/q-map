@@ -3,7 +3,7 @@
   import { useAlerts } from '$lib/alertsContext';
   import AlertDetail from '$lib/components/AlertDetail.svelte';
   import HorizontalRule from '$lib/components/HorizontalRule.svelte';
-  import ResourceHeader from '$lib/components/ResourceHeader.svelte';
+  import PageHeader from '$lib/components/PageHeader.svelte';
 
   /**
    * Screen 06, Emergency Alerts. Figma: "06 Alerts - Mobile/Active",
@@ -41,9 +41,14 @@
 </svelte:head>
 
 <div class="screen">
-  <!-- ResourceHeader's shape is this screen's: title, a context line, a back
-       link. Its prop names are the resource page's. -->
-  <ResourceHeader name="Emergency Alerts" categoryLabel={subtitle} backHref="/" districtName="Queens Resource Map" />
+  <!-- "Back" (Figma, 2026-10-07): the site name is already in SiteHeader
+       above, so the link no longer repeats it. The accessible name says where
+       it goes, and starts with what it shows (WCAG 2.5.3). -->
+  <PageHeader
+    title="Emergency Alerts"
+    secondary={subtitle}
+    back={{ href: '/', label: 'Back', name: 'Back to Queens Resource Map' }}
+  />
 
   <HorizontalRule />
 

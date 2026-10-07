@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { error } from '@sveltejs/kit';
 import { dataUrl } from '$lib/data';
+import type { MapView } from '$lib/mapView';
 import { hasDetail } from '$lib/resources';
 import type { DistrictIndexEntry, DistrictPayload, Resource } from '$lib/types';
 import type { EntryGenerator, PageServerLoad } from './$types';
@@ -129,10 +130,17 @@ export const load: PageServerLoad = async ({ fetch, params }) => {
     district.resource_categories.find((c) => c.slug === resource.category)?.label ??
     resource.category;
 
-  // Only these three values are serialised — not the 114 KB they came from.
+  /**
+   * The docked map on this page: the district, nothing else. Not yet the
+   * resource's own point, which needs a highlight style that is not designed.
+   */
+  const map: MapView = { district: params.district, layers: [], categories: [] };
+
+  // Only these values are serialised — not the 114 KB they came from.
   return {
     resource,
     categoryLabel,
-    district: { slug: district.slug, display_name: district.display_name }
+    district: { slug: district.slug, display_name: district.display_name },
+    map
   };
 };

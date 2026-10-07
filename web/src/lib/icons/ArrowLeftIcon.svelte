@@ -2,7 +2,7 @@
   import type { SVGAttributes } from 'svelte/elements';
 
   /**
-   * The back arrow on DistrictHeader's "Change location" link.
+   * The back arrow on PageHeader's back link.
    *
    * Exported from Figma (node I14:1387;14:1383). The asset's own path, with
    * `stroke="#0A0A0A"` swapped for currentColor and 12px for 1em, so it

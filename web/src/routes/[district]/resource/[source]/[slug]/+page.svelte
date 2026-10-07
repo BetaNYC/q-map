@@ -1,7 +1,7 @@
 <script lang="ts">
   import HorizontalRule from '$lib/components/HorizontalRule.svelte';
   import ResourceField from '$lib/components/ResourceField.svelte';
-  import ResourceHeader from '$lib/components/ResourceHeader.svelte';
+  import PageHeader from '$lib/components/PageHeader.svelte';
   import { groupsFor, listingNote, mapsHref, platformOf } from '$lib/resourceDetail';
   import { mapReturnPath } from '$lib/resources';
 
@@ -40,11 +40,10 @@
      Groups with no fields are left out; 12 FRANC records have none at all and
      the page is then the header and the listing note. -->
 <div class="screen">
-  <ResourceHeader
-    name={data.resource.name}
-    categoryLabel={data.categoryLabel}
-    {backHref}
-    districtName={data.district.display_name}
+  <PageHeader
+    title={data.resource.name}
+    secondary={data.categoryLabel}
+    back={{ href: backHref, label: data.district.display_name }}
   />
 
   {#each groups as group (group.title)}

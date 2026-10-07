@@ -3,10 +3,11 @@
   import 'maplibre-gl/dist/maplibre-gl.css';
   import { dataUrl } from '$lib/data';
   import { BASEMAP_STYLE, INITIAL_CENTER, INITIAL_ZOOM } from '$lib/map/basemap';
+  import type { GeoJSONSource } from 'maplibre-gl';
   import { overlaySpecs } from '$lib/map/overlays';
   import { registerMapProtocols } from '$lib/map/protocols';
   import { configureMapWorker } from '$lib/map/worker';
-  import type { DistrictIndexEntry } from '$lib/types';
+  import type { MapDistrict } from '$lib/mapView';
 
   /**
    * The district map. Step 8: the basemap, the PMTiles protocol, the district
@@ -20,25 +21,64 @@
    * $effect below only flips `visibility` on layers that already exist. Adding
    * and removing sources per toggle would also re-download the PMTiles archive
    * every time — 5.9 MB for the moderate stormwater layer.
+   *
+   * The same rule is what lets one map serve the docked desktop layout, where
+   * it lives in the root layout and outlasts the page beside it. `district`
+   * can change under a mounted map, so the district outline, the fit and the
+   * resource points are effects below, not one-off steps in `load`.
+   *
+   * `district` null is the Queens overview the docked map shows on pages not
+   * about one district: every Queens district outlined as the current one is,
+   * as the entry picker draws them, fitted to `overviewBbox`.
    */
 
   interface Props {
-    district: DistrictIndexEntry;
+    /** null: all of Queens (the docked map's overview). */
+    district: MapDistrict | null;
+    /** Fitted to when `district` is null. [xmin, ymin, xmax, ymax]. */
+    overviewBbox?: MapDistrict['bbox'];
     /** `layer_id`s currently on, from `?layers=`. */
     visibleLayers: string[];
     /** Category slugs currently on, from `?categories=`. null means all. */
     visibleCategories: string[] | null;
     /** Fired when a resource point is tapped — the page writes `?resource=`. */
-    onSelectResource: (resourceId: string) => void;
+    onSelectResource?: (resourceId: string) => void;
+    /**
+     * Fired when another district is clicked, with its slug. Absent, the
+     * other districts are not clickable at all: no hit layer is hit-tested
+     * and no pointer cursor shows.
+     */
+    onSelectDistrict?: (slug: string) => void;
+    /** cdta2020 ids that have pages (the Queens 14). Only these are clickable,
+     *  and in the overview these are the districts outlined. */
+    selectableDistricts?: string[];
   }
 
-  let { district, visibleLayers, visibleCategories, onSelectResource }: Props = $props();
+  let {
+    district,
+    overviewBbox,
+    visibleLayers,
+    visibleCategories,
+    onSelectResource,
+    onSelectDistrict,
+    selectableDistricts = []
+  }: Props = $props();
 
   /** The resource points layer id, used by the filter effect and the click
    *  handler. `layers/resources/<slug>.geojson` carries only resource_id,
    *  name, category, source and is_coad_member — the popup's address and
    *  operator come from the join the page does (§7.4). */
   const RESOURCE_LAYER = 'resource-points';
+
+  /** Invisible fill over the other clickable districts. A line layer is only
+   *  hit on its 0.75px stroke, so clicking inside a district needs a fill. */
+  const DISTRICT_HIT_LAYER = 'cdta-hit';
+
+  /** Matches no feature: the starting filter for layers whose real filter
+   *  depends on `district`, which the effects below set. */
+  const NOTHING: maplibregl.FilterSpecification = ['==', ['get', 'cdta2020'], ''];
+
+  const EMPTY: GeoJSON.FeatureCollection = { type: 'FeatureCollection', features: [] };
 
   let container = $state<HTMLDivElement>();
   let map: maplibregl.Map | undefined;
@@ -85,8 +125,23 @@
         id: 'cdta-others',
         type: 'line',
         source: 'cdta',
-        filter: ['!=', ['get', 'cdta2020'], district.cdta2020],
+        filter: NOTHING,
         paint: { 'line-color': '#d7dce4', 'line-width': 0.75 }
+      });
+
+      // Opacity 0, not visibility none: a hidden layer is not hit-tested, a
+      // transparent one is. Below the overlays so it never tints them.
+      instance.addLayer({
+        id: DISTRICT_HIT_LAYER,
+        type: 'fill',
+        source: 'cdta',
+        filter: NOTHING,
+        paint: { 'fill-color': '#000000', 'fill-opacity': 0 }
+      });
+
+      instance.on('click', DISTRICT_HIT_LAYER, (e) => {
+        const slug = e.features?.[0]?.properties?.slug;
+        if (typeof slug === 'string') onSelectDistrict?.(slug);
       });
 
       // Overlays go in BEFORE the district outline so the outline stays legible
@@ -102,11 +157,9 @@
       }
 
       // Per-district resource points — 178 KB at the largest, against 1.19 MB
-      // for one Queens-wide file. A district map needs only its own.
-      instance.addSource('resources', {
-        type: 'geojson',
-        data: dataUrl(`layers/resources/${district.slug}.geojson`)
-      });
+      // for one Queens-wide file. A district map needs only its own. Starts
+      // empty; the effect below says which file, if any, to load.
+      instance.addSource('resources', { type: 'geojson', data: EMPTY });
 
       instance.addLayer({
         id: RESOURCE_LAYER,
@@ -122,47 +175,134 @@
 
       instance.on('click', RESOURCE_LAYER, (e) => {
         const id = e.features?.[0]?.properties?.resource_id;
-        if (typeof id === 'string') onSelectResource(id);
+        if (typeof id === 'string') onSelectResource?.(id);
       });
 
       // A point is a 6px circle; the cursor is the only affordance on a
-      // pointer device that it can be tapped at all.
-      instance.on('mouseenter', RESOURCE_LAYER, () => {
-        instance.getCanvas().style.cursor = 'pointer';
-      });
-      instance.on('mouseleave', RESOURCE_LAYER, () => {
-        instance.getCanvas().style.cursor = '';
-      });
+      // pointer device that it can be tapped at all. The same goes for a
+      // district you can click through to.
+      for (const layerId of [RESOURCE_LAYER, DISTRICT_HIT_LAYER]) {
+        instance.on('mouseenter', layerId, () => {
+          instance.getCanvas().style.cursor = 'pointer';
+        });
+        instance.on('mouseleave', layerId, () => {
+          instance.getCanvas().style.cursor = '';
+        });
+      }
 
       instance.addLayer({
         id: 'cdta-current',
         type: 'line',
         source: 'cdta',
-        filter: ['==', ['get', 'cdta2020'], district.cdta2020],
+        filter: NOTHING,
         // #3258a3 (color/blue/700), matching the entry map's district outlines
         // (Andrew, 2026-10-01). Was #0a0a0a.
         paint: { 'line-color': '#3258a3', 'line-width': 2 }
       });
 
-      // bbox is [xmin, ymin, xmax, ymax] in EPSG:4326, straight from
-      // districts.json — no need to compute it from the geometry.
-      instance.fitBounds(
-        [
-          [district.bbox[0], district.bbox[1]],
-          [district.bbox[2], district.bbox[3]]
-        ],
-        { padding: 24, animate: false }
-      );
+      // A drag, wheel or keyboard pan carries an originalEvent; fitBounds
+      // does not. After the reader moves the map, a resize leaves it alone.
+      instance.on('movestart', (e) => {
+        if (e.originalEvent) userMoved = true;
+      });
 
       map = instance;
       styleReady = true;
     });
 
+    /**
+     * Refit when the container changes size and the reader has not moved the
+     * map since the last fit. On desktop the toolbar under the map arrives
+     * once the district's categories load, usually after the first fit, and
+     * shortens the map by about 180px. MapLibre resizes the canvas itself but
+     * keeps the centre and zoom, which would leave the district's edges under
+     * the toolbar.
+     */
+    const observer = new ResizeObserver(() => {
+      if (!map || !lastBounds || userMoved) return;
+      map.resize();
+      map.fitBounds(lastBounds, { padding: 24, animate: false });
+    });
+    observer.observe(container);
+
     return () => {
+      observer.disconnect();
       styleReady = false;
       map = undefined;
+      fitted = null;
+      lastBounds = null;
       instance.remove();
     };
+  });
+
+  let userMoved = false;
+  let lastBounds: maplibregl.LngLatBoundsLike | null = null;
+
+  /** What the map was last fitted to: a slug, or '' for the overview. null
+   *  until the first fit, which is instant; every later one animates, so a
+   *  click-through reads as a move across Queens rather than a cut. */
+  let fitted: string | null = null;
+
+  /**
+   * Point the map at `district`: outline it, dim the rest, and fit to it.
+   * Or, with no district, outline all of Queens and fit to that.
+   *
+   * Runs on load and again whenever the district changes under a mounted map
+   * — a click-through on the docked map, or /q14/map to /q12/map, where
+   * SvelteKit reuses the page component and only the props change.
+   */
+  $effect(() => {
+    const current = district ? [district.cdta2020] : selectableDistricts;
+    const key = district?.slug ?? '';
+    const bbox = district?.bbox ?? overviewBbox;
+    const clickable = onSelectDistrict
+      ? selectableDistricts.filter((id) => id !== district?.cdta2020)
+      : [];
+    if (!styleReady || !map) return;
+
+    const isCurrent: maplibregl.ExpressionSpecification = [
+      'in',
+      ['get', 'cdta2020'],
+      ['literal', current]
+    ];
+    map.setFilter('cdta-current', isCurrent);
+    map.setFilter('cdta-others', ['!', isCurrent]);
+    map.setFilter(DISTRICT_HIT_LAYER, ['in', ['get', 'cdta2020'], ['literal', clickable]]);
+
+    if (fitted === key || !bbox) return;
+
+    const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    // bbox is [xmin, ymin, xmax, ymax] in EPSG:4326, straight from
+    // districts.json — no need to compute it from the geometry.
+    lastBounds = [
+      [bbox[0], bbox[1]],
+      [bbox[2], bbox[3]]
+    ];
+    map.fitBounds(lastBounds, { padding: 24, animate: fitted !== null && !reduceMotion });
+    fitted = key;
+    userMoved = false;
+  });
+
+  /**
+   * Which points file the map should hold. A string so the effect below only
+   * re-runs when it changes: toggling one category of twelve must filter the
+   * points already loaded, not fetch them again.
+   *
+   * `[]` means the page shows no points, so nothing is fetched — the district
+   * page would otherwise download up to 178 KB on every visit to draw nothing.
+   */
+  const resourcesUrl = $derived(
+    !district || visibleCategories?.length === 0
+      ? null
+      : dataUrl(`layers/resources/${district.slug}.geojson`)
+  );
+
+  $effect(() => {
+    const url = resourcesUrl;
+    if (!styleReady || !map) return;
+
+    map.getSource<GeoJSONSource>('resources')?.setData(url ?? EMPTY);
   });
 
   /**
@@ -202,7 +342,7 @@
   });
 </script>
 
-<div class="map" bind:this={container} aria-label="Map of {district.display_name}"></div>
+<div class="map" bind:this={container} aria-label="Map of {district?.display_name ?? 'Queens'}"></div>
 
 <style>
   .map {
