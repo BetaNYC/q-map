@@ -3,6 +3,7 @@
   import { useAlerts } from '$lib/alertsContext';
   import AlertDetail from '$lib/components/AlertDetail.svelte';
   import HorizontalRule from '$lib/components/HorizontalRule.svelte';
+  import FrozenHead from '$lib/components/FrozenHead.svelte';
   import PageHeader from '$lib/components/PageHeader.svelte';
 
   /**
@@ -44,13 +45,16 @@
   <!-- "Back" (Figma, 2026-10-07): the site name is already in SiteHeader
        above, so the link no longer repeats it. The accessible name says where
        it goes, and starts with what it shows (WCAG 2.5.3). -->
-  <PageHeader
-    title="Emergency Alerts"
-    secondary={subtitle}
-    back={{ href: '/', label: 'Back', name: 'Back to Queens Resource Map' }}
-  />
+  <!-- Frozen while the page scrolls, with the rule under it as its edge. -->
+  <FrozenHead>
+    <PageHeader
+      title="Emergency Alerts"
+      secondary={subtitle}
+      back={{ href: '/', label: 'Back', name: 'Back to Queens Resource Map' }}
+    />
 
-  <HorizontalRule />
+    <HorizontalRule />
+  </FrozenHead>
 
   <!-- Announced once when the state settles; the alert list itself is not in
        the live region, so a 2-minute refresh does not re-read it. -->

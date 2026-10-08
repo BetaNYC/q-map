@@ -49,6 +49,17 @@
     border-bottom: 1px solid var(--color-border);
   }
 
+  /* Frozen at the top while the page scrolls (Andrew, 2026-10-07), on windows
+     tall enough to spare it: see FrozenHead for the 600px reasoning. Above
+     FrozenHead, which sticks just below it. */
+  @media (min-height: 600px) {
+    .site {
+      position: sticky;
+      top: 0;
+      z-index: 3;
+    }
+  }
+
   /* title/map-heading (Andrew, 2026-10-07): the page titles' style. */
   .name {
     margin: 0;

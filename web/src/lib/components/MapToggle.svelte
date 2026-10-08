@@ -98,6 +98,10 @@
     border-radius: var(--radius-sm);
     background: var(--swatch);
     border: 1px solid var(--swatch);
+    /* LayerRow's hairline: the stormwater (limited) swatch is #cedef0, which
+       nearly vanishes on the surface without it. Inside the element, so it
+       dims with the swatch when off. */
+    box-shadow: inset 0 0 0 0.75px rgb(0 0 0 / 0.18);
   }
 
   /* Off: outlined, at 35% (LayerRow's off state, and Figma's). */

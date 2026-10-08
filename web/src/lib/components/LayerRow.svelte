@@ -90,9 +90,9 @@
     border-radius: var(--radius-sm);
 
     /* The swatch is the only carrier of the layer's identity, and these fills
-     * are pale. A hairline keeps the lightest of them (#9bbde9) from
+     * are pale. A hairline keeps the lightest of them (#cedef0) from
      * disappearing into the sheet — the swatch is a UI component under WCAG
-     * 1.4.11, which wants 3:1 against its background, and #9bbde9 on
+     * 1.4.11, which wants 3:1 against its background, and #cedef0 on
      * --color-surface is nowhere near that.
      *
      * It sits inside the element, so it dims with the swatch rather than
