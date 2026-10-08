@@ -4,6 +4,7 @@
   import GapSentence from '$lib/components/GapSentence.svelte';
   import HazardRow from '$lib/components/HazardRow.svelte';
   import HorizontalRule from '$lib/components/HorizontalRule.svelte';
+  import FrozenHead from '$lib/components/FrozenHead.svelte';
   import PageHeader from '$lib/components/PageHeader.svelte';
   import Section from '$lib/components/Section.svelte';
 
@@ -22,17 +23,21 @@
 <!-- Screen 02. Figma: "02 District - Mobile", node 13:839.
      390px frame, 16px gutters, 358px measure (handoff §3). -->
 <div class="screen">
-  <PageHeader
-    title={district.display_name}
-    secondary={district.cd_label}
-    back={{ href: '/', label: 'Change location' }}
-  />
+  <!-- Frozen while the page scrolls: the header, and COAD where there is one
+       (its own rules give the frozen block its edge). -->
+  <FrozenHead>
+    <PageHeader
+      title={district.display_name}
+      secondary={district.cd_label}
+      back={{ href: '/', label: 'Change location' }}
+    />
 
-  <!-- 1 of 14 districts. `coad_name` is null in the same thirteen as `coad`,
-       so either check works; this reads as the question being asked. -->
-  {#if district.coad_name}
-    <Coad {district} />
-  {/if}
+    <!-- 1 of 14 districts. `coad_name` is null in the same thirteen as `coad`,
+         so either check works; this reads as the question being asked. -->
+    {#if district.coad_name}
+      <Coad {district} />
+    {/if}
+  </FrozenHead>
 
   <Section title="Hazard Areas">
     <!-- Always 8, already ordered, three ranked and five pinned. `rank` is

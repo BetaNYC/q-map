@@ -31,6 +31,15 @@
   }
 }
 
+/* Keyboard focus scrolls clear of the frozen headers (WCAG 2.2, 2.4.11):
+ * SiteHeader plus whatever FrozenHead publishes for this page. The same
+ * 600px condition as the freezing itself. */
+@media (min-height: 600px) {
+  :root {
+    scroll-padding-top: calc(var(--site-header-height) + var(--frozen-head-height, 0px));
+  }
+}
+
 body {
   margin: 0;
   background: var(--color-surface);

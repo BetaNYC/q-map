@@ -31,7 +31,7 @@ export interface OverlaySpec {
 
 /** The four swatch colours, repeated from $lib/layers for MapLibre's benefit. */
 const FILL = {
-  stormwater_limited_1_77: '#9bbde9',
+  stormwater_limited_1_77: '#cedef0',
   stormwater_moderate_2_13: '#3f6bb9',
   hurricane_evac_zones: '#ebaa7d',
   surge_current: '#d8b663'
@@ -41,6 +41,25 @@ const FILL = {
  *  basemap's streets read through — the whole reason for a street basemap. */
 const FILL_OPACITY = 0.45;
 const LINE_OPACITY = 0.9;
+
+/**
+ * The two stormwater layers, told apart by lightness (Andrew, 2026-10-08).
+ *
+ * Moderate rain is the heavier storm and the wider extent: dark (blue/600) and
+ * fairly solid, drawn first. Limited rain, a lighter storm, floods a thin core
+ * inside it: pale (blue/200) and nearly opaque, drawn on top. Darker reads as
+ * more severe, which is the heavier storm.
+ *
+ * At the old 45% each, the dark one over the grey basemap and the pale one
+ * came out within 1.1:1 of each other: one colour. These settings composite to
+ * about 1.9:1 between the core and its surround, at every zoom. A casing on
+ * the limited layer was tried and dropped: at district zoom it swallowed the
+ * thin shapes into white speckle.
+ */
+const STORMWATER_OPACITY = {
+  stormwater_moderate_2_13: 0.65,
+  stormwater_limited_1_77: 0.9
+} as const;
 
 function stormwater(layerId: 'stormwater_limited_1_77' | 'stormwater_moderate_2_13'): OverlaySpec {
   return {
@@ -59,17 +78,20 @@ function stormwater(layerId: 'stormwater_limited_1_77' | 'stormwater_moderate_2_
         source: `overlay-${layerId}`,
         // DATA_CONTRACT §8: the source-layer name matches the file name.
         'source-layer': layerId,
+        // One style for the whole layer (Andrew, 2026-10-08). The source's
+        // Flooding_C attribute separates nuisance flooding (1: >= 4in, < 1ft)
+        // from deep and contiguous (2: >= 1ft); that was drawn 20% stronger,
+        // and is no longer distinguished. The attribute stays in the tiles.
         paint: {
           'fill-color': FILL[layerId],
-          // Flooding_C is the styling attribute and takes two values: 1 is
-          // nuisance flooding (>= 4in, < 1ft), 2 is deep and contiguous
-          // (>= 1ft). Deep water reads more strongly.
-          'fill-opacity': [
-            'case',
-            ['==', ['get', 'Flooding_C'], 2],
-            FILL_OPACITY + 0.2,
-            FILL_OPACITY
-          ]
+          'fill-opacity': STORMWATER_OPACITY[layerId],
+          // No stroke on moderate (Andrew, 2026-10-08). MapLibre outlines
+          // every fill polygon in its own colour by default, drawn over the
+          // translucent fill, so at 65% the edges read as a darker stroke, and
+          // the seams between the many adjacent polygons in these tiles as
+          // lines inside the shapes. Transparent removes both. Limited, pale
+          // and at 90%, shows no visible outline and keeps the default.
+          ...(layerId === 'stormwater_moderate_2_13' ? { 'fill-outline-color': 'rgba(0, 0, 0, 0)' } : {})
         }
       }
     ]
@@ -101,11 +123,21 @@ function polygonGeojson(layerId: 'hurricane_evac_zones' | 'surge_current'): Over
   };
 }
 
+/**
+ * DRAWING ORDER IS THIS OBJECT'S KEY ORDER, bottom to top (Andrew,
+ * 2026-10-08): hurricane evacuation zones, storm surge, stormwater (moderate),
+ * stormwater (limited). Map.svelte adds the layers in Object.values() order,
+ * and MapLibre draws later layers on top. The broad coastal zones sit
+ * underneath; the stormwater extents, smaller and street-scale, sit on top,
+ * with the limited-rain extent (the more frequent flooding) uppermost.
+ *
+ * This is the map's order only. The toolbar lists layers in registry order.
+ */
 export function overlaySpecs(): Record<string, OverlaySpec> {
   return {
-    stormwater_limited_1_77: stormwater('stormwater_limited_1_77'),
-    stormwater_moderate_2_13: stormwater('stormwater_moderate_2_13'),
     hurricane_evac_zones: polygonGeojson('hurricane_evac_zones'),
-    surge_current: polygonGeojson('surge_current')
+    surge_current: polygonGeojson('surge_current'),
+    stormwater_moderate_2_13: stormwater('stormwater_moderate_2_13'),
+    stormwater_limited_1_77: stormwater('stormwater_limited_1_77')
   };
 }

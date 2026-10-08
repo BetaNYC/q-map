@@ -37,7 +37,9 @@ export interface MapLayer {
  * given an invented colour. See web/README.md.
  */
 const LAYER_SWATCH: Record<string, string> = {
-  stormwater_limited_1_77: '#9bbde9',
+  // blue/200, not blue/300, since 2026-10-08: see STORMWATER_OPACITY in
+  // $lib/map/overlays.ts. Must match the map's fill.
+  stormwater_limited_1_77: '#cedef0',
   stormwater_moderate_2_13: '#3f6bb9',
   hurricane_evac_zones: '#ebaa7d',
   surge_current: '#d8b663'
