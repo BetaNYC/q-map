@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?><alert xmlns="urn:oasis:names:tc:emergency:cap:1.2"><identifier>2776955665671065</identifier><sender>2776955665671065</sender><sent>2026-10-09T18:59:06-04:00</sent><status>Actual</status><msgType>Alert</msgType><scope>Public</scope><code>CAPSv1.2</code><info><language>en-US</language><category>Rescue</category><event>Civil Emergency Message</event><urgency>Immediate</urgency><severity>Extreme</severity><certainty>Observed</certainty><eventCode><valueName>SAME</valueName><value>CEM</value></eventCode><expires>2026-10-09T20:59:06-04:00</expires><senderName>NYCEM [English]</senderName><headline>Notify NYC - Missing Vulnerable Adult Alert - Henry Ackie (NYC)</headline><description>Alert issued 10-09-2026 at 06:58 PM.
+
+A Missing Vulnerable Adult Alert has been issued for Henry Ackie, a 75-year-old black male from Brooklyn, Kings County. The missing may be in need of medical attention.
+
+Description: 5'6" tall, 150lbs, with gray hair and brown eyes. Wearing a burgundy shirt with black sleeves, blue shorts, and brown slippers.
+
+Last Seen: East 48th Street in Brooklyn, NY at approximately 8:00 PM on 10-08-2026.
+
+      
+
+If you see the missing person, please call NYCPD Missing Person Squad at 800-577-8477 or call 9-1-1.
+
+A photo of the missing is available here: https://flic.kr/p/2sFo7Qm 
+
+To view this message in American Sign Language (ASL), العربية, বাঙালি, 中文, Français, Kreyòl Ayisyen, Italiano, 한국어, Polski, Pусский, Español, اردو or ייִדיש : http://on.nyc.gov/1UYt0TX.</description><parameter><valueName>timezone</valueName><value>EST</value></parameter><area><areaDesc>Bronx,Kings,New York,Queens,Staten Island</areaDesc><geocode><valueName>SAME</valueName><value>036005</value></geocode><geocode><valueName>SAME</valueName><value>036047</value></geocode><geocode><valueName>SAME</valueName><value>036061</value></geocode><geocode><valueName>SAME</valueName><value>036081</value></geocode><geocode><valueName>SAME</valueName><value>036085</value></geocode></area></info></alert>
