@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?><alert xmlns="urn:oasis:names:tc:emergency:cap:1.2"><identifier>2781353712226380</identifier><sender>2781353712226380</sender><sent>2026-10-11T17:30:41-04:00</sent><status>Actual</status><msgType>Alert</msgType><scope>Public</scope><code>CAPSv1.2</code><info><language>en-US</language><category>Geo</category><event>Civil Emergency Message</event><urgency>Immediate</urgency><severity>Moderate</severity><certainty>Observed</certainty><eventCode><valueName>SAME</valueName><value>CEM</value></eventCode><expires>2026-10-11T19:30:41-04:00</expires><senderName>NYCEM [English]</senderName><headline>Notify NYC - Flood Advisory - 10/11 (NYC)</headline><description>Notification issued 10-11-2026 at 05:30 PM.
+
+The National Weather Service has issued the following:
+What: Flood Advisory
+Where: NYC
+When: Until 8:00 PM on 10/11
+Hazards: 0.5-1 inches of rain expected. Heavy rainfall will cause flooding of small creeks and streams, urban areas, highways, streets and underpasses as well as other drainage areas and low lying spots.
+Preparedness Actions:
+- Do not drive your vehicle or walk into areas where water covers the roadway as the water depth may be too great to allow you to cross safely.
+
+For the latest weather info: www.weather.gov/okx/.
+
+To view this message in American Sign Language (ASL), العربية, বাঙালি, 中文, Français, Kreyòl Ayisyen, Italiano, 한국어, Polski, Pусский, Español, اردو or ייִדיש : http://on.nyc.gov/2gZuG4v.</description><parameter><valueName>timezone</valueName><value>EST</value></parameter><area><areaDesc>Bronx,Kings,New York,Queens,Staten Island</areaDesc><geocode><valueName>SAME</valueName><value>036005</value></geocode><geocode><valueName>SAME</valueName><value>036047</value></geocode><geocode><valueName>SAME</valueName><value>036061</value></geocode><geocode><valueName>SAME</valueName><value>036081</value></geocode><geocode><valueName>SAME</valueName><value>036085</value></geocode></area></info></alert>
