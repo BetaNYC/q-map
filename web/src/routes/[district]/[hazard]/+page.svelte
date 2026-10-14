@@ -1,12 +1,10 @@
 <script lang="ts">
   import { base } from '$app/paths';
   import ConditionsPanel from '$lib/components/ConditionsPanel.svelte';
-  import HazardItem from '$lib/components/HazardItem.svelte';
+  import ContentSections from '$lib/components/ContentSections.svelte';
   import HorizontalRule from '$lib/components/HorizontalRule.svelte';
   import FrozenHead from '$lib/components/FrozenHead.svelte';
   import PageHeader from '$lib/components/PageHeader.svelte';
-  import PhoneText from '$lib/components/PhoneText.svelte';
-  import Section from '$lib/components/Section.svelte';
   import type { ConditionsMetric } from '$lib/types';
 
   let { data } = $props();
@@ -14,21 +12,6 @@
   const district = $derived(data.district);
   const content = $derived(data.content);
 
-  /**
-   * §7.6: skip any section with no `items` AND no `body`.
-   *
-   * Six of eight hazards are unwritten stubs, and even an authored one carries
-   * empty sections. NOT `status === 'stub'` — status is ABSENT on the authored
-   * ones, so testing the string treats authored content as a stub.
-   *
-   * `current-conditions` is the exception: it is data-backed, so it renders
-   * even though it has neither items nor body.
-   */
-  const sections = $derived(
-    content.sections.filter(
-      (s) => s.id === 'current-conditions' || s.items.length > 0 || s.body
-    )
-  );
 
   /** Both metrics, not just `chip_metric` — that names what screen 01's chip
    *  shows, and this section is the fuller readout. */
@@ -89,63 +72,20 @@
     <HorizontalRule />
   </FrozenHead>
 
-  {#if content.summary}
-    <!-- Paragraphs split on the blank line a folded YAML block keeps. Phone
-         numbers in it are tappable ($lib/phones.ts). -->
-    <div class="summary">
-      {#each content.summary.trim().split(/\n\s*\n|\n/) as paragraph, i (i)}
-        <p class="prose"><PhoneText text={paragraph} /></p>
-      {/each}
-    </div>
-  {/if}
-
-  {#if sections.length === 0}
-    <p class="empty">Guidance for this hazard has not been written yet.</p>
-  {/if}
-
-  {#each sections as section, i (section.id)}
-    <!-- A RULE ONLY BEFORE A TITLED SECTION, and never before the first.
-         The two frames disagree on purpose: Heavy Rain (58:403) separates its
-         two headed sections with a rule, while Extreme Heat (40:200) runs its
-         three unheaded groups together with none. A heading earns the
-         boundary; an unheaded group is a continuation. -->
-    {#if i > 0 && section.title}
-      <HorizontalRule />
-    {/if}
-
-    <!-- A hazard section's title is optional: the Extreme Heat page carries
-         every heading on a group instead. Those render unwrapped — the frame
-         has no container around them, and the NestedContainers inside bring
-         their own 12px. -->
-    {#if section.title}
-      <Section title={section.title}>
-        {@render sectionBody(section)}
-      </Section>
-    {:else}
-      <div class="untitled">{@render sectionBody(section)}</div>
-    {/if}
-  {/each}
+  <ContentSections
+    summary={content.summary}
+    sections={content.sections}
+    emptyText="Guidance for this hazard has not been written yet."
+  >
+    {#snippet dataSection(section)}
+      {#if section.id === 'current-conditions' && data.conditions}
+        <!-- Data-backed: conditions.json in place of authored content (§7.6). -->
+        <ConditionsPanel metrics={conditionMetrics} />
+      {/if}
+    {/snippet}
+  </ContentSections>
 </div>
 
-{#snippet sectionBody(section: (typeof sections)[number])}
-  {#if section.id === 'current-conditions' && data.conditions}
-    <!-- Data-backed: conditions.json in place of authored content (§7.6). -->
-    <ConditionsPanel metrics={conditionMetrics} />
-  {/if}
-
-  <!-- Every section carries both keys and one of them is empty. -->
-  {#if section.body}
-    <p class="prose"><PhoneText text={section.body} /></p>
-  {/if}
-
-  {#if section.items.length}
-    <ul class="items">
-      {#each section.items as item, i (item.label + i)}
-        <li><HazardItem {item} /></li>
-      {/each}
-    </ul>
-  {/if}
-{/snippet}
 
 <style>
   .screen {
@@ -158,46 +98,5 @@
     margin-inline: auto;
     padding-inline: var(--gutter);
     padding-block: var(--space-600);
-  }
-
-  /* Aligned with the sections below it: Section's own 10px padding. */
-  .summary {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-300);
-    padding: 10px;
-  }
-
-  .prose,
-  .empty {
-    margin: 0;
-    line-height: var(--line-height-prose);
-    overflow-wrap: break-word;
-  }
-
-  .empty {
-    padding-inline: var(--space-200);
-  }
-
-  /* An unheaded section has no wrapper in the frame — its contents sit
-     directly on the page — so this supplies exactly what the page would: the
-     12px horizontal inset every top-level block carries, and nothing else. It
-     is Section without the heading and without Section's 10px.
-
-     The inset lives here rather than on the children because both kinds of
-     child appear at this level: a NestedContainer group and a bare
-     HazardElement note are siblings on the Extreme Heat frame, and they line
-     up only if the container insets them together. */
-  .untitled {
-    display: flex;
-    flex-direction: column;
-    padding-inline: var(--space-300);
-  }
-
-  .items {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    width: 100%;
   }
 </style>

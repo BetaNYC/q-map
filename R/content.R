@@ -252,34 +252,7 @@ validate_hazard_content <- function(content, model_slugs, registry_ids = charact
       }
     }
 
-    for (s in y$sections) {
-      unknown_s <- setdiff(names(s), SECTION_KEYS)
-      if (length(unknown_s) > 0) {
-        stop(where, " [", s$id, "]: unknown section key(s) ",
-             paste(unknown_s, collapse = ", "),
-             ". Allowed: ", paste(SECTION_KEYS, collapse = ", "))
-      }
-      if (!is.null(s$body) && !nzchar(trimws(s$body))) {
-        stop(where, " [", s$id, "]: section has an empty `body`")
-      }
-      # `title` is optional: a section that omits it renders its items with no
-      # heading, which is how the Extreme Heat screen is built - every heading
-      # on that page belongs to a group, not a section.
-      #
-      # An untitled section with nothing in it is a different thing, and always
-      # a mistake: it renders as literally nothing, so neither the author nor
-      # the page can tell it is there.
-      has_title <- !is.null(s$title) && nzchar(trimws(s$title))
-      has_items <- length(s$items %||% list()) > 0
-      has_body  <- !is.null(s$body) && nzchar(trimws(s$body))
-      if (!has_title && !has_items && !has_body) {
-        stop(where, " [", s$id, "]: section has no title, no items and no ",
-             "body, so it renders as nothing. Give it content or remove it.")
-      }
-      # A stub section may legitimately be empty while content is being
-      # written; a section with items must have well-formed ones.
-      for (it in s$items %||% list()) validate_item(it, where, s$id, depth = 1)
-    }
+    validate_sections(y$sections, where)
   }
   TRUE
 }
@@ -297,6 +270,43 @@ validate_hazard_content <- function(content, model_slugs, registry_ids = charact
 # is exactly what the link checker exists to prevent. Prose guidance is a real
 # content type ("Make an itemized list of personal property"), but it has to be
 # claimed.
+# The section and item rules every authored content file shares: hazards and
+# standalone pages (content/pages/) alike. Lifted out of validate_hazard_content
+# on 2026-10-14 when the General page became the second kind of content file,
+# so the two cannot drift. Hazard-only rules (the eight-hazard catalog, map
+# layers) stay in validate_hazard_content.
+validate_sections <- function(sections, where) {
+  for (s in sections) {
+    unknown_s <- setdiff(names(s), SECTION_KEYS)
+    if (length(unknown_s) > 0) {
+      stop(where, " [", s$id, "]: unknown section key(s) ",
+           paste(unknown_s, collapse = ", "),
+           ". Allowed: ", paste(SECTION_KEYS, collapse = ", "))
+    }
+    if (!is.null(s$body) && !nzchar(trimws(s$body))) {
+      stop(where, " [", s$id, "]: section has an empty `body`")
+    }
+    # `title` is optional: a section that omits it renders its items with no
+    # heading, which is how the Extreme Heat screen is built - every heading
+    # on that page belongs to a group, not a section.
+    #
+    # An untitled section with nothing in it is a different thing, and always
+    # a mistake: it renders as literally nothing, so neither the author nor
+    # the page can tell it is there.
+    has_title <- !is.null(s$title) && nzchar(trimws(s$title))
+    has_items <- length(s$items %||% list()) > 0
+    has_body  <- !is.null(s$body) && nzchar(trimws(s$body))
+    if (!has_title && !has_items && !has_body) {
+      stop(where, " [", s$id, "]: section has no title, no items and no ",
+           "body, so it renders as nothing. Give it content or remove it.")
+    }
+    # A stub section may legitimately be empty while content is being
+    # written; a section with items must have well-formed ones.
+    for (it in s$items %||% list()) validate_item(it, where, s$id, depth = 1)
+  }
+  invisible(TRUE)
+}
+
 MAX_ITEM_DEPTH <- 2
 
 # Keys an item may carry. Whitelisted rather than open, because the schema was
@@ -544,7 +554,8 @@ check_link <- function(url, timeout = 20) {
 }
 
 validate_hazard_links <- function(content, overlays = list(),
-                                  dead_codes = c(404L, 410L)) {
+                                  dead_codes = c(404L, 410L),
+                                  what = "hazard content") {
   links <- hazard_links(content, overlays)
   if (nrow(links) == 0) {
     message("Link check: no links authored yet")
@@ -558,7 +569,7 @@ validate_hazard_links <- function(content, overlays = list(),
   dead <- links |> filter(status %in% dead_codes)
   if (nrow(dead) > 0) {
     stop(paste0(
-      nrow(dead), " dead link(s) in hazard content:\n",
+      nrow(dead), " dead link(s) in ", what, ":\n",
       paste0("  ", dead$slug, " [", dead$section, "] ", dead$status, " ",
              dead$url, collapse = "\n")
     ))
@@ -789,3 +800,76 @@ write_hazard_overlays <- function(content, overlays, dir) {
   }, character(1))
   unname(paths)
 }
+
+
+# --- standalone pages ---------------------------------------------------------
+#
+# Content pages that are not hazards: content/pages/<slug>.yml, published to
+# data/processed/pages/<slug>.json and rendered at /<slug>. The first is
+# General Resources (2026-10-14), the SME-reviewed "General" copy.
+#
+# Same item and section schema as a hazard (validate_sections), so the same
+# components render it and the same link check covers it. What a page does not
+# have is everything that ties a hazard to the model: no catalog of eight, no
+# `jra_category`, no `map_layers`, no district overrides.
+PAGE_CONTENT_DIR <- "content/pages"
+
+PAGE_KEYS <- c("slug", "label", "summary", "sections", ".file")
+
+read_page_content <- function(dir = PAGE_CONTENT_DIR) {
+  files <- list.files(dir, pattern = "\\.ya?ml$", full.names = TRUE)
+  if (length(files) == 0) stop("No page content found in ", dir)
+  out <- lapply(files, function(f) {
+    y <- yaml::read_yaml(f)
+    y$.file <- basename(f)
+    y
+  })
+  names(out) <- vapply(out, function(y) y$slug %||% NA_character_, character(1))
+  out
+}
+
+# `reserved` is every slug the app already routes at the top level - the
+# districts and the static pages - because a page is served at /<slug> and a
+# collision would make one of the two unreachable. `routes_dir` is where the
+# page's own route must exist: a page with no route is published and shown
+# nowhere, which is the silent failure the hazard catalog check exists for.
+validate_page_content <- function(pages, reserved, routes_dir = "web/src/routes") {
+  if (anyNA(names(pages))) stop("Page content: a file has no `slug`")
+  if (anyDuplicated(names(pages))) stop("Page content: duplicate slug")
+  for (slug in names(pages)) {
+    y <- pages[[slug]]
+    where <- paste0(y$.file, " (", slug, ")")
+    if (!identical(sub("\\.ya?ml$", "", y$.file), slug)) {
+      stop(where, ": filename does not match slug")
+    }
+    unknown <- setdiff(names(y), PAGE_KEYS)
+    if (length(unknown) > 0) {
+      stop(where, ": unknown key(s) ", paste(unknown, collapse = ", "),
+           ". A page has: ", paste(setdiff(PAGE_KEYS, ".file"), collapse = ", "))
+    }
+    for (f in c("label", "sections")) {
+      if (is.null(y[[f]])) stop(where, ": missing required field `", f, "`")
+    }
+    if (!is.null(y$summary) && !nzchar(trimws(y$summary))) {
+      stop(where, ": `summary` is present but empty - remove the key or write it")
+    }
+    if (slug %in% reserved) {
+      stop(where, ": slug collides with an existing route (/", slug, ")")
+    }
+    if (!file.exists(file.path(routes_dir, slug, "+page.svelte"))) {
+      stop(where, ": no route at ", file.path(routes_dir, slug),
+           " - the page would be published and shown nowhere")
+    }
+    ids <- vapply(y$sections, function(s) s$id %||% NA_character_, character(1))
+    if (anyNA(ids)) stop(where, ": a section has no `id`")
+    if (anyDuplicated(ids)) stop(where, ": duplicate section id")
+    unknown_ids <- setdiff(ids, SECTION_IDS)
+    if (length(unknown_ids) > 0) {
+      stop(where, ": unknown section id(s) ", paste(unknown_ids, collapse = ", "),
+           " - add to SECTION_IDS if intended")
+    }
+    validate_sections(y$sections, where)
+  }
+  TRUE
+}
+

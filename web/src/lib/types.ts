@@ -154,6 +154,18 @@ export interface HazardSection {
 }
 
 /** DATA_CONTRACT.md §6 — `hazards/<slug>.json`, citywide authored guidance. */
+/**
+ * `pages/<slug>.json`: a standalone content page (content/pages/), rendered at
+ * /<slug>. The hazard schema without the hazard model: no category, no map
+ * layers. First: General Resources (2026-10-14).
+ */
+export interface PageContent {
+  slug: string;
+  label: string;
+  summary?: string;
+  sections: HazardSection[];
+}
+
 export interface HazardContent {
   slug: string;
   label: string;

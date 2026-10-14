@@ -361,6 +361,45 @@ list(
     validate_hazard_output(hazard_content_paths)
   ),
 
+  ## Standalone content pages -------------------------------------------------
+  # content/pages/<slug>.yml -> data/processed/pages/<slug>.json, rendered at
+  # /<slug>. The hazard schema without the hazard model: same sections and
+  # items (validate_sections), same writer, same output and link checks. First
+  # page: General Resources (2026-10-14).
+
+  tar_target(page_content_dir, PAGE_CONTENT_DIR, format = "file"),
+
+  tar_target(page_content, read_page_content(page_content_dir)),
+
+  tar_target(
+    page_content_checks,
+    # Every slug the app routes at the top level: all CDTA slugs (only Queens
+    # has pages today; reserving all 59 keeps a future borough from colliding)
+    # and the static routes.
+    validate_page_content(
+      page_content,
+      reserved = c(cdta_crosswalk$slug, "alerts", "404", "map", "resource")
+    )
+  ),
+
+  # Its own node, like hazard_link_checks: the only page target that needs the
+  # network, so a failure there is attributable.
+  tar_target(
+    page_link_checks,
+    validate_hazard_links(page_content, what = "page content")
+  ),
+
+  tar_target(
+    page_content_paths,
+    write_hazard_content(page_content, "data/processed/pages"),
+    format = "file"
+  ),
+
+  tar_target(
+    page_output_checks,
+    validate_hazard_output(page_content_paths)
+  ),
+
   ## Resources ---------------------------------------------------------------
   # The canonical file is hand-maintained and committed; the pipeline reads it
   # and never writes it. scripts/03_seed_resources.R proposes changes as a diff.

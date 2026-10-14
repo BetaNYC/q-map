@@ -1090,3 +1090,12 @@ them for every page. The point popup lives in the layout too. Desktop
 absent `?categories=` written out as all). 24px toggles: a recorded departure
 from §10, see `MapToggle.svelte`.
 
+## Standalone content pages
+
+`content/pages/<slug>.yml` → `data/processed/pages/<slug>.json` → `/<slug>`.
+Same schema as a hazard page, rendered by the same `ContentSections`
+component. The first is `/general` (General Resources), linked from the entry
+page below the about text. A new page needs a YAML file and a route at
+`src/routes/<slug>/`; the pipeline refuses a page with no route or a slug that
+collides with an existing one.
+
