@@ -50,9 +50,10 @@
   <AlertBanner />
 
   <p class="about">
-    Lorem ipsum dolor sit amet, consectetur adipiscing elit,
-    sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam,
-    quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+    Queens has resources to help you prepare and find support. Explore the hazards your neighborhood faces and local resources you can access to prepare, respond, or recover. 
+    You can start small and make a plan that fits your household, or find help now if something is happening. <br><br>
+    The Queens Resource Map (Q-Map) is a tool created by the NYC Preparedness and Recovery Institute (<a href="https://pandemicresponse.columbia.edu/" rel="noopener noreferrer">PRI</a>) in collaboration with <a href="https://beta.nyc" rel="noopener noreferrer">BetaNYC</a>. 
+    It is designed to provide a dynamic, community-informed platform connecting residents and community-based organizations to critical resources before, during, and after emergencies. 
   </p>
 
   <!-- Both go straight to the district they find, and say why when they
