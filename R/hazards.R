@@ -49,12 +49,14 @@ HAZARD_SCORE_COL <- c(
 # it first or second in 11 of 14 districts while separating them poorly.
 # Infectious disease is measured too, and scores 1 or 2 in every Queens
 # district.
+# Order revised at SME review 2026-10-14 (was hazmat, infectious-disease,
+# extreme-cold, mass-casualty, blackout-cyberattack).
 HAZARD_PINNED <- c(
-  "hazmat",
-  "infectious-disease",
   "extreme-cold",
-  "mass-casualty",
-  "blackout-cyberattack"
+  "hazmat",
+  "blackout-cyberattack",
+  "infectious-disease",
+  "mass-casualty"
 )
 
 HAZARD_LABELS <- c(
@@ -74,6 +76,14 @@ HAZARD_LABELS <- c(
 # previous infectious-disease string, "measured citywide, but does not vary
 # across Queens", was factually wrong: PIVI takes both 1 and 2 across the 14
 # districts, so it does vary. It is low everywhere, which is a different claim.
+# The reason shown for a ranked hazard that scores 0 and so drops to the bottom
+# (see build_hazards). Matches the app's wording for a coastal score of 0.
+ZERO_SCORE_REASON <- c(
+  `coastal-storm` = "Neighborhood does not experience coastal flooding",
+  `heavy-rain`    = "Neighborhood does not experience stormwater flooding",
+  `extreme-heat`  = "Neighborhood-level heat risk not measured here"
+)
+
 HAZARD_PIN_REASON <- c(
   `hazmat`               = "Queens has more of these businesses than other boroughs",
   `infectious-disease`   = "Queens neighborhoods score low on the Pandemic Influenza Vulnerability Index",
@@ -447,6 +457,10 @@ validate_hazard_order <- function(hazards, reviewed) {
       `extreme-heat`  = hvi
     ) |>
     tidyr::pivot_longer(-cdta2020, names_to = "slug", values_to = "score") |>
+    # A hazard the review scored 0 is unranked and sits last (build_hazards,
+    # 2026-10-14), so it leaves the ranked sequence being compared. The
+    # reviewed file itself is unchanged: it records the review, not the UI.
+    filter(score > 0) |>
     group_by(cdta2020) |>
     arrange(desc(score), match(slug, HAZARD_PRIORITY), .by_group = TRUE) |>
     summarise(expected = paste(slug, collapse = " > "), .groups = "drop")
@@ -476,8 +490,15 @@ validate_hazard_order <- function(hazards, reviewed) {
 # Build the ordered hazard list for every district.
 #
 # `measures` is one row per CDTA carrying the three reviewed score columns.
-# Ranks 1-3 are the ranked hazards, ordered by score descending; ranks 4-8 are
-# the pinned ones in HAZARD_PINNED order.
+# The ranked hazards come first, ordered by score descending; then the pinned
+# ones in HAZARD_PINNED order.
+#
+# A RANKED HAZARD SCORING 0 IS NOT RANKED (Andrew, 2026-10-14). Coastal storm
+# scores 0 in the five districts with no coastal flooding exposure; it used to
+# sit at rank 3 there, above hazards that do apply. It is now unranked and
+# placed last, below the pinned hazards, with ZERO_SCORE_REASON as its reason.
+# Those districts have two ranked hazards, so gap selection walks two and falls
+# through for the third (select_district_gaps).
 build_hazards <- function(measures) {
   long <- measures |>
     select(cdta2020, all_of(unname(HAZARD_SCORE_COL))) |>
@@ -490,23 +511,39 @@ build_hazards <- function(measures) {
     # never returns NA here and the ordering is total and deterministic - a
     # four-way tie resolves the same way on every rebuild.
     arrange(desc(score), match(slug, HAZARD_PRIORITY), .by_group = TRUE) |>
-    mutate(rank = row_number(), ranked = TRUE) |>
+    mutate(ranked = score > 0, rank = row_number()) |>
     ungroup()
+
+  n_ranked <- long |> group_by(cdta2020) |> summarise(n_ranked = sum(ranked), .groups = "drop")
 
   pinned <- tidyr::expand_grid(
     cdta2020 = unique(measures$cdta2020),
     slug = HAZARD_PINNED
   ) |>
+    left_join(n_ranked, by = "cdta2020") |>
     mutate(
       score = NA_integer_,
-      rank = length(HAZARD_PRIORITY) + match(slug, HAZARD_PINNED),
+      rank = n_ranked + match(slug, HAZARD_PINNED),
       ranked = FALSE
-    )
+    ) |>
+    select(-n_ranked)
 
-  bind_rows(long, pinned) |>
+  # Zero-scoring hazards go after the pinned ones, in their existing order
+  # (score ties broken by HAZARD_PRIORITY, as above).
+  zeroed <- long |>
+    filter(!ranked) |>
+    group_by(cdta2020) |>
+    mutate(rank = length(HAZARD_PRIORITY) + length(HAZARD_PINNED) - n() + row_number()) |>
+    ungroup()
+
+  bind_rows(filter(long, ranked), pinned, zeroed) |>
     mutate(
       label = unname(HAZARD_LABELS[slug]),
-      pin_reason = unname(HAZARD_PIN_REASON[slug])
+      pin_reason = dplyr::case_when(
+        !ranked & slug %in% HAZARD_PINNED ~ unname(HAZARD_PIN_REASON[slug]),
+        !ranked ~ unname(ZERO_SCORE_REASON[slug]),
+        TRUE ~ unname(HAZARD_PIN_REASON[slug])
+      )
     ) |>
     arrange(cdta2020, rank)
 }
