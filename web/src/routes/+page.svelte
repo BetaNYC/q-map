@@ -14,15 +14,13 @@
 
   /**
    * Desktop (Andrew, 2026-10-07): the docked map is beside the page, so the
-   * "Select on map" panel is hidden and the district list opens instead.
+   * "Select on map" panel is hidden, and its DistrictPicker is not mounted.
    *
-   * The list opens once JS has run, not in the prerendered HTML, which cannot
-   * know the window's width; on desktop it opens a moment after first paint.
-   *
-   * Both panels take their `open` from `docked`, as opposites. The two share a
-   * `name`, so opening either closes the other: if the map panel kept a fixed
-   * `open`, whichever panel applied its prop last would win, and on desktop
-   * that was the hidden map panel.
+   * "Choose Community District" is collapsed by default on every width
+   * (Andrew, 2026-10-14). It used to open itself on desktop, which also needed
+   * the map panel's `open` to be the opposite of `docked` so the two exclusive
+   * panels did not fight. With the list closed everywhere, the map panel is
+   * simply open by default, as the phone frames draw it.
    */
   const docked = new MediaQuery(DOCKED_QUERY, false);
 </script>
@@ -39,9 +37,11 @@
      default), ".../Neighborhoods open", ".../Both closed", and the
      OneAlert / TwoAlert / GreaterThanTwoAlerts (revised) banner variants.
 
-     Order: header, banner, about, then the two panels. The panels are one
-     exclusive accordion (EntryPanel): opening one closes the other, the map is
-     open by default, and both may be closed.
+     Order: banner, about, General Resources, then "View neighborhood
+     resources" over the address field, "Use my location" and the two panels.
+     The site name above all of it is SiteHeader. The panels are one exclusive
+     accordion (EntryPanel): opening one closes the other, the map is open by
+     default on phones (hidden on desktop), and both may be closed.
 
      The address field (step 4) and "Use my location" (step 3) come first:
      finding a district by where you are, before choosing it by name. -->
@@ -65,38 +65,45 @@
     <span class="label">General Resources</span>
   </a>
 
-  <!-- Both go straight to the district they find, and say why when they
-       can't. The address field uses NYC GeoSearch; neither renders without
-       JavaScript, and the panels below always work. -->
-  <AddressSearch districts={data.all} />
-  <LocateButton districts={data.all} />
+  <!-- The ways to reach a district page, under one heading (Andrew,
+       2026-10-14) so they read as a group and apart from General Resources
+       above. An h2: SiteHeader's site name is this page's h1. -->
+  <section class="neighborhood" aria-labelledby="neighborhood-heading">
+    <h2 id="neighborhood-heading" class="section-heading">View Queens neighborhood resources</h2>
 
-  <EntryPanel name="entry-view" label="Choose Community District" open={docked.current}>
-    <!-- districts.json covers all 59 CDTAs citywide; only the Queens 14 have
-         pages, so the load filters on `boro` rather than on a slug prefix. -->
-    <ul class="cards">
-      {#each data.queens as district (district.slug)}
-        <li><CdtaCard {district} /></li>
-      {/each}
-    </ul>
-  </EntryPanel>
+    <!-- Both go straight to the district they find, and say why when they
+         can't. The address field uses NYC GeoSearch; neither renders without
+         JavaScript, and the panels below always work. -->
+    <AddressSearch districts={data.all} />
+    <LocateButton districts={data.all} />
 
-  <!-- Hidden on desktop by CSS, so it is gone at first paint rather than
-       when JS arrives. The picker is not mounted there either: the docked map
-       does its job, and a second MapLibre in a hidden panel would still cost
-       a WebGL context. -->
-  <div class="picker-panel">
-    <EntryPanel name="entry-view" label="Select on map" open={!docked.current}>
-      <!-- Client-only: MapLibre needs a DOM and a WebGL context, and a
-           prerendered page has neither. Without JavaScript the panel says so and
-           points at the list, which works without it. -->
-      {#if browser && !docked.current}
-        <DistrictPicker districts={data.all} />
-      {:else}
-        <p class="fallback">The map needs JavaScript. Choose your district from the list above.</p>
-      {/if}
+    <EntryPanel name="entry-view" label="Choose Community District">
+      <!-- districts.json covers all 59 CDTAs citywide; only the Queens 14 have
+           pages, so the load filters on `boro` rather than on a slug prefix. -->
+      <ul class="cards">
+        {#each data.queens as district (district.slug)}
+          <li><CdtaCard {district} /></li>
+        {/each}
+      </ul>
     </EntryPanel>
-  </div>
+
+    <!-- Hidden on desktop by CSS, so it is gone at first paint rather than
+         when JS arrives. The picker is not mounted there either: the docked map
+         does its job, and a second MapLibre in a hidden panel would still cost
+         a WebGL context. -->
+    <div class="picker-panel">
+      <EntryPanel name="entry-view" label="Select on map" open>
+        <!-- Client-only: MapLibre needs a DOM and a WebGL context, and a
+             prerendered page has neither. Without JavaScript the panel says so and
+             points at the list, which works without it. -->
+        {#if browser && !docked.current}
+          <DistrictPicker districts={data.all} />
+        {:else}
+          <p class="fallback">The map needs JavaScript. Choose your district from the list above.</p>
+        {/if}
+      </EntryPanel>
+    </div>
+  </section>
 </div>
 
 <style>
@@ -147,6 +154,26 @@
       position: relative;
       top: 0.1em;
     }
+  }
+
+  /* Same 12px rhythm as .screen, so wrapping the controls moved nothing. */
+  .neighborhood {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-300);
+    /* A step more space above the heading than between the controls, so it
+       reads as heading what follows rather than closing what came before. */
+    margin-top: var(--space-300);
+  }
+
+  /* title/section, as Section's titles ("Hazard Areas"), inset 8px to line up
+     with the about text above. */
+  .section-heading {
+    margin: 0;
+    padding-inline: var(--space-200);
+    font-size: var(--font-size-section);
+    font-weight: var(--font-weight-bold);
+    line-height: var(--line-height-tight);
   }
 
   .about {
