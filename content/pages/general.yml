@@ -1,0 +1,70 @@
+# General Resources
+# Authored content: the pipeline validates and copies it to
+# data/processed/pages/general.json.
+
+slug: general
+label: General Resources
+
+summary: >
+  A few steps can help in any emergency. Sign up for local alerts, choose someone to check in with, and plan where you could go. 
+  Keep medicines, a flashlight, a charger, and important contacts ready. Include children, pets, and anyone who may need help. 
+  Gather supplies over time, starting with what you already have.
+
+  Call 911 for immediate danger. For City services or help finding resources, call 311 and ask for an interpreter.
+
+sections:
+  - id: preparedness
+    title: Get Ready
+    items:
+      - label: Pack a Go Bag and home supplies
+        link_label: NYC Emergency Management
+        url: https://www.nyc.gov/site/em/ready/gather-supplies.page
+        body: >
+          Practical supply lists. Build your kit over time, starting
+          with what you have.
+      - label: Make your household emergency plan
+        link_label: Ready New York
+        url: https://www.nyc.gov/site/em/ready/guides-resources.page
+        body: >
+          Choose contacts, meeting places, medications, and support
+          for leaving or staying home. Translated workbooks and audio
+          versions.
+      - label: Plan for disability and medical needs
+        link_label: NYC Emergency Management
+        url: https://www.nyc.gov/site/em/ready/disabilities-access-functional-needs.page
+        body: >
+          Support networks, communication, transportation, and powered
+          medical equipment.
+      - label: Plan for pets and service animals
+        link_label: NYC Emergency Management
+        url: https://www.nyc.gov/site/em/ready/pets.page
+        body: >
+          Supplies and evacuation. City disaster evacuation centers
+          accept pets and service animals.
+      - label: Prepare your small business
+        link_label: NYC Emergency Management
+        url: https://www.nyc.gov/site/em/ready/businesses.page
+        body: Business continuity planning and preparedness guides.
+
+  - id: response
+    title: When Something Happens
+    items:
+      - label: Get local emergency alerts
+        link_label: Notify NYC
+        url: https://a858-nycnotify.nyc.gov/notifynyc/
+        body: >
+          Free alerts by app, text, email, or phone. Select basement
+          alerts if needed. Multilingual alerts and ASL videos.
+      - label: Ask NYC311 for help
+        link_label: NYC311
+        url: https://portal.311.nyc.gov/
+        body: >
+          Find City services, report problems, or ask what is open.
+          Call 311; outside NYC, 212-639-9675. Phone interpreters in
+          more than 175 languages.
+      - label: Know when to leave or stay inside
+        link_label: NYC Emergency Management
+        url: https://www.nyc.gov/site/em/ready/get-prepared.page
+        body: >
+          Evacuation and shelter-in-place guidance. Follow
+          instructions for the specific emergency.

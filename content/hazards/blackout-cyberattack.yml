@@ -1,20 +1,104 @@
-# Blackout & Cyberattack — STUB. Schema-valid but unwritten; sections carry no items yet.
-# Authored content: the pipeline validates and copies content below.
+# Blackout & Cyberattack
+# Authored content: the pipeline validates and copies content below
+#
+# Rewritten 2026-10-14 from the SME-reviewed "Core Readiness Messages by
+# Threat" (test/Core Readiness Messages by Threat.pdf, reviewed 8 October
+# 2026), using the mapping documented in heavy-rain.yml. Its "Suggested first
+# links" are "Start here"; its "Additional candidate links" are "More help".
 
 slug: blackout-cyberattack
 label: Blackout & Cyberattack
 jra_category: utility-interruption
-status: stub
 
 summary: >
-  Loss of electricity, whether from grid failure, storm damage, or an attack on utility systems.
+  A blackout is a loss of electricity. A cyberattack uses digital tools to
+  steal information or disrupt devices and services.
 
 sections:
-  - id: preparedness
-    title: Before
-  - id: response
-    title: During
-  - id: general
-    title: General information
+  - id: core-actions
+    title: Core actions
+    items:
+      - label: Keep flashlights, charged batteries, and written contacts ready
+        note: true
+        body: If you use powered medical equipment, make a backup plan.
+      - label: Report lost power to your electric utility
+        note: true
+        body: >
+          Keep fridge doors closed. Never run a generator indoors or
+          use a stove for heat.
+      - label: Use unique passwords, extra sign-in verification, and updates
+        note: true
+        body: Avoid unexpected links; contact your bank promptly if money is stolen.
+      - label: >
+          If essential medical equipment stops or you are in immediate
+          danger, call 911
+        note: true
+
+  - id: start-here
+    title: Start here
+    items:
+      - label: Report or track a Con Edison outage
+        link_label: Con Edison
+        url: https://www.coned.com/en/services-and-outages/report-track-service-issue
+        body: Outages in most of Queens. Report online or call 800-752-6633.
+      - label: Report or track a Rockaways power outage
+        link_label: PSEG Long Island
+        url: https://www.psegliny.com/outages
+        body: >
+          Electricity in the Rockaways. Report online, text OUT to
+          773454, or call 800-490-0075.
+      - label: Protect accounts and devices
+        link_label: NYC Emergency Management
+        url: https://www.nyc.gov/site/em/ready/cybersecurity.page
+        body: Passwords, updates, scams, and basic cybersecurity steps.
+
+  - id: more-help
+    title: More help
+    items:
+      - label: Stay safe when utilities stop working
+        link_label: NYC Emergency Management
+        url: https://www.nyc.gov/site/em/ready/utility-disruptions.page
+        body: Electricity, gas, water, and telephone disruptions.
+      - label: Register powered medical equipment with Con Edison
+        link_label: Con Edison
+        url: https://www.coned.com/en/accounts-billing/payment-plans-assistance/special-services
+        body: >
+          Life-support equipment and special customer protections.
+          Registration does not guarantee uninterrupted power or
+          immediate restoration.
+      - label: Register powered medical equipment in the Rockaways
+        link_label: PSEG Long Island Critical Care
+        url: https://www.psegliny.com/outages/stormprepandrestoration/criticalcareprogram
+        body: >
+          Advance outreach and preparation for customers using life-
+          support equipment. Keep a backup plan.
+      - label: Get the free NYC Secure phone app
+        link_label: NYC Cyber Command
+        url: https://secure.nyc/
+        body: >
+          Alerts about some device, app, and Wi-Fi risks. An extra
+          tool alongside good account security.
+      - label: Report an internet or technology complaint
+        link_label: New York Attorney General
+        url: https://ag.ny.gov/file-complaint
+        body: >
+          Complaints about scams, apps, and technology. If money is
+          stolen, also contact your bank immediately.
+      - label: Check food safety after a power outage
+        link_label: NYC Health
+        url: https://www.nyc.gov/site/doh/health/emergency-preparedness/emergencies-cyber-power-outage.page
+        body: Food, medication, and other health precautions when power is lost.
+      - label: Find an air-conditioned place nearby
+        link_label: NYC Cool Options
+        url: https://finder.nyc.gov/coolingcenters/locations
+        body: >
+          Cooling centers and other places to cool down. Check
+          activation, hours, accessibility, and any entry costs.
+      - label: Request help for someone living outside
+        link_label: NYC311
+        url: https://portal.311.nyc.gov/article/?kanumber=KA-01037
+        body: >
+          Homeless outreach and Code Blue information. Call 911 for
+          immediate medical danger.
 
 map_layers: []

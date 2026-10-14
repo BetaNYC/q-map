@@ -1,4 +1,5 @@
 <script lang="ts">
+  import PhoneText from '$lib/components/PhoneText.svelte';
   import type { HazardItem } from '$lib/types';
 
   /**
@@ -17,9 +18,13 @@
    *
    *     "Get personalized flood guidance, Blue Dots"
    *
-   * The body stays inside the anchor too. It is context for the same
-   * destination, and excluding it would leave a dead strip inside an otherwise
-   * tappable block.
+   * The body is tappable too, but no longer inside the anchor (2026-10-14).
+   * Descriptions now carry phone numbers that must be tappable on their own
+   * ($lib/phones.ts), and a link inside a link is invalid HTML. So the anchor
+   * wraps the heading and destination name, and a stretched pseudo-element
+   * (`.stretched::after`, inset 0) spreads its hit area over the whole block;
+   * the phone links sit above it. The accessible name is unchanged: heading
+   * plus destination.
    *
    * `label` is the heading for every shape — a note's, a link's, a group's, a
    * phone's provider — so the key never means two things. `link_label` is the
@@ -38,25 +43,31 @@
   let { item }: Props = $props();
 </script>
 
-{#snippet content()}
-  <span class="header">
-    <span class="label">{item.label}</span>
-    {#if item.link_label}
-      <span class="link-label">{item.link_label}</span>
-    {/if}
-  </span>
+{#snippet heading()}
+  <span class="label">{item.label}</span>
+  {#if item.link_label}
+    <span class="link-label">{item.link_label}</span>
+  {/if}
+{/snippet}
 
+{#snippet body()}
   {#if item.body}
-    <span class="body">{item.body}</span>
+    <span class="body"><PhoneText text={item.body} /></span>
   {/if}
 {/snippet}
 
 {#if item.url}
   <!-- External, and opened in place: this is emergency guidance, and a
        surprise new tab is worse than a back button. -->
-  <a class="element is-link" href={item.url}>{@render content()}</a>
+  <div class="element is-link">
+    <a class="header stretched" href={item.url}>{@render heading()}</a>
+    {@render body()}
+  </div>
 {:else}
-  <div class="element">{@render content()}</div>
+  <div class="element">
+    <span class="header">{@render heading()}</span>
+    {@render body()}
+  </div>
 {/if}
 
 <style>
@@ -80,8 +91,20 @@
   }
 
   .is-link {
+    position: relative;
+  }
+
+  .stretched {
     color: inherit;
     text-decoration: none;
+  }
+
+  /* The whole block is the target: the anchor's hit area, stretched over the
+     element. Phone links in the body sit above it (PhoneText's z-index). */
+  .stretched::after {
+    content: '';
+    position: absolute;
+    inset: 0;
   }
 
   .header {

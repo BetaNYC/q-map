@@ -1,5 +1,6 @@
 <script lang="ts">
   import { browser } from '$app/environment';
+  import { base } from '$app/paths';
   import AddressSearch from '$lib/components/AddressSearch.svelte';
   import AlertBanner from '$lib/components/AlertBanner.svelte';
   import CdtaCard from '$lib/components/CdtaCard.svelte';
@@ -50,10 +51,19 @@
   <AlertBanner />
 
   <p class="about">
-    Lorem ipsum dolor sit amet, consectetur adipiscing elit,
-    sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam,
-    quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+    Queens has resources to help you prepare and find support. Explore the hazards your neighborhood faces and local resources you can access to prepare, respond, or recover. 
+    You can start small and make a plan that fits your household, or find help now if something is happening. <br><br>
+    The Queens Resource Map (Q-Map) is a tool created by the NYC Preparedness and Recovery Institute (<a href="https://pandemicresponse.columbia.edu/" rel="noopener noreferrer">PRI</a>) in collaboration with <a href="https://beta.nyc" rel="noopener noreferrer">BetaNYC</a>. 
+    It is designed to provide a dynamic, community-informed platform connecting residents and community-based organizations to critical resources before, during, and after emergencies. 
   </p>
+
+  <!-- General Resources (/general): steps for any emergency and where to get
+       help. Drawn as the "Use my location" control is (Figma: Location), but
+       a link, not a button: it goes to a page rather than doing something
+       here, and a screen reader should announce it as a link. -->
+  <a class="general-link" href="{base}/general">
+    <span class="label">General Resources</span>
+  </a>
 
   <!-- Both go straight to the district they find, and say why when they
        can't. The address field uses NYC GeoSearch; neither renders without
@@ -106,6 +116,36 @@
   @media (min-width: 1024px) {
     .picker-panel {
       display: none;
+    }
+  }
+
+  /* LocateButton's outlined button, as a link: sunken fill, 0.5px secondary
+     outline, 3px radius, 12px padding, at least 44px tall (WCAG 2.5.5). */
+  .general-link {
+    display: flex;
+    align-items: center;
+    min-height: var(--touch-target-min);
+    padding: var(--space-300);
+    box-sizing: border-box;
+    background: var(--color-surface-sunken);
+    border: 0.5px solid var(--color-text-secondary);
+    border-radius: 3px;
+    color: var(--color-text-primary);
+    font-size: var(--font-size-body);
+    font-weight: var(--font-weight-bold);
+    line-height: var(--line-height-tight);
+    text-decoration: none;
+  }
+
+  /* Optical centring, as in EntryPanel and LocateButton - see the note there. */
+  .general-link .label {
+    text-box: trim-both cap alphabetic;
+  }
+
+  @supports not (text-box: trim-both cap alphabetic) {
+    .general-link .label {
+      position: relative;
+      top: 0.1em;
     }
   }
 

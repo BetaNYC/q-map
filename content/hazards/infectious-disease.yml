@@ -1,30 +1,123 @@
-# Infectious Disease — STUB. Schema-valid but unwritten; sections carry no items yet.
+# Infectious Disease
 # Authored content: the pipeline validates and copies content below
+#
+# Rewritten 2026-10-14 from the SME-reviewed "Core Readiness Messages by
+# Threat" (test/Core Readiness Messages by Threat.pdf, reviewed 8 October
+# 2026), using the mapping documented in heavy-rain.yml. Its "Suggested first
+# links" are "Start here"; its "Additional candidate links" are "More help".
 
 slug: infectious-disease
 label: Infectious Disease
 jra_category: pandemic
-status: stub
 
 summary: >
-  Pandemic influenza or another communicable outbreak. Vulnerability is measured citywide rather than by district.
+  Infectious diseases are illnesses caused by germs, such as viruses or
+  bacteria. They can spread through people, food, water, or insects.
 
 sections:
-  # Rendered from conditions.json, not from this file. Screen 02's "current
-  # conditions" box was dropped and the citywide respiratory readout moves
-  # here, which is the hazard it is actually about.
-  #
-  # The number is a share of CITYWIDE emergency department visits and this page
-  # is district-scoped, so the component must render conditions.geography_label
-  # alongside it. That is not optional copy.
+  - id: core-actions
+    title: Core actions
+    items:
+      - label: Keep recommended vaccines up to date
+        note: true
+        body: Follow NYC Health advice for the specific disease or outbreak.
+      - label: Stay home when sick and wash hands often
+        note: true
+        body: >
+          For respiratory illness, use a well-fitting mask around
+          others and improve airflow when safe.
+      - label: >
+          Ask a healthcare provider early about testing and treatment,
+          especially if you have a higher risk of serious illness
+        note: true
+      - label: Severe trouble breathing or another medical emergency?
+        note: true
+        body: Call 911.
+
   - id: current-conditions
     title: Respiratory illness in New York City right now
-  - id: preparedness
-    title: Before
-  - id: response
-    title: During
-  - id: general
-    title: General information
+
+  - id: start-here
+    title: Start here
+    items:
+      - label: Prevent and treat respiratory infections
+        link_label: NYC Health
+        url: https://www.nyc.gov/site/doh/health/health-topics/respiratory-illnesses.page
+        body: >
+          Current advice on COVID-19, flu, and RSV, including
+          vaccines, masks, and treatment. Translated factsheets.
+      - label: Find vaccines near you
+        link_label: NYC Health Map
+        url: https://a816-health.nyc.gov/NYCHealthMap/ServiceCategory/Vaccines
+        body: >
+          Search vaccine services. Confirm vaccine availability, age
+          eligibility, cost, and hours with the provider.
+      - label: Talk to an urgent care clinician remotely
+        link_label: NYC Health + Hospitals Virtual ExpressCare
+        url: https://www.nychealthandhospitals.org/get-care/getting-healthcare-from-home/
+        body: >
+          24/7 phone or video care. Call 631-397-2273; financial
+          assistance is available. Phone and video language
+          assistance.
+
+  - id: more-help
+    title: More help
+    items:
+      - label: Look up a disease and how it spreads
+        link_label: New York State Health Department
+        url: https://www.health.ny.gov/diseases/communicable/
+        body: >
+          Disease facts, symptoms, and prevention. Use NYC alerts for
+          instructions during a local outbreak.
+      - label: Find low-cost City health clinics
+        link_label: NYC Health
+        url: https://www.nyc.gov/site/doh/services/allclinics.page
+        body: >
+          Immunization, sexual health, and tuberculosis services,
+          regardless of immigration status. Services and charges vary
+          by clinic.
+      - label: Get healthcare if you are uninsured
+        link_label: NYC Care
+        url: https://www.nyccare.nyc/enroll/
+        body: >
+          Affordable care through NYC Health + Hospitals for eligible
+          NYC residents. Call 646-692-2273; immigration status is no
+          barrier. Interpreters and translated materials.
+      - label: Find community healthcare in Flushing
+        link_label: Charles B. Wang Community Health Center
+        url: https://www.cbwchc.org/for-patients
+        body: >
+          Primary and preventive care, insurance help, and discounts
+          based on income. Multilingual staff; confirm your language
+          when booking.
+      - label: Find community healthcare in southeast Queens
+        link_label: Joseph P. Addabbo Family Health Center
+        url: https://www.addabbo.org/
+        body: >
+          Primary and preventive care in Jamaica, Arverne, and Far
+          Rockaway. Ask about costs and language help.
+      - label: Check emergency medicine distribution information
+        link_label: NYC Health
+        url: https://www.nyc.gov/site/doh/health/emergency-preparedness/emergency-medication-distribution.page
+        body: >
+          Medicine or vaccines at temporary POD sites only when
+          activated. Follow official locations; PODs do not treat
+          people already sick.
+      - label: Learn about time off when you are sick
+        link_label: NYC DCWP
+        url: https://www.nyc.gov/site/dca/workers/workersrights/paid-sick-leave-law-for-workers.page
+        body: >
+          Protected time off for covered workers, including illness.
+          Check current rules and reporting options. Translated worker
+          materials.
+      - label: Korean Community Services health navigation
+        link_label: Korean Community Services
+        url: https://www.kcsny.org/phrc
+        body: >
+          Bayside-based nonprofit: health coverage, education, and
+          care connections. Call 718-939-6137. Language support for
+          Korean and Asian American communities; confirm your
+          language.
 
 map_layers:
   - pivi_choropleth

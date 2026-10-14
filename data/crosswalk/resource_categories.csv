@@ -3,7 +3,7 @@ facdb,facsubgrp,SOUP KITCHENS AND FOOD PANTRIES,food-assistance,Food assistance,
 facdb,facsubgrp,SENIOR SERVICES,older-adults,Older adults,
 facdb,facsubgrp,LEGAL AND INTERVENTION SERVICES,benefits-and-legal,Benefits and legal help,
 facdb,facsubgrp,PROGRAMS FOR PEOPLE WITH DISABILITIES,disability-and-access,Disability and access,
-facdb,facsubgrp,WORKFORCE DEVELOPMENT,benefits-and-legal,Benefits and legal help,"Excluded 2026-09-22: not a resource a household turns to in an emergency. education-and-jobs retired 2026-09-22: schools and colleges excluded, literacy/workforce re-homed."
+facdb,facsubgrp,WORKFORCE DEVELOPMENT,exclude,,"Excluded 2026-09-22: not a resource a household turns to in an emergency. education-and-jobs retired 2026-09-22: schools and colleges excluded, literacy/workforce re-homed."
 facdb,facsubgrp,IMMIGRANT SERVICES,immigration-and-language,Immigration and language,
 facdb,facsubgrp,COMMUNITY CENTERS AND COMMUNITY PROGRAMS,libraries-and-community,Libraries and community,
 facdb,facsubgrp,NON-RESIDENTIAL HOUSING AND HOMELESS SERVICES,housing-and-shelter,Housing and shelter,
@@ -26,7 +26,7 @@ facdb,facgroup,ADULT SERVICES,immigration-and-language,Immigration and language,
 facdb,facgroup,VOCATIONAL AND PROPRIETARY SCHOOLS,exclude,,"Excluded 2026-09-22: not a resource a household turns to in an emergency. education-and-jobs retired 2026-09-22: schools and colleges excluded, literacy/workforce re-homed."
 facdb,facgroup,HIGHER EDUCATION,exclude,,"Excluded 2026-09-22: not a resource a household turns to in an emergency. education-and-jobs retired 2026-09-22: schools and colleges excluded, literacy/workforce re-homed."
 facdb,facgroup,PARKS AND PLAZAS,parks-and-environment,Parks and environment,
-facdb,facgroup,HISTORICAL SITES,parks-and-environment,Parks and environment,
+facdb,facgroup,HISTORICAL SITES,exclude,,
 facdb,facgroup,"OFFICES, TRAINING, AND TESTING",government-offices,Government offices,
 facdb,facgroup,TRANSPORTATION,exclude,,Parking lots and garages; not a resident resource
 facdb,facgroup,SOLID WASTE,exclude,,Infrastructure; scoped for the hazard side not the resource side
@@ -43,9 +43,9 @@ qnpd,organization_type,Mental Health Services & Recovery Support,health-care,Hea
 qnpd,organization_type,Substance Abuse,health-care,Health care,Folded into health-care 2026-09-22: the district screen shows one Health care row.
 qnpd,organization_type,Youth Development & Empowerment,children-and-youth,Children and youth,
 qnpd,organization_type,Education,libraries-and-community,Libraries and community,"Excluded 2026-09-22: not a resource a household turns to in an emergency. education-and-jobs retired 2026-09-22: schools and colleges excluded, literacy/workforce re-homed."
-qnpd,organization_type,Workforce Development,benefits-and-legal,Benefits and legal help,"Excluded 2026-09-22: not a resource a household turns to in an emergency. education-and-jobs retired 2026-09-22: schools and colleges excluded, literacy/workforce re-homed."
+qnpd,organization_type,Workforce Development,exclude,,"Excluded 2026-09-22: not a resource a household turns to in an emergency. education-and-jobs retired 2026-09-22: schools and colleges excluded, literacy/workforce re-homed."
 qnpd,organization_type,Immigration Integration,immigration-and-language,Immigration and language,
-qnpd,organization_type,Environmental Issues,parks-and-environment,Parks and environment,
+qnpd,organization_type,Environmental Issues,exclude,,
 qnpd,organization_type,Civic Engagement,government-offices,Government offices,
 qnpd,organization_type,Arts & Culture,libraries-and-community,Libraries and community,Largest single QNPD type at 35 orgs; folded in per the agreed 14-category vocabulary
 qnpd,organization_type,Spiritual Services,libraries-and-community,Libraries and community,Congregations often function as informal shelters and distribution points

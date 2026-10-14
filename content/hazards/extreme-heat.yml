@@ -1,85 +1,106 @@
 # Extreme Heat
+# Authored content: the pipeline validates and copies content below
 #
-# Structured to match the Figma screen "03 Hazard - Mobile/Extreme Heat"
-# (node 40:200).
-#
-# NO SECTION CARRIES A TITLE. Every heading on that screen is a GROUP label —
-# bold, with its children indented beside a rule — and the sections exist only
-# to order the page. A section with no `title` renders no heading, which is the
-# whole difference between this page and the Heavy Rain one.
-#
+# Rewritten 2026-10-14 from the SME-reviewed "Core Readiness Messages by
+# Threat" (test/Core Readiness Messages by Threat.pdf, reviewed 8 October
+# 2026), using the mapping documented in heavy-rain.yml. Its "Suggested first
+# links" are "Start here"; its "Additional candidate links" are "More help".
 
 slug: extreme-heat
 label: Extreme Heat
 jra_category: temperature-extremes
 
+summary: >
+  Extreme heat is weather hot enough to strain your body. Humidity can make
+  it harder to cool down, even indoors.
+
 sections:
-  - id: cooling
+  - id: core-actions
+    title: Core actions
     items:
-      - label: Access air conditioning or green spaces to keep your body temperature at safe levels
-        items:
-          - label: Find a cooling center
-            link_label: Cool Options NYC
-            url: https://finder.nyc.gov/coolingcenters
-            body: >
-              Cooling options and centers provide free access to indoor air
-              conditioning
-          - label: Locate outdoor cooling solutions
-            link_label: Cool it! NYC
-            url: https://www.nycgovparks.org/about/health-and-safety-guide/cool-it-nyc
-            body: >
-              Outdoor cooling resources include water features, shade trees,
-              and more
-          - label: Consider alternative cooling locations
-            note: true
-            body: Like movie theaters, museums, or shopping malls
-          - label: Follow indoor heat safety guidance
-            link_label: NYC Emergency Management
-            url: https://www.nyc.gov/site/em/ready/extreme-heat.page
-            body: Recommended steps if indoor temperature reaches above 90°
-
-      - label: Apply for assistance
-        items:
-          - label: Apply for a free air conditioner (NYC)
-            link_label: Home Energy Assistance Program (HEAP)
-            url: https://www.nyc.gov/site/hra/help/energy-assistance.page
-            body: >
-              HEAP is a program from the NYC Human Resouces Administration Department of Social Services
-          - label: Apply for a free air conditioner (NY State)
-            link_label: Essential Plan Cooling Program
-            url: https://info.nystateofhealth.ny.gov/CoolingProgram
-            body: > 
-              Air conditioners are available to qualifying New York State Essential Plan members on a first-come, first-serve basis
-          - label: Receive a utility bill discount
-            link_label: Con Edison
-            url: https://www.coned.com/en/accounts-billing/payment-plans-assistance/help-paying-your-bill
-            body: Enroll in Con Edison's financial assistance program
-
-  - id: response
-    items:
-      - label: Practice safe outdoor activities
+      - label: Use air conditioning or spend time in an air-conditioned place
         note: true
-        body: >
-          Ensure you drink plenty of water even if you are not thirsty, wear
-          light, loose fitting clothes, and avoid drinks with alcohol, caffeine
-          or sugar and strenuous physical activity when possible
+        body: Fans alone may not keep you safe during extreme heat.
+      - label: Drink water regularly and take breaks from activity
+        note: true
+        body: Check on people living alone or without cooling.
+      - label: Never leave anyone or a pet in a parked car
+        note: true
+        body: Plan now for cooling and help with energy costs.
+      - label: Confusion, fainting, or trouble breathing in the heat?
+        note: true
+        body: Call 911 and start cooling the person.
 
-  # The phones sit under a group label, not a section title, so the heading
-  # renders with the indent and rule the frame shows.
-  - id: utility-interruptions
+  - id: start-here
+    title: Start here
     items:
-      - label: Report utility interruptions immediately
-        items:
-          - label: Con Edison
-            tel: "1-800-752-6633"
-            tty: "1-800-642-2308"
-          - label: National Grid
-            tel: "1-718-643-4050"
-            tty: "1-718-297-2857"
-          - label: PSEG Long Island
-            tel: "1-800-490-0025"
-            tty: "1-631-755-6660"
+      - label: Find an air-conditioned place nearby
+        link_label: NYC Cool Options
+        url: https://finder.nyc.gov/coolingcenters/locations
+        body: >
+          Cooling centers and other places to cool down. Check
+          activation, hours, accessibility, and any entry costs.
+      - label: Learn how to stay safe in hot weather
+        link_label: NYC Health
+        url: https://www.nyc.gov/site/doh/health/emergency-preparedness/emergencies-extreme-weather-heat.page
+        body: >
+          Indoor cooling, heat illness, and checking on people who
+          need support. Translated heat safety materials.
+      - label: Check help buying an air conditioner
+        link_label: HEAP Cooling Assistance through HRA
+        url: https://access.nyc.gov/programs/cooling-assistance-benefit/
+        body: >
+          Equipment and installation for eligible households.
+          Seasonal; 2026 applications are closed.
 
-# `map_layers: []` on one line. `- []` is a list whose single entry is an empty
-# list, which is a different thing and used to fail with an unreadable error.
+  - id: more-help
+    title: More help
+    items:
+      - label: Check cooling help for Essential Plan members
+        link_label: Essential Plan Cooling Program
+        url: https://portal.311.nyc.gov/article/?kanumber=KA-03679
+        body: >
+          An air conditioner for eligible members with qualifying
+          health needs. 2026 applications are closed.
+      - label: Ask Con Edison about bill assistance
+        link_label: Con Edison
+        url: https://www.coned.com/en/accounts-billing/payment-plans-assistance/help-paying-your-bill
+        body: Discounts and payment assistance for eligible customers in most of Queens.
+      - label: Ask PSEG Long Island about bill assistance
+        link_label: PSEG Long Island
+        url: https://www.psegliny.com/myaccount/customersupport/financialassistance
+        body: Payment and financial assistance for eligible customers in the Rockaways.
+      - label: Find outdoor water and shade
+        link_label: NYC Parks Cool It NYC
+        url: https://portal.311.nyc.gov/article/?kanumber=KA-03323
+        body: >
+          Spray showers, fountains, and shaded spaces. Air
+          conditioning offers stronger protection during extreme heat.
+      - label: Find your Queens library
+        link_label: Queens Public Library
+        url: https://queenslibrary.org/about-us/locations
+        body: >
+          Local branches, internet access, and community information.
+          Check current hours and closures before going.
+      - label: Find support for an older adult
+        link_label: NYC Aging
+        url: https://www.nyc.gov/site/dfta/services/find-help.page
+        body: >
+          Meals, case management, caregiver help, and local centers.
+          Call Aging Connect at 212-244-6469. Phone language
+          assistance available.
+      - label: Queens Community House older adult support
+        link_label: Queens Community House
+        url: https://qchnyc.org/programs/older-adult-services
+        body: >
+          Local centers, case management, and home-delivered meals for
+          eligible older adults. Confirm service area and enrollment.
+      - label: Learn about time off when you are sick
+        link_label: NYC DCWP
+        url: https://www.nyc.gov/site/dca/workers/workersrights/paid-sick-leave-law-for-workers.page
+        body: >
+          Protected time off for covered workers, including illness.
+          Check current rules and reporting options. Translated worker
+          materials.
+
 map_layers: []
