@@ -5,6 +5,7 @@
   import HorizontalRule from '$lib/components/HorizontalRule.svelte';
   import FrozenHead from '$lib/components/FrozenHead.svelte';
   import PageHeader from '$lib/components/PageHeader.svelte';
+  import PhoneText from '$lib/components/PhoneText.svelte';
   import Section from '$lib/components/Section.svelte';
   import type { ConditionsMetric } from '$lib/types';
 
@@ -69,13 +70,14 @@
        renders that button even for the five hazards with no layers at all —
        the resources are the point of the map).
 
-       NEITHER THE MEASURE NOR THE SUMMARY RENDERS HERE ANY MORE. The measure
-       ("Heat Vulnerability Index: 4 out of 5") was the same measureLine()
-       string, in the same type, that HazardRow already shows on the district
-       screen one tap above. The summary went with it on the same call. Both
-       are absent from the revised frames. `content.summary` is still emitted
-       by the pipeline and now renders nowhere in the app — noted in
-       web/README.md so it is a known gap rather than a silent drop. -->
+       THE MEASURE DOES NOT RENDER HERE. The measure ("Heat Vulnerability
+       Index: 4 out of 5") is the same measureLine() string, in the same type,
+       that HazardRow already shows on the district screen one tap above.
+
+       THE SUMMARY DOES, again (Andrew, 2026-10-14): the SME-reviewed copy
+       opens every hazard with a two-sentence description of it, written as
+       `summary`. It was dropped on 2026-09-23 with the measure, when no
+       authored summary said anything the screen needed. -->
   <!-- Frozen while the page scrolls, with the rule under it as its edge. -->
   <FrozenHead>
     <PageHeader
@@ -86,6 +88,16 @@
 
     <HorizontalRule />
   </FrozenHead>
+
+  {#if content.summary}
+    <!-- Paragraphs split on the blank line a folded YAML block keeps. Phone
+         numbers in it are tappable ($lib/phones.ts). -->
+    <div class="summary">
+      {#each content.summary.trim().split(/\n\s*\n|\n/) as paragraph, i (i)}
+        <p class="prose"><PhoneText text={paragraph} /></p>
+      {/each}
+    </div>
+  {/if}
 
   {#if sections.length === 0}
     <p class="empty">Guidance for this hazard has not been written yet.</p>
@@ -123,7 +135,7 @@
 
   <!-- Every section carries both keys and one of them is empty. -->
   {#if section.body}
-    <p class="prose">{section.body}</p>
+    <p class="prose"><PhoneText text={section.body} /></p>
   {/if}
 
   {#if section.items.length}
@@ -146,6 +158,14 @@
     margin-inline: auto;
     padding-inline: var(--gutter);
     padding-block: var(--space-600);
+  }
+
+  /* Aligned with the sections below it: Section's own 10px padding. */
+  .summary {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-300);
+    padding: 10px;
   }
 
   .prose,

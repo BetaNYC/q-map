@@ -438,11 +438,17 @@ the same size and the same grey — so arriving from a district row showed the
 identical sentence twice, one tap apart. `measureLine()` itself stays;
 `HazardRow` still uses it.
 
-**`content.summary` now renders nowhere.** It is still emitted, still on
-`HazardContent`, and four hazards carry one (coastal-storm, hazmat,
-infectious-disease, mass-casualty). Neither revised frame draws it. Recorded
-here rather than quietly dropped: either a frame should place it or the
-pipeline should stop emitting it.
+**`content.summary` renders again (2026-10-14),** under the frozen header,
+split into paragraphs, with phone numbers tappable. Every hazard now carries
+one: the SME-reviewed copy opens each hazard with a two-sentence description.
+(From 2026-09-23 to 2026-10-14 it rendered nowhere.)
+
+**Phone numbers in hazard text are tappable.** `$lib/phones.ts` splits text
+into runs and `tel:` links (hyphenated NANP numbers, and 911, 311, 988), and
+`PhoneText` renders them, in summaries, section bodies and item bodies.
+`HazardElement` is a stretched link so a number inside a link item can be its
+own link: the anchor wraps the heading and destination, `::after` spreads its
+hit area over the block, and the phone links sit above it.
 
 **The 48px gap was double-counted spacing.** `NestedContainer`'s slot set
 `gap: 24px` *and* every `HazardElement` padded itself 12px all round, so

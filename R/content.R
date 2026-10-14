@@ -39,6 +39,13 @@ HAZARD_OVERLAY_KEYS <- c("summary", "sections", "map_layers", "resource_categori
 # a section nobody notices is missing.
 SECTION_IDS <- c(
   "preparedness", "response", "general",
+  # The three protective actions every hazard leads with, from the SME-reviewed
+  # "Core Readiness Messages by Threat" (2026-10-14): one NOTE per action, and
+  # the "...? Call 911." line as the last.
+  "core-actions",
+  # The same document's link groups: its "Suggested first links" (the three
+  # recommended starting points) and "Additional candidate links".
+  "start-here", "more-help",
   # `cooling` groups the Extreme Heat page's air-conditioning and green-space
   # guidance. Named for its content rather than for a phase, which is what the
   # page's structure is now organised around.
