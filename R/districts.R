@@ -238,8 +238,11 @@ validate_district_payloads <- function(payloads, crosswalk) {
     slugs <- vapply(p$hazards, function(h) h$slug, character(1))
     if (anyDuplicated(slugs)) stop(slug, ": duplicate hazard slug")
     is_ranked <- vapply(p$hazards, function(h) isTRUE(h$ranked), logical(1))
-    if (!identical(is_ranked, c(rep(TRUE, n_ranked), rep(FALSE, length(HAZARD_PINNED))))) {
-      stop(slug, ": ranked hazards must occupy positions 1-", n_ranked)
+    # Ranked hazards come first. Up to n_ranked of them: a ranked hazard that
+    # scores 0 is unranked and placed last (build_hazards, 2026-10-14).
+    k <- sum(is_ranked)
+    if (k > n_ranked || !identical(is_ranked, c(rep(TRUE, k), rep(FALSE, n_total - k)))) {
+      stop(slug, ": ranked hazards must occupy the first positions (at most ", n_ranked, ")")
     }
 
     # A pinned hazard must carry its reason, or the UI has no way to say why it
@@ -289,8 +292,10 @@ validate_hazard_calibration <- function(payloads) {
     if (length(hz) != 8) {
       stop("Calibration: ", slug, " has ", length(hz), " hazards, expected 8")
     }
+    # Ranked first, as many as score above 0 (build_hazards, 2026-10-14).
+    n_scored <- sum(vapply(hz, function(h) isTRUE(h$ranked), logical(1)))
     for (i in seq_along(hz)) {
-      should_rank <- i <= length(HAZARD_PRIORITY)
+      should_rank <- i <= n_scored
       if (!identical(hz[[i]]$ranked, should_rank)) {
         stop("Calibration: ", slug, " position ", i, " is ",
              if (hz[[i]]$ranked) "ranked" else "pinned", " ('", hz[[i]]$slug,
