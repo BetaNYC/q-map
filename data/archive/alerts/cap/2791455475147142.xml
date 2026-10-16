@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?><alert xmlns="urn:oasis:names:tc:emergency:cap:1.2"><identifier>2791455475147142</identifier><sender>2791455475147142</sender><sent>2026-10-16T15:58:50-04:00</sent><status>Actual</status><msgType>Alert</msgType><scope>Public</scope><code>CAPSv1.2</code><info><language>en-US</language><category>Geo</category><event>Civil Emergency Message</event><urgency>Immediate</urgency><severity>Extreme</severity><certainty>Observed</certainty><eventCode><valueName>SAME</valueName><value>CEM</value></eventCode><expires>2026-10-16T17:58:50-04:00</expires><senderName>NYCEM [English]</senderName><headline>Notify NYC - Severe Thunderstorm Watch - 10/16 (NYC)</headline><description>Notification issued 10-16-2026 at 03:58 PM.
+
+The National Weather Service has issued the following:
+What: Severe Thunderstorm Watch
+Where: NYC
+When: Until 10:00 PM on 10/16
+Hazards: Severe thunderstorms may bring strong winds, heavy rain, and hail. Strong winds can cause flying debris, turn unsecured objects into projectiles, and cause power outages.
+Preparedness Actions: Exercise caution when walking, biking, or driving. Remain alert for threatening weather and possible warnings.
+
+Before an outage
+- Charge cell phones
+- Gather supplies
+- Turn refrigerators/freezers to a colder setting
+
+During an Outage
+-Stay clear of downed power lines
+-Turn off all appliances
+-Keep refrigerator/freezer doors closed to prevent food spoilage
+-Do not use generators indoors
+-If you have a disability/access needs, or use life sustaining equipment (LSE) and need immediate assistance, dial 911.
+
+For the latest weather info: www.weather.gov/okx.
+
+ 
+
+To view this message in American Sign Language (ASL), العربية, বাঙালি, 中文, Français, Kreyòl Ayisyen, Italiano, 한국어, Polski, Pусский, Español, اردو or ייִדיש :  http://on.nyc.gov/2rQxgQi.</description><parameter><valueName>timezone</valueName><value>EST</value></parameter><area><areaDesc>Bronx,Kings,New York,Queens,Staten Island</areaDesc><geocode><valueName>SAME</valueName><value>036005</value></geocode><geocode><valueName>SAME</valueName><value>036047</value></geocode><geocode><valueName>SAME</valueName><value>036061</value></geocode><geocode><valueName>SAME</valueName><value>036081</value></geocode><geocode><valueName>SAME</valueName><value>036085</value></geocode></area></info></alert>
