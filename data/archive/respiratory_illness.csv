@@ -35,3 +35,5 @@ date,metric,value,first_seen
 2026-09-26,Respiratory illness visits,8.6,2026-10-03
 2026-10-03,Respiratory illness hospitalizations,7.14,2026-10-10
 2026-10-03,Respiratory illness visits,8.7,2026-10-10
+2026-10-10,Respiratory illness hospitalizations,6.96,2026-10-17
+2026-10-10,Respiratory illness visits,8.81,2026-10-17
