@@ -19,16 +19,18 @@
     children: Snippet;
     /** Accessible name for the sheet itself. */
     label: string;
+    /** Bindable: the map page drops the sheet to peek when a list row is
+     *  tapped, so the point and its popup are not hidden under it. */
+    expanded?: boolean;
   }
 
-  let { header, children, label }: Props = $props();
+  let { header, children, label, expanded = $bindable(false) }: Props = $props();
 
   /** Matches --sheet-peek. Kept in sync by hand, as in d26. */
   const PEEK_PX = 123;
   /** Matches .is-expanded's height. */
   const EXPANDED_FRAC = 0.72;
 
-  let expanded = $state(false);
   let sheetEl = $state<HTMLElement>();
   let scrollEl = $state<HTMLElement>();
 

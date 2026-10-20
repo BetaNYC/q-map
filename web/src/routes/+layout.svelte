@@ -8,10 +8,13 @@
   import { provideAlerts } from '$lib/alertsContext';
   import MapToolbar from '$lib/components/MapToolbar.svelte';
   import Popup from '$lib/components/Popup.svelte';
+  import ResourceListPane from '$lib/components/ResourceListPane.svelte';
   import SiteHeader from '$lib/components/SiteHeader.svelte';
   import { dataUrl } from '$lib/data';
   import { parseSelection, toggleSelection, withSelection } from '$lib/mapState';
   import { DOCKED_QUERY, QUEENS_VIEW, type MapView } from '$lib/mapView';
+  import { groupResources } from '$lib/resourceList';
+  import { mapStateQuery } from '$lib/resources';
   import type { DistrictPayload, Resource, ResourceCategory } from '$lib/types';
 
   let { children, data } = $props();
@@ -142,20 +145,26 @@
     writeSelection(withSelection(page.url, 'layers', next, defaults, knownLayers));
   }
 
-  /* ---- The popup ------------------------------------------------------ */
+  /* ---- The popup and the resource list --------------------------------- */
 
   /**
    * `?resource=` opens a point's popup, on any page with a district: the
    * toolbar can switch points on anywhere, so a click on one has to work
    * anywhere. The join is the map page's: resources/<slug>.json, fetched in
-   * the browser, here only once a popup is actually asked for.
+   * the browser, once a popup is asked for or the list has rows to show.
+   * With no category on (the district page's default) it is not fetched.
    */
   const resourceParam = $derived(browser ? page.url.searchParams.get('resource') : null);
+
+  /** The resource drawn selected on the map and in the list: the one a click
+   *  chose, else the one the page is about (a resource page's MapView). */
+  const selectedId = $derived(resourceParam ?? declared.selected ?? null);
   let resourcesBySlug = $state<Record<string, Resource[]>>({});
 
   $effect(() => {
     const slug = declared.district;
-    if (!docked.current || !slug || !resourceParam || resourcesBySlug[slug]) return;
+    const wanted = resourceParam || categoriesOn.length > 0;
+    if (!docked.current || !slug || !wanted || resourcesBySlug[slug]) return;
     let cancelled = false;
     fetch(dataUrl(`resources/${slug}.json`))
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
@@ -182,14 +191,71 @@
       : ''
   );
 
+  /** The map's state, for the popup's detail link (mapStateQuery). On a
+   *  desktop hazard page the hazard is the route's, so Back from the resource
+   *  page lands on the hazard page again. */
+  const detailQuery = $derived(
+    mapStateQuery({ categories: categoriesOn, layers: layersOn, hazard: page.params.hazard ?? null })
+  );
+
+  /** The list's rows for the categories on, or null until both the
+   *  categories and the records have loaded. */
+  const listGroups = $derived.by(() => {
+    const slug = declared.district;
+    const records = slug ? resourcesBySlug[slug] : undefined;
+    if (!categories) return null;
+    if (categoriesOn.length === 0) return [];
+    return records ? groupResources(records, categories, categoriesOn) : null;
+  });
+
+  /** The list row that opened the popup, if a row did. */
+  let trigger: HTMLElement | null = null;
+
+  function selectFromList(resourceId: string, row: HTMLElement) {
+    trigger = row;
+    selectResource(resourceId);
+  }
+
   function closePopup() {
     const url = new URL(page.url);
     url.searchParams.delete('resource');
     writeSelection(url);
-    // §10: focus returns to the trigger. A point is not focusable; the canvas,
-    // where the arrow keys pan from, is the closest true statement.
-    queueMicrotask(() => document.querySelector<HTMLElement>('.map-pane .maplibregl-canvas')?.focus());
+    // §10: focus returns to the trigger. A list row when a row opened it.
+    // A point is not focusable; the canvas, where the arrow keys pan from, is
+    // the closest true statement.
+    const row = trigger?.isConnected ? trigger : null;
+    trigger = null;
+    queueMicrotask(() => (row ?? document.querySelector<HTMLElement>('.map-pane .maplibregl-canvas'))?.focus());
   }
+
+  /* ---- The list pane's height ------------------------------------------ */
+
+  let paneCollapsed = $state(false);
+  let stageWidth = $state(0);
+  let stageHeight = $state(0);
+  let popupHeight = $state(0);
+
+  /** Pane geometry, px. Figma: the 07 Resource List - Desktop frames. */
+  const PANE = { inset: 16, width: 320, maxHeight: 389, popupWidth: 280, popupBottom: 24, gap: 8 };
+
+  /**
+   * At most 389px (Andrew, 2026-10-20), and within the map less 16px above
+   * and below.
+   *
+   * The Popup stays where it has always been, centred at the bottom of the
+   * map. Where the two overlap side by side - a map narrower than 952px, so
+   * windows under 1342px - the pane ends 8px above the popup while it is open
+   * instead. At 1024x768 that leaves about four rows.
+   */
+  const paneMaxHeight = $derived.by(() => {
+    const within = Math.min(PANE.maxHeight, stageHeight - 2 * PANE.inset);
+    const popupLeft = stageWidth / 2 - PANE.popupWidth / 2;
+    const overlaps = Boolean(selectedResource) && popupHeight > 0 && popupLeft < PANE.inset + PANE.width;
+    if (!overlaps) return within;
+    return Math.min(within, stageHeight - PANE.popupBottom - popupHeight - PANE.gap - PANE.inset);
+  });
+
+  const paneOpen = $derived(Boolean(declared.district && categories && !paneCollapsed));
 
   /** null when the view is all of Queens, or names a slug with no page. */
   const district = $derived(
@@ -243,7 +309,7 @@
        accessibility tree there. -->
   <section class="map-pane" aria-label="Map and map controls">
     {#if docked.current}
-      <div class="map-stage">
+      <div class="map-stage" bind:clientWidth={stageWidth} bind:clientHeight={stageHeight}>
         {#await import('$lib/components/Map.svelte') then { default: Map }}
           <Map
             {district}
@@ -253,17 +319,35 @@
             visibleCategories={view.categories}
             selectableDistricts={queensIds}
             onSelectDistrict={selectDistrict}
-            onSelectResource={selectResource}
+            onSelectResource={(id) => {
+              trigger = null;
+              selectResource(id);
+            }}
+            {categories}
+            selectedResource={selectedId}
+            coveredLeft={paneOpen ? PANE.inset + PANE.width : 0}
           />
         {/await}
 
+        {#if declared.district && listGroups}
+          <ResourceListPane
+            groups={listGroups}
+            {selectedId}
+            onSelect={selectFromList}
+            collapsed={paneCollapsed}
+            onToggle={() => (paneCollapsed = !paneCollapsed)}
+            maxHeight={paneMaxHeight}
+          />
+        {/if}
+
         {#if selectedResource && declared.district}
-          <div class="popup-layer">
+          <div class="popup-layer" bind:clientHeight={popupHeight}>
             <Popup
               resource={selectedResource}
               categoryLabel={popupCategoryLabel}
               districtSlug={declared.district}
               onClose={closePopup}
+              {detailQuery}
             />
           </div>
         {/if}
