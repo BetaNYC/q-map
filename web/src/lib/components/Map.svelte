@@ -10,7 +10,7 @@
   import type { MapDistrict } from '$lib/mapView';
   import { categoryInitial } from '$lib/categories';
   import { recallCamera, rememberCamera } from '$lib/map/camera';
-  import { pointScale } from '$lib/map/pointScale';
+  import { pointSizePx } from '$lib/map/pointScale';
   import type { ResourceCategory } from '$lib/types';
 
   /**
@@ -208,9 +208,10 @@
       instance.on('zoomend', layoutLabels);
 
       // Points grow with zoom: d26's ramp ($lib/map/pointScale.ts), as one
-      // custom property every marker reads, so a zoom frame is one write.
+      // custom property every marker sizes itself from, so a zoom frame is
+      // one write.
       const scalePoints = () =>
-        container?.style.setProperty('--point-scale', pointScale(instance.getZoom()).toFixed(3));
+        container?.style.setProperty('--point-size', `${pointSizePx(instance.getZoom()).toFixed(2)}px`);
       instance.on('zoom', scalePoints);
       scalePoints();
 
@@ -614,14 +615,16 @@
     text-shadow: 0 0 2px #fefcfa;
   }
 
-  /* PointMarker (Figma 261:1276): the panel's category mark on the map. A
-     24px hit area around the 16px square (WCAG 2.5.8). Both grow with zoom by
-     --point-scale (d26's ramp, 1 to 1.75 between zooms 15 and 20). */
+  /* PointMarker (Figma 261:1276): the panel's category mark on the map, at
+     d26's 20px and growing with zoom by --point-size ($lib/map/pointScale.ts:
+     20px to zoom 15, 35px at 20). Sized, not transformed, so the border stays
+     one crisp line at every zoom. The hit area is the square plus 4px each
+     side, so never under 24px (WCAG 2.5.8). */
   .map :global(.point-marker) {
     display: grid;
     place-items: center;
-    width: calc(24px * var(--point-scale, 1));
-    height: calc(24px * var(--point-scale, 1));
+    width: calc(var(--point-size, 20px) + 8px);
+    height: calc(var(--point-size, 20px) + 8px);
     cursor: pointer;
   }
 
@@ -629,18 +632,19 @@
     display: grid;
     place-items: center;
     box-sizing: border-box;
-    width: var(--space-400);
-    height: var(--space-400);
+    width: var(--point-size, 20px);
+    height: var(--point-size, 20px);
     background: var(--color-surface);
     border: 0.75px solid var(--color-text-primary);
+    /* radius/sm, the panel's and toolbar's category marks (Andrew,
+       2026-10-20). Figma's PointMarker is square-cornered. */
+    border-radius: var(--radius-sm);
     font-family: var(--font-mono-icon);
-    font-size: var(--font-size-small);
+    /* Figma's 12px letter in a 16px square, kept in proportion. */
+    font-size: calc(var(--point-size, 20px) * 0.75);
     font-style: italic;
     line-height: 1;
     color: var(--color-text-primary);
-    /* A transform, not a bigger font and box: the letter, border and square
-       scale together and stay in the frame's proportions. */
-    transform: scale(var(--point-scale, 1));
   }
 
   /* Over whatever it is stacked with. */

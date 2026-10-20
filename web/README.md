@@ -1139,8 +1139,9 @@ and row text, and is tested on the real q14 payload.
 - **Second line:** the operator where it adds to the name, never the
   category, which the group heading already says.
 - **Points are the category marks**, as HTML markers rather than a symbol
-  layer, so the letter is in the icon face. They grow with zoom on d26's ramp
-  (1× to zoom 15, 1.75× at 20; `$lib/map/pointScale.ts`). Not focusable: the list is the
+  layer, so the letter is in the icon face. At d26's size and ramp: 20px to zoom
+  15, 35px at zoom 20 (`$lib/map/pointScale.ts`). Sized, not transformed, so
+  the border stays one crisp line. Not focusable: the list is the
   keyboard route. Selected: `--color-accent`, on top of anything stacked with
   it.
 - **Departure:** phone rows are at least 44px; the frame's 8px padding makes a
