@@ -14,6 +14,19 @@
 # A scrape never overwrites the canonical file. It proposes a diff. That is
 # what makes hand corrections survive a re-scrape, and it is the whole point of
 # the "trusted messenger" direction.
+#
+# HAND ADDITIONS AND REMOVALS (2026-10-20). Two things a person can do in the
+# canonical file that no scrape will undo:
+#
+#   add     a row with source = "manual" and resource_id = "manual:<slug>".
+#           No scrape produces manual rows, so the seed never proposes
+#           removing them. Coordinates are entered by hand.
+#   remove  fill `removed_reason` on any row. The row stays in the file - so
+#           the seed still recognises the id and never re-proposes it, and the
+#           other hand edits survive - but live_resources() drops it before
+#           anything is published. Clearing the cell restores it.
+#
+# Removing a whole SOURCE CATEGORY is a crosswalk edit (`exclude`), not this.
 
 FACDB_URL <- "https://data.cityofnewyork.us/resource/ji82-xba5.json"
 
@@ -22,7 +35,18 @@ FACDB_URL <- "https://data.cityofnewyork.us/resource/ji82-xba5.json"
 # Queens directory get flagged rather than silently plotted in Queens.
 GEOSEARCH_URL <- "https://geosearch.planninglabs.nyc/v2/search"
 
-RESOURCE_SOURCES <- c("facdb", "qnpd", "franc")
+# The three scraped sources, which the crosswalk maps and the seed fetches.
+RESOURCE_SEEDED_SOURCES <- c("facdb", "qnpd", "franc")
+# `manual` is entered by hand in the canonical file and has no crosswalk rows.
+RESOURCE_SOURCES <- c(RESOURCE_SEEDED_SOURCES, "manual")
+
+# FacDB records carry a name, an address and a facility type - no contact,
+# hours or services. Scoped 2026-10-20 to the categories where the location
+# alone is the useful fact. The crosswalk is what enforces this (every other
+# FacDB category maps to `exclude`); validate_canonical_resources() checks the
+# canonical file agrees, so a hand-added FacDB row cannot slip back in.
+FACDB_CATEGORIES <- c("emergency-services", "government-offices",
+                      "disability-and-access")
 
 # --- category crosswalk -----------------------------------------------------
 
@@ -42,10 +66,23 @@ validate_resource_categories <- function(cx) {
   }
   assert_no_na(cx, required)
 
-  bad_source <- setdiff(cx$source, RESOURCE_SOURCES)
+  bad_source <- setdiff(cx$source, RESOURCE_SEEDED_SOURCES)
   if (length(bad_source) > 0) {
     stop("resource_categories.csv: unknown source(s) ",
-         paste(bad_source, collapse = ", "))
+         paste(bad_source, collapse = ", "),
+         " - only scraped sources are mapped; manual rows carry their category")
+  }
+
+  # The FacDB scope, stated once in FACDB_CATEGORIES and enforced here: a
+  # FacDB mapping outside it means the scope has drifted in one file but not
+  # the other.
+  facdb_cats <- unique(cx$canonical_category[cx$source == "facdb" &
+                                               cx$canonical_category != "exclude"])
+  if (!setequal(facdb_cats, FACDB_CATEGORIES)) {
+    stop("resource_categories.csv: FacDB maps to ",
+         paste(sort(facdb_cats), collapse = ", "), " but FACDB_CATEGORIES is ",
+         paste(sort(FACDB_CATEGORIES), collapse = ", "),
+         ". Change both together.")
   }
 
   # One mapping per (source, field, category) or the lookup is ambiguous.
@@ -359,7 +396,10 @@ CANONICAL_COLUMNS <- c(
   "address", "lon", "lat", "geocode_boro", "geocode_match",
   "in_queens", "serves_queens", "is_coad_member",
   "mission", "contact", "contact_name", "email", "phone", "website", "social",
-  "languages", "accepts_referrals", "fees", "capacity", "review_note"
+  "languages", "accepts_referrals", "fees", "capacity", "review_note",
+  # Blank on a live row. Any text removes the row from every output; see the
+  # header of this file.
+  "removed_reason"
 )
 
 candidates_facdb <- function(facdb, cx, verified_on) {
@@ -536,7 +576,9 @@ build_resource_candidates <- function(facdb, qnpd, qnpd_geo, franc, cx,
         is.na(lon) ~ "not geocoded",
         !in_queens ~ paste0("address is in ", geocode_boro),
         TRUE ~ NA_character_
-      )
+      ),
+      # A scrape never removes anything; only a person does.
+      removed_reason = NA_character_
     ) |>
     mutate(across(where(is.character), trim)) |>
     select(any_of(CANONICAL_COLUMNS)) |>
@@ -557,6 +599,13 @@ read_canonical_resources <- function(path) {
 }
 
 validate_canonical_resources <- function(res, cx) {
+  # A spreadsheet round-trip can drop or rename a column. Losing
+  # removed_reason would silently republish every removed resource.
+  absent <- setdiff(CANONICAL_COLUMNS, names(res))
+  if (length(absent) > 0) {
+    stop("resources.csv: missing column(s) ", paste(absent, collapse = ", "))
+  }
+
   assert_no_na(res, c("resource_id", "source", "name", "canonical_category"))
 
   # Permalinks and every hand correction key off this. A collision silently
@@ -566,6 +615,50 @@ validate_canonical_resources <- function(res, cx) {
   bad_source <- setdiff(res$source, RESOURCE_SOURCES)
   if (length(bad_source) > 0) {
     stop("resources.csv: unknown source(s) ", paste(bad_source, collapse = ", "))
+  }
+
+  # The id is `<source>:<key>`, and the frontend splits it on that colon to
+  # build /resource/{source}/{slug}. A hand-added row with the wrong prefix
+  # would get a detail URL under another source.
+  bad_prefix <- res |> filter(!startsWith(resource_id, paste0(source, ":")))
+  if (nrow(bad_prefix) > 0) {
+    stop("resources.csv: resource_id must start with '<source>:' - ",
+         paste(head(bad_prefix$resource_id, 3), collapse = ", "))
+  }
+
+  # A hand-added row has no scrape behind it, so the row itself is the only
+  # record of where it came from and when it was last true.
+  manual <- res |> filter(source == "manual")
+  bad_manual <- manual |>
+    filter(is.na(provenance) | !nzchar(provenance) |
+             is.na(verified_on) | !nzchar(verified_on) |
+             is.na(in_queens) | is.na(serves_queens))
+  if (nrow(bad_manual) > 0) {
+    stop("resources.csv: manual row(s) need provenance, verified_on, ",
+         "in_queens and serves_queens: ",
+         paste(head(bad_manual$resource_id, 3), collapse = ", "))
+  }
+  # The slug becomes a URL: /q{NN}/resource/manual/<slug>. The frontend build
+  # refuses anything but lowercase letters, digits and dashes, up to 60 chars
+  # (web/src/routes/[district]/resource/[source]/[slug]/+page.server.ts);
+  # failing here says so in the pipeline, next to the row, instead.
+  bad_slug <- manual |> filter(!grepl("^manual:[a-z0-9-]{1,60}$", resource_id))
+  if (nrow(bad_slug) > 0) {
+    stop("resources.csv: manual resource_id must be manual:<slug>, the slug ",
+         "lowercase letters, digits and dashes, at most 60 characters - ",
+         paste(head(bad_slug$resource_id, 3), collapse = ", "))
+  }
+
+  # THE FACDB SCOPE. The crosswalk stops the seed proposing other FacDB
+  # categories; this stops the canonical file holding them, which a by-hand
+  # recategorisation or an old --force seed could otherwise do. Removed rows
+  # are included: an out-of-scope FacDB row should be deleted, not parked.
+  out_of_scope <- res |>
+    filter(source == "facdb", !canonical_category %in% FACDB_CATEGORIES)
+  if (nrow(out_of_scope) > 0) {
+    stop("resources.csv: ", nrow(out_of_scope), " FacDB row(s) outside ",
+         paste(FACDB_CATEGORIES, collapse = ", "), ": ",
+         paste(unique(out_of_scope$canonical_category), collapse = ", "))
   }
 
   # Every category must resolve through the crosswalk, so a hand edit cannot
@@ -597,6 +690,13 @@ validate_canonical_resources <- function(res, cx) {
          "lon/lat swap: ", paste(head(off$resource_id, 3), collapse = ", "))
   }
   TRUE
+}
+
+# The rows that publish. The ONLY place removed_reason is read: every output
+# - district payloads, map points, category counts - descends from this, so a
+# removed resource cannot reach one output and not another.
+live_resources <- function(res) {
+  res |> filter(is.na(removed_reason) | !nzchar(trimws(removed_reason)))
 }
 
 # Assign each resource to a district by point-in-polygon.

@@ -355,7 +355,8 @@ field_table(resources_all, NOTES_RESOURCES),
 field_table(resource_records, list(
   resource_id = "**Stable across rebuilds.** Permalinks depend on it.",
   category = "Resolves through `data/crosswalk/resource_categories.csv`.",
-  is_coad_member = "FRANC membership. A flag, not a category."
+  is_coad_member = "FRANC membership. A flag, not a category.",
+  source = "`facdb`, `qnpd`, `franc` or `manual` (entered by hand in `data/canonical/resources.csv`). Every source except `facdb` gets a detail page; FacDB records carry no contact or service detail and are popup-only. Do not hardcode a count of either - resources are added and removed by hand."
 )),
 "",
 "## 5. `gaps/<slug>.json`",
@@ -529,7 +530,7 @@ paste("**The map popup needs a join.** It shows name, category and address,",
 "- **Layer ids are permalink surface.** They appear in map URLs. `data/registry/map_layers.csv` is the vocabulary; only rows with `status: available` have an artifact. `delivery: inline` means the values already ship in the district payload and join to `cdta.geojson` by `cdta2020` - there is no separate file.",
 "- **Language estimates carry `cv`.** Above 30, DCP treats the figure as unreliable. Gap 18 prefers the largest RELIABLE uncovered language and falls back to the largest overall in the three districts that have none; where it falls back, `facts.reliable` is `false` and the pipeline has already swapped in a hedged `sentence_template`. Render what you are given.",
 "- **A gap sentence may be a finding of absence.** Where a `higher_is_worse` gap is zero the pipeline swaps in different copy (\"None of ... sit in an area that floods\") and sorts it last within its hazard, so it only appears when the hazard has nothing else. The template you receive already reflects that - do not branch on the value yourself.",
-"- **`capacity` is omitted, never `0`.** FacDB uses 0 for \"not reported\" on 88% of records. If the key is absent, capacity is unknown, not zero.",
+"- **`capacity` is omitted, never `0`.** FacDB uses 0 for \"not reported\". If the key is absent, capacity is unknown, not zero.",
 "- **Names and addresses are already title-cased** by the pipeline, with an acronym exception list. Do not re-case them in a component; `PS 811Q` and `O\'Brien` are correct as given.",
 "- **Every section has both `items` and `body`.** One of them is empty. Seven of eight hazards are unwritten stubs, so that is the normal case, not the edge case.",
 "- **`current-conditions` is a section with no content.** Render `conditions.json` there. It is citywide - show `geography_label`.",

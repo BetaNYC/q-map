@@ -87,8 +87,8 @@ export function plainText(value: string): string {
 
 /**
  * FacDB records have no detail page by design — they are popup-only, and their
- * permalink is /q{NN}/map?resource=facdb:<hash>. 248 of the 3,795 records get a
- * page: 169 QNPD and 79 FRANC.
+ * permalink is /q{NN}/map?resource=facdb:<hash>. QNPD, FRANC and hand-added
+ * (`manual`) records get a page.
  */
 export function hasDetail(resource: Resource): boolean {
   return resource.source !== 'facdb';

@@ -79,6 +79,26 @@ print(candidates |> count(source, name = "n") |> as.data.frame(), row.names = FA
 dir.create(dirname(CANONICAL), showWarnings = FALSE, recursive = TRUE)
 
 if (!file.exists(CANONICAL) || force) {
+  # --force overwrites every hand correction - that is what it is for - but it
+  # must not destroy the two things no scrape can recreate: manual rows, and
+  # the record of what a person removed. Both are carried across by id.
+  if (file.exists(CANONICAL)) {
+    prior <- read_csv(CANONICAL, show_col_types = FALSE,
+                      col_types = cols(.default = col_character()))
+    keep_manual <- prior |> filter(source == "manual")
+    removals <- prior |>
+      filter(!is.na(removed_reason), nzchar(trimws(removed_reason))) |>
+      select(resource_id, removed_reason)
+    candidates <- candidates |>
+      mutate(across(everything(), as.character)) |>
+      select(-removed_reason) |>
+      left_join(removals, by = "resource_id") |>
+      bind_rows(keep_manual) |>
+      select(all_of(CANONICAL_COLUMNS)) |>
+      arrange(source, resource_id)
+    message("Kept ", nrow(keep_manual), " manual row(s) and ",
+            sum(!is.na(candidates$removed_reason)), " removal(s) across --force")
+  }
   write_csv(candidates, CANONICAL, na = "")
   message("\nSeeded ", CANONICAL, " (", nrow(candidates), " rows)")
   message("This file is now hand-maintained. Re-running proposes a diff ",
@@ -91,9 +111,14 @@ if (!file.exists(CANONICAL) || force) {
                        col_types = cols(.default = col_character()))
   cand_chr <- candidates |> mutate(across(everything(), as.character))
 
+  # A hand-removed row stays in the file, so its id still matches and it is
+  # never re-proposed as "added".
   added <- anti_join(cand_chr, existing, by = "resource_id") |>
     mutate(.change = "added")
-  removed <- anti_join(existing, cand_chr, by = "resource_id") |>
+  # Manual rows have no scrape behind them, so their absence from the
+  # candidates is expected, not a removal upstream.
+  removed <- anti_join(filter(existing, source != "manual"), cand_chr,
+                       by = "resource_id") |>
     mutate(.change = "removed")
 
   # Changed: compare only source-derived fields. Anything a human may have
@@ -129,7 +154,12 @@ if (!file.exists(CANONICAL) || force) {
     differs(joined[[paste0(f, ".new")]], joined[[paste0(f, ".old")]],
             numeric = f %in% numeric_fields)
   })
-  changed <- joined[Reduce(`|`, flags), ] |> mutate(.change = "changed")
+  # Upstream drift on a resource a person removed is not worth a review line.
+  removed_ids <- existing$resource_id[!is.na(existing$removed_reason) &
+                                        nzchar(trimws(existing$removed_reason))]
+  changed <- joined[Reduce(`|`, flags), ] |>
+    filter(!resource_id %in% removed_ids) |>
+    mutate(.change = "changed")
 
   diff <- bind_rows(added, removed, changed)
   dir.create(dirname(DIFF_OUT), showWarnings = FALSE, recursive = TRUE)

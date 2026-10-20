@@ -69,12 +69,38 @@ export const entries: EntryGenerator = () => {
       });
   });
 
-  // §5 states 248. Asserted rather than trusted: a short payload would just
-  // build fewer pages, and the popup's detail links would 404 in production
-  // with nothing having failed.
-  if (routes.length !== 248) {
-    throw new Error(`expected 248 resource routes, built ${routes.length}`);
+  // The failure this guards: a short payload builds fewer pages, and the
+  // popup's detail links 404 in production with nothing having failed.
+  //
+  // Was a fixed count (§5's 248). That broke on every hand addition or removal
+  // in resources.csv, which is now routine, so it is asserted against the
+  // thing the popup actually reads instead: every map point that offers a
+  // detail link has a page, and every page has a point. Two-way, so it also
+  // catches pages built for resources the map no longer shows.
+  const linked = new Set(
+    queens.flatMap((d) => {
+      const layer: { features: { properties: Resource }[] } = JSON.parse(
+        readFileSync(join(dataDir, 'layers', 'resources', `${d.slug}.geojson`), 'utf8')
+      );
+      return layer.features
+        .map((f) => f.properties)
+        .filter((p) => hasDetail(p))
+        .map((p) => {
+          const separator = p.resource_id.indexOf(':');
+          return `${d.slug}/${p.resource_id.slice(0, separator)}/${p.resource_id.slice(separator + 1)}`;
+        });
+    })
+  );
+  const unbuilt = [...linked].filter((p) => !seen.has(p));
+  const unlinked = [...seen].filter((p) => !linked.has(p));
+  if (unbuilt.length > 0 || unlinked.length > 0) {
+    throw new Error(
+      `resource routes disagree with the map layer: ${unbuilt.length} linked but not built ` +
+        `(${unbuilt.slice(0, 3).join(', ')}), ${unlinked.length} built but not linked ` +
+        `(${unlinked.slice(0, 3).join(', ')})`
+    );
   }
+  if (routes.length === 0) throw new Error('no resource routes built');
 
   return routes;
 };

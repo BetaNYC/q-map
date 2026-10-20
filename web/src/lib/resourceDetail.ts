@@ -132,6 +132,15 @@ export function groupsFor(r: Resource): Group[] {
 
 /** "About this listing". "Call to confirm details." only when there is a number to call. */
 export function listingNote(r: Resource): string {
-  const source = r.source === 'franc' ? 'the FRANC resource map' : 'the Queens Nonprofit Directory';
-  return r.phone ? `From ${source}. Call to confirm details.` : `From ${source}.`;
+  // Named per source rather than "FRANC, else QNPD": a hand-added `manual`
+  // record fell into the else and was credited to the nonprofit directory.
+  // An unknown source gets no attribution rather than a wrong one.
+  const sources: Record<string, string> = {
+    qnpd: 'the Queens Nonprofit Directory',
+    franc: 'the FRANC resource map',
+    manual: 'the Queens Resource Map team'
+  };
+  const source = sources[r.source];
+  const call = r.phone ? ' Call to confirm details.' : '';
+  return source ? `From ${source}.${call}` : call.trim();
 }
