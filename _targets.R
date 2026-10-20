@@ -506,7 +506,6 @@ list(
         rbind(select(solid_waste_facilities, uid, facname, geometry),
               select(wastewater_facilities, uid, facname, geometry)),
         cdta_boundaries),
-      resources_cdta = resources_cdta,
       access = access_stats,
       block_cdta = block_cdta
     ))

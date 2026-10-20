@@ -211,6 +211,16 @@ BLOCKERS <- list(
   hazard_pinned = list(
     kind = "reason", label = "Attached to a hazard the ranking pins",
     resolved = function(f) FALSE
+  ),
+
+  # Gap 33 was filed cross-cutting but counted stormwater-exposed residents, so
+  # it measured heavy rain. Cross-cutting gaps fill the slot after a district's
+  # last ranked hazard, and there it would have restated the heavy-rain
+  # sentence above it. validate_gap_registry() now refuses a live cross-cutting
+  # gap with a hazard_polygon, which is the mechanical form of this reason.
+  not_cross_cutting = list(
+    kind = "reason", label = "Filed cross-cutting but measures one hazard",
+    resolved = function(f) FALSE
   )
 )
 

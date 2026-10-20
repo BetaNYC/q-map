@@ -22,7 +22,15 @@ GAP_ROW_STATUSES <- c(GAP_STATUSES, "not_applicable")
 GAP_POLARITY <- c("higher_is_worse", "higher_is_better")
 
 # A registry-only pseudo-hazard. It has no page in the hazard catalog, so a
-# cross-cutting gap can only ever reach a district through fall-through.
+# cross-cutting gap reaches a district only through select_district_gaps():
+# standing in for a barren ranked hazard, or filling the slots after the last
+# ranked hazard where a district ranks fewer than three (2026-10-20). That
+# second path is live: five districts rank two hazards.
+#
+# "Cross-cutting" is a claim about the measure, not a filing convenience. The
+# gap must say something about the district that holds whatever the hazard,
+# so it may not be tied to a hazard area - see the hazard_polygon check in
+# validate_gap_registry().
 GAP_PSEUDO_HAZARDS <- "cross-cutting"
 
 # Display labels for hazard_slug values that have no hazard page, and so no
@@ -150,6 +158,33 @@ validate_gap_registry <- function(reg, ranked_slugs, pinned_slugs) {
          " have no gap with status 'available'. Every district leading with ",
          "one of those will fall through, so the 02 screen cannot show three ",
          "sentences. Unblock a gap or accept fewer sentences explicitly.")
+  }
+
+  # The same feasibility question for the third slot. A district whose third
+  # ranked hazard scores 0 ranks only two (build_hazards), and cross-cutting is
+  # the only thing that may fill the slot after them. Five districts depend on
+  # it today, so its absence is a missing sentence, not a dormant branch.
+  n_cross <- sum(live$hazard_slug %in% GAP_PSEUDO_HAZARDS &
+                   live$status == "available")
+  if (n_cross == 0) {
+    stop("resource_gaps.csv: no available cross-cutting gap. Districts ranking ",
+         "fewer than three hazards would show fewer than three sentences.")
+  }
+
+  # A cross-cutting gap may not be tied to a hazard area. One that is measures
+  # that hazard, and in the slot after the ranked hazards it repeats a hazard
+  # already on the screen - gap 33 counted stormwater-exposed residents and
+  # would have restated gap 7's flood population as a second heavy-rain
+  # sentence. Live rows only: 33 keeps its polygon in the record of why it was
+  # retired.
+  tied <- live |>
+    filter(hazard_slug %in% GAP_PSEUDO_HAZARDS,
+           !is.na(hazard_polygon), nzchar(hazard_polygon))
+  if (nrow(tied) > 0) {
+    stop("resource_gaps.csv: cross-cutting gap(s) ",
+         paste(tied$gap_id, collapse = ", "), " name a hazard_polygon (",
+         paste(unique(tied$hazard_polygon), collapse = ", "), "). A gap tied ",
+         "to a hazard area measures that hazard - file it there.")
   }
 
   no_reason <- live |>
