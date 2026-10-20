@@ -71,7 +71,8 @@
   <HorizontalRule />
 
   <Section title="Resource Gaps">
-    <!-- Exactly three, one per ranked hazard, already ordered by risk_rank. -->
+    <!-- Exactly three, already ordered by risk_rank: one per ranked hazard,
+         then a cross-cutting gap where a district ranks only two. -->
     <ul class="rows rows--gaps">
       {#each district.gaps_displayed as gap (gap.gap_id)}
         <li><GapSentence {gap} /></li>

@@ -218,12 +218,12 @@ NOTES_IDX <- list(
 )
 
 NOTES_DISTRICT <- list(
-  hazards = "Always 8, ordered. Positions 1-3 are ranked, 4-8 pinned. See gotchas.",
+  hazards = "Always 8, ordered. Ranked hazards (`ranked: true`, up to 3) come first, then the pinned ones; a ranked hazard scoring 0 is unranked and placed last, with a `reason`. See gotchas.",
   risk_profile = "Every entry is a **stat object**, never a bare number.",
   population = "`total` is a stat object too, and its `source` differs from `surge_pop_pct`'s. See gotchas.",
   resource_categories = "**Derived per district.** Do not hardcode a global list.",
   hazard_overrides = "Slugs with district-specific guidance. Fetch the override file only for these.",
-  gaps_displayed = "Up to 3, one per ranked hazard. Every entry carries `risk_rank`; a fallback also carries `fallback_from` naming the ranked hazard whose slot it fills.",
+  gaps_displayed = "Exactly 3, ordered by `risk_rank`. One per ranked hazard; where a district ranks fewer than three hazards, the remaining slots hold a `cross-cutting` gap. Every entry carries `risk_rank`; a stand-in also carries `fallback_from` naming the ranked hazard whose slot it fills.",
   meta = "Carries `hazard_model` and `hazard_model_status`. Currently `reviewed_unweighted_1_5` and `expert_reviewed_2026_09_22`."
 )
 
@@ -296,9 +296,9 @@ field_table(districts_all, NOTES_DISTRICT),
 "### `hazards[]`",
 "",
 field_table(hazard_entries, list(
-  ranked = "`true` for positions 1-3. When `false`, `score` is absent and `reason` is present.",
-  score = "Integer on a shared 1-5 scale, so the three ranked hazards compare directly - there is no weight. Coastal storm alone admits `0`, meaning no exposed tract. Ties are already resolved in `rank`; do not re-sort on `score`.",
-  reason = "Why this hazard is pinned. Always present when `ranked` is `false`. Render it - it is what stops a pinned hazard reading as \"least dangerous\"."
+  ranked = "`true` for the ranked hazards, which come first: up to 3, fewer where a ranked hazard scores 0 (today only coastal storm can). When `false`, `score` is absent and `reason` is present.",
+  score = "Integer on a shared 1-5 scale, so the three ranked hazards compare directly - there is no weight. A score of 0 (coastal storm, no exposed tract) is not shipped: that hazard is unranked, placed last, and carries a `reason` instead. Ties are already resolved in `rank`; do not re-sort on `score`.",
+  reason = "Why this hazard is not ranked - pinned, or, for coastal storm where it scores 0, \"Neighborhood does not experience coastal flooding\". Always present when `ranked` is `false`. Render it - it is what stops a pinned hazard reading as \"least dangerous\"."
 )),
 "",
 "### `risk_profile` entries",
@@ -341,8 +341,8 @@ field_table(cat_entries, list(
 field_table(gap_displayed, list(
   sentence_template = "Interpolate `facts` into this. **The pipeline does not write the sentence.**",
   facts = "Keys vary by gap. Interpolate by name, do not assume a fixed set.",
-  risk_rank = "The rank of the hazard this gap measures, always 1-3. **Always present.** The one exception is a `cross-cutting` gap, which measures no ranked hazard and instead carries the rank of the slot it fills - `hazard_slug` tells you which reading applies.",
-  fallback_from = "Present only on a fallback, which can now only be a `cross-cutting` gap standing in for a top-three hazard that had nothing to report. Names that hazard, so the UI can say so rather than implying an alignment that is not there. Absent on every district today; handle it anyway.",
+  risk_rank = "The rank of the hazard this gap measures, always 1-3. **Always present.** The one exception is a `cross-cutting` gap, which measures no ranked hazard and instead carries the slot it fills: the rank of the hazard named in `fallback_from`, or, with no `fallback_from`, a slot after the district's last ranked hazard (3 in a district ranking two). `hazard_slug` tells you which reading applies.",
+  fallback_from = "Present only on a `cross-cutting` gap standing in for a ranked hazard of this district that had nothing to report. Names that hazard, so the UI can say so. **Absent** on a cross-cutting gap filling a slot after the last ranked hazard - nothing is stood in for there, so show no note. Absent on every district today; handle it anyway.",
   polarity = "`higher_is_worse` or `higher_is_better`. **Do not assume.**"
 )),
 "",

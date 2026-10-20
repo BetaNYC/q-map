@@ -497,8 +497,8 @@ validate_hazard_order <- function(hazards, reviewed) {
 # scores 0 in the five districts with no coastal flooding exposure; it used to
 # sit at rank 3 there, above hazards that do apply. It is now unranked and
 # placed last, below the pinned hazards, with ZERO_SCORE_REASON as its reason.
-# Those districts have two ranked hazards, so gap selection walks two and falls
-# through for the third (select_district_gaps).
+# Those districts have two ranked hazards, so gap selection walks two and fills
+# the third slot from cross-cutting (select_district_gaps).
 build_hazards <- function(measures) {
   long <- measures |>
     select(cdta2020, all_of(unname(HAZARD_SCORE_COL))) |>
