@@ -417,9 +417,11 @@ list(
     validate_canonical_resources(canonical_resources, resource_categories)
   ),
 
+  # Hand-removed rows (removed_reason filled) stop here. Everything that
+  # publishes a resource reads resources_cdta, never canonical_resources.
   tar_target(
     resources_cdta,
-    resources_to_cdta(canonical_resources, cdta_boundaries)
+    resources_to_cdta(live_resources(canonical_resources), cdta_boundaries)
   ),
 
   tar_target(

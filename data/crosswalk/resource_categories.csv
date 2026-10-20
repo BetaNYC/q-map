@@ -1,31 +1,31 @@
 source,source_field,source_category,canonical_category,canonical_label,notes
-facdb,facsubgrp,SOUP KITCHENS AND FOOD PANTRIES,food-assistance,Food assistance,
-facdb,facsubgrp,SENIOR SERVICES,older-adults,Older adults,
-facdb,facsubgrp,LEGAL AND INTERVENTION SERVICES,benefits-and-legal,Benefits and legal help,
+facdb,facsubgrp,SOUP KITCHENS AND FOOD PANTRIES,exclude,,"Excluded 2026-10-20 (was food-assistance): FacDB is scoped to emergency-services, government-offices and disability-and-access, because its records carry no contact or service detail."
+facdb,facsubgrp,SENIOR SERVICES,exclude,,"Excluded 2026-10-20 (was older-adults): FacDB is scoped to emergency-services, government-offices and disability-and-access, because its records carry no contact or service detail."
+facdb,facsubgrp,LEGAL AND INTERVENTION SERVICES,exclude,,"Excluded 2026-10-20 (was benefits-and-legal): FacDB is scoped to emergency-services, government-offices and disability-and-access, because its records carry no contact or service detail."
 facdb,facsubgrp,PROGRAMS FOR PEOPLE WITH DISABILITIES,disability-and-access,Disability and access,
 facdb,facsubgrp,WORKFORCE DEVELOPMENT,exclude,,"Excluded 2026-09-22: not a resource a household turns to in an emergency. education-and-jobs retired 2026-09-22: schools and colleges excluded, literacy/workforce re-homed."
-facdb,facsubgrp,IMMIGRANT SERVICES,immigration-and-language,Immigration and language,
-facdb,facsubgrp,COMMUNITY CENTERS AND COMMUNITY PROGRAMS,libraries-and-community,Libraries and community,
-facdb,facsubgrp,NON-RESIDENTIAL HOUSING AND HOMELESS SERVICES,housing-and-shelter,Housing and shelter,
-facdb,facsubgrp,FINANCIAL ASSISTANCE AND SOCIAL SERVICES,benefits-and-legal,Benefits and legal help,
-facdb,facsubgrp,MENTAL HEALTH,health-care,Health care,Folded into health-care 2026-09-22: the district screen shows one Health care row.
-facdb,facsubgrp,HOSPITALS AND CLINICS,health-care,Health care,
-facdb,facsubgrp,RESIDENTIAL HEALTH CARE,health-care,Health care,
-facdb,facsubgrp,OTHER HEALTH CARE,health-care,Health care,
-facdb,facsubgrp,SUBSTANCE USE DISORDER TREATMENT PROGRAMS,health-care,Health care,Folded into health-care 2026-09-22: the district screen shows one Health care row.
-facdb,facgroup,LIBRARIES,libraries-and-community,Libraries and community,
-facdb,facgroup,CULTURAL INSTITUTIONS,libraries-and-community,Libraries and community,
+facdb,facsubgrp,IMMIGRANT SERVICES,exclude,,"Excluded 2026-10-20 (was immigration-and-language): FacDB is scoped to emergency-services, government-offices and disability-and-access, because its records carry no contact or service detail."
+facdb,facsubgrp,COMMUNITY CENTERS AND COMMUNITY PROGRAMS,exclude,,"Excluded 2026-10-20 (was libraries-and-community): FacDB is scoped to emergency-services, government-offices and disability-and-access, because its records carry no contact or service detail."
+facdb,facsubgrp,NON-RESIDENTIAL HOUSING AND HOMELESS SERVICES,exclude,,"Excluded 2026-10-20 (was housing-and-shelter): FacDB is scoped to emergency-services, government-offices and disability-and-access, because its records carry no contact or service detail."
+facdb,facsubgrp,FINANCIAL ASSISTANCE AND SOCIAL SERVICES,exclude,,"Excluded 2026-10-20 (was benefits-and-legal): FacDB is scoped to emergency-services, government-offices and disability-and-access, because its records carry no contact or service detail."
+facdb,facsubgrp,MENTAL HEALTH,exclude,,"Excluded 2026-10-20 (was health-care): FacDB is scoped to emergency-services, government-offices and disability-and-access, because its records carry no contact or service detail. Folded into health-care 2026-09-22: the district screen shows one Health care row."
+facdb,facsubgrp,HOSPITALS AND CLINICS,exclude,,"Excluded 2026-10-20 (was health-care): FacDB is scoped to emergency-services, government-offices and disability-and-access, because its records carry no contact or service detail."
+facdb,facsubgrp,RESIDENTIAL HEALTH CARE,exclude,,"Excluded 2026-10-20 (was health-care): FacDB is scoped to emergency-services, government-offices and disability-and-access, because its records carry no contact or service detail."
+facdb,facsubgrp,OTHER HEALTH CARE,exclude,,"Excluded 2026-10-20 (was health-care): FacDB is scoped to emergency-services, government-offices and disability-and-access, because its records carry no contact or service detail."
+facdb,facsubgrp,SUBSTANCE USE DISORDER TREATMENT PROGRAMS,exclude,,"Excluded 2026-10-20 (was health-care): FacDB is scoped to emergency-services, government-offices and disability-and-access, because its records carry no contact or service detail. Folded into health-care 2026-09-22: the district screen shows one Health care row."
+facdb,facgroup,LIBRARIES,exclude,,"Excluded 2026-10-20 (was libraries-and-community): FacDB is scoped to emergency-services, government-offices and disability-and-access, because its records carry no contact or service detail."
+facdb,facgroup,CULTURAL INSTITUTIONS,exclude,,"Excluded 2026-10-20 (was libraries-and-community): FacDB is scoped to emergency-services, government-offices and disability-and-access, because its records carry no contact or service detail."
 facdb,facgroup,EMERGENCY SERVICES,emergency-services,Emergency services,
 facdb,facgroup,PUBLIC SAFETY,emergency-services,Emergency services,
 facdb,facgroup,SCHOOLS (K-12),exclude,,"Institutions children attend, not resources a household turns to in an emergency. 605 in Queens."
-facdb,facgroup,YOUTH SERVICES,children-and-youth,Children and youth,
+facdb,facgroup,YOUTH SERVICES,exclude,,"Excluded 2026-10-20 (was children-and-youth): FacDB is scoped to emergency-services, government-offices and disability-and-access, because its records carry no contact or service detail."
 facdb,facgroup,DAY CARE AND PRE-KINDERGARTEN,exclude,,"Same. 1,088 in Queens - the single largest block in the category."
-facdb,facgroup,CHILD SERVICES AND WELFARE,children-and-youth,Children and youth,
+facdb,facgroup,CHILD SERVICES AND WELFARE,exclude,,"Excluded 2026-10-20 (was children-and-youth): FacDB is scoped to emergency-services, government-offices and disability-and-access, because its records carry no contact or service detail."
 facdb,facgroup,CAMPS,exclude,,Seasonal and recreational. 86 in Queens.
-facdb,facgroup,ADULT SERVICES,immigration-and-language,Immigration and language,"Adult and immigrant literacy education-and-jobs retired 2026-09-22: schools and colleges excluded, literacy/workforce re-homed."
+facdb,facgroup,ADULT SERVICES,exclude,,"Excluded 2026-10-20 (was immigration-and-language): FacDB is scoped to emergency-services, government-offices and disability-and-access, because its records carry no contact or service detail. Adult and immigrant literacy education-and-jobs retired 2026-09-22: schools and colleges excluded, literacy/workforce re-homed."
 facdb,facgroup,VOCATIONAL AND PROPRIETARY SCHOOLS,exclude,,"Excluded 2026-09-22: not a resource a household turns to in an emergency. education-and-jobs retired 2026-09-22: schools and colleges excluded, literacy/workforce re-homed."
 facdb,facgroup,HIGHER EDUCATION,exclude,,"Excluded 2026-09-22: not a resource a household turns to in an emergency. education-and-jobs retired 2026-09-22: schools and colleges excluded, literacy/workforce re-homed."
-facdb,facgroup,PARKS AND PLAZAS,parks-and-environment,Parks and environment,
+facdb,facgroup,PARKS AND PLAZAS,exclude,,"Excluded 2026-10-20 (was parks-and-environment): FacDB is scoped to emergency-services, government-offices and disability-and-access, because its records carry no contact or service detail."
 facdb,facgroup,HISTORICAL SITES,exclude,,
 facdb,facgroup,"OFFICES, TRAINING, AND TESTING",government-offices,Government offices,
 facdb,facgroup,TRANSPORTATION,exclude,,Parking lots and garages; not a resident resource

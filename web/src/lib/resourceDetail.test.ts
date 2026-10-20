@@ -63,6 +63,14 @@ describe('listingNote', () => {
     expect(listingNote(record('q01', 'qnpd:ansob-center-for-refugees--1'))).toBe('From the Queens Nonprofit Directory. Call to confirm details.');
     expect(listingNote(record('q14', 'franc:acqc'))).toBe('From the FRANC resource map.');
   });
+
+  it('credits a hand-added record to the team, not to a scraped source', () => {
+    const base = record('q14', 'franc:acqc');
+    expect(listingNote({ ...base, source: 'manual', phone: undefined })).toBe('From the Queens Resource Map team.');
+    expect(listingNote({ ...base, source: 'manual', phone: '718-555-0100' })).toBe(
+      'From the Queens Resource Map team. Call to confirm details.'
+    );
+  });
 });
 
 describe('phoneHref', () => {
