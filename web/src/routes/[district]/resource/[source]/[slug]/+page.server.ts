@@ -157,10 +157,17 @@ export const load: PageServerLoad = async ({ fetch, params }) => {
     resource.category;
 
   /**
-   * The docked map on this page: the district, nothing else. Not yet the
-   * resource's own point, which needs a highlight style that is not designed.
+   * The docked map on this page: the district, with the resource's own point
+   * drawn selected (PointMarker Selected=True) whenever its category is on -
+   * which it is when the page was opened from the popup, as the link carries
+   * the map's categories.
    */
-  const map: MapView = { district: params.district, layers: [], categories: [] };
+  const map: MapView = {
+    district: params.district,
+    layers: [],
+    categories: [],
+    selected: resource.resource_id
+  };
 
   // Only these values are serialised — not the 114 KB they came from.
   return {

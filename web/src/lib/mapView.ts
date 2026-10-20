@@ -36,6 +36,13 @@ export interface MapView {
    * the district's points file is not fetched at all.
    */
   categories: string[] | null;
+  /**
+   * A resource drawn selected, with no popup: the resource page's own record,
+   * so its point stays selected beside the page it opened (Andrew,
+   * 2026-10-20). `?resource=` still wins - it is what a click selects, and it
+   * opens the popup. Absent: nothing selected.
+   */
+  selected?: string;
 }
 
 /** Every Queens district outlined, nothing else on. */

@@ -4,13 +4,20 @@
   import FrozenHead from '$lib/components/FrozenHead.svelte';
   import PageHeader from '$lib/components/PageHeader.svelte';
   import { groupsFor, listingNote, mapsHref, platformOf } from '$lib/resourceDetail';
+  import { browser } from '$app/environment';
+  import { page } from '$app/state';
   import { mapReturnPath } from '$lib/resources';
 
   let { data } = $props();
 
   /* Back to the map this resource was tapped in, not to the district page.
-     Derived from the record, so it is static in the prerendered HTML. */
-  const backHref = $derived(mapReturnPath(data.resource, data.district.slug));
+     Opened from the popup, the page's query string carries the map's state
+     and the link returns it, so the map comes back as it was. Otherwise -
+     and in the prerendered HTML, which has no query string - it is derived
+     from the record. See mapReturnPath(). */
+  const backHref = $derived(
+    mapReturnPath(data.resource, data.district.slug, browser ? page.url.searchParams : undefined)
+  );
 
   /* The address opens the device's maps app (decision 5c). The prerendered
      HTML carries a web map link, which works everywhere; in the browser it is

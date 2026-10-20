@@ -600,6 +600,29 @@ grounds:
   HTML; round-tripped, it could only resolve on hydration, so the no-JS and
   pre-hydration answer would be a *different destination*.
 
+**Revised 2026-10-20: the map persists through a resource page** (Andrew).
+Following the popup's link used to reset the map: categories and layers off
+beside the resource page on desktop, and on the way back only the resource's
+own category, with the phone map re-fitted. Now:
+
+- The popup's detail link carries the map's **effective** state,
+  `?categories=…&layers=…[&hazard=…]`, written out in full because "absent"
+  means a different default on each page (`mapStateQuery()`).
+- On desktop the root layout already lays those over any page's defaults, so
+  the map beside the resource page keeps them, with no change to the page.
+- The back link returns them when the page's own URL has them, plus
+  `?resource=`. From a desktop hazard page that includes `?hazard=`, so Back
+  lands on the hazard page.
+- The phone map remembers its camera per district for the visit
+  (`$lib/map/camera.ts`, in memory) and returns to it on remount instead of
+  re-fitting. Desktop's map never unmounts, so it already kept its camera.
+
+The derivation above stays as the fallback, and both objections to
+round-tripping are answered rather than overruled: a shared or bookmarked
+resource page has no query string and gets the derived link, and so does the
+prerendered HTML, which the browser then upgrades. The reset rule holds for
+every other link, none of which carries a query string.
+
 The label stays the district name — it names where you are going back to, and
 the map is district-scoped, so "The Rockaways" is true of both.
 
@@ -726,12 +749,11 @@ Four deviations from the frame, each deliberate:
   wording is used instead — "Contact and services" for QNPD, "About this
   resource" for FRANC — with the resource name appended in the accessible name.
   Verified from the accessibility tree: `"Contact and services, Her Care Inc"`.
-- **Translucency is on the background, not the element.** Figma sets
-  `opacity: .95` on the frame, which fades the text too. This sits over map
-  imagery, and §10 already flags that "the composite is what matters" — fading
-  the text makes its contrast a function of whatever tiles are underneath.
-  `background: rgb(254 252 250 / 0.95)` keeps the look and the legibility.
-  Revert to element opacity for literal fidelity.
+- **An opaque fill, `#fefcfa`** (Andrew, 2026-10-20), the surface the
+  resource list pane uses. It was 95% on the background only, after Figma's
+  `opacity: .95` on the frame, which let map imagery and stacked points show
+  through. §10 flags that "the composite is what matters" over imagery;
+  opaque, the text is always 19.34:1. Figma's frame still carries the 95%.
 - **A close control.** §10 requires a visible one — tapping the map is not
   enough and Escape is not reachable by touch. Figma draws none, so this is a
   44px hit area over a glyph, and it is the one piece of the popup that is not
@@ -819,10 +841,15 @@ The active tab is local state, not a URL parameter: §5 names four parameters
 and this is not one of them. It is a view preference, not something a shared
 link should pin.
 
+Three tabs since the resource list (2026-10-20): **List · Categories ·
+Layers**, List first and the default. Categories is the old Resources tab, the
+category toggles.
+
 ### The popup join, from a map click
 
 The feature carries only `resource_id`, `name`, `category`, `source` and
-`is_coad_member`. Clicking a point writes `?resource=` — the same permalink
+`is_coad_member`. Points are HTML markers (PointMarker; see `Map.svelte` and
+"The resource list" below). Clicking a point writes `?resource=` — the same permalink
 §7.4 names — and the page resolves the rest: `address` and `operator` from
 `resources/<slug>.json`, the category *label* from the district payload.
 
@@ -1089,6 +1116,35 @@ them for every page. The point popup lives in the layout too. Desktop
 `/q{NN}/map` forwards to the district or hazard page with its parameters (an
 absent `?categories=` written out as all). 24px toggles: a recorded departure
 from §10, see `MapToggle.svelte`.
+
+## The resource list
+
+The resources the map is showing, as a list, so nobody has to click points
+one at a time. Figma: ResourceListItem 265:162, ResourceListGroupHeader
+265:163, ResourceListHeader 265:180, Tab Bar 3 265:211; frames "07 Resource
+List - Desktop" and "04 Map - Mobile/…/List".
+
+| Where | Component | Notes |
+|---|---|---|
+| Desktop, over the docked map | `ResourceListPane` in the root layout | Top-left, 320px, at most 389px tall and within the map less 32px. Ends 8px above the Popup when they overlap side by side (maps under 952px wide). Collapses to a pill. |
+| Phone, the sheet's List tab | `ResourceList` on the map page | Summary line, then the list. A row tap drops the sheet to peek. |
+
+Both render `ResourceList`; `$lib/resourceList.ts` decides the groups, order
+and row text, and is tested on the real q14 payload.
+
+- **A row selects, it never navigates**, for every source. It writes
+  `?resource=`, the map eases to the point if it is out of view or under the
+  pane, and the Popup opens. Clicking a point scrolls its row into view.
+  Closing the Popup returns focus to the row that opened it.
+- **Second line:** the operator where it adds to the name, never the
+  category, which the group heading already says.
+- **Points are the category marks**, as HTML markers rather than a symbol
+  layer, so the letter is in the icon face. They grow with zoom on d26's ramp
+  (1× to zoom 15, 1.75× at 20; `$lib/map/pointScale.ts`). Not focusable: the list is the
+  keyboard route. Selected: `--color-accent`, on top of anything stacked with
+  it.
+- **Departure:** phone rows are at least 44px; the frame's 8px padding makes a
+  one-line row 33px.
 
 ## Standalone content pages
 

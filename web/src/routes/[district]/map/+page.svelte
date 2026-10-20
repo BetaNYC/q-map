@@ -10,11 +10,13 @@
   import TabBar from '$lib/components/TabBar.svelte';
   import Popup from '$lib/components/Popup.svelte';
   import ResourceRow from '$lib/components/ResourceRow.svelte';
+  import ResourceList from '$lib/components/ResourceList.svelte';
+  import { groupResources, listSummary } from '$lib/resourceList';
   import { dataUrl } from '$lib/data';
   import { parseSelection, toggleSelection, withSelection } from '$lib/mapState';
   import { DOCKED_QUERY } from '$lib/mapView';
   import { MediaQuery } from 'svelte/reactivity';
-  import { hasDetail } from '$lib/resources';
+  import { hasDetail, mapStateQuery } from '$lib/resources';
   import type { Resource } from '$lib/types';
 
   let { data } = $props();
@@ -152,10 +154,24 @@
       : ''
   );
 
-  /** Which sheet tab is showing. Local UI state, not URL state: it is a view
-   *  preference rather than something a shared link should pin (§5 lists four
-   *  parameters and this is not one of them). */
-  let activeTab = $state<'resources' | 'layers'>('resources');
+  /**
+   * Which sheet tab is showing. Local UI state, not URL state: it is a view
+   * preference rather than something a shared link should pin (§5 lists four
+   * parameters and this is not one of them).
+   *
+   * List first, and the default: it is what people came for (Figma Tab Bar 3,
+   * 265:211). The category toggles were the Resources tab and are now
+   * Categories, so two tabs do not both say resources.
+   */
+  let activeTab = $state<'list' | 'categories' | 'layers'>('list');
+
+  /** The sheet's state, bound so a list row can drop it to peek. */
+  let sheetExpanded = $state(false);
+
+  /** The list: the records the map is showing, grouped. null until loaded. */
+  const listGroups = $derived(
+    resources ? groupResources(resources, data.district.resource_categories, selected) : null
+  );
 
   /** Tapping a point on the map writes `?resource=`, the same permalink §7.4
    *  names — so a map click and a shared link arrive at identical state. */
@@ -163,6 +179,20 @@
     const url = new URL(page.url);
     url.searchParams.set('resource', resourceId);
     goto(url, { replaceState: true, noScroll: true, keepFocus: true });
+  }
+
+  /** The list row that opened the popup, if a row did. */
+  let trigger: HTMLElement | null = null;
+
+  /**
+   * A row does what tapping its point does, then gets out of the way: the
+   * sheet drops to peek so the point, which the map eases to, and the popup
+   * above the sheet are both in view.
+   */
+  function selectFromList(resourceId: string, row: HTMLElement) {
+    trigger = row;
+    sheetExpanded = false;
+    selectResource(resourceId);
   }
 
   /**
@@ -175,6 +205,11 @@
   const hazardParam = $derived(browser ? page.url.searchParams.get('hazard') : null);
   const hazard = $derived(
     hazardParam ? (data.district.hazards.find((h) => h.slug === hazardParam) ?? null) : null
+  );
+
+  /** The map's state, carried on the popup's detail link (mapStateQuery). */
+  const detailQuery = $derived(
+    mapStateQuery({ categories: selected ?? allCategories, layers: selectedLayers, hazard: hazard?.slug ?? null })
   );
 
   /* ---- Desktop: forward to the page beside the map -------------------- */
@@ -218,12 +253,23 @@
     /**
      * §10: focus "returns to the trigger on close".
      *
-     * The trigger is a point on the map, which is not a focusable element —
+     * Opened from the list, the trigger is the row: the sheet opens again and
+     * focus goes back to it, so the reader carries on down the list.
+     *
+     * Opened from the map, the trigger is a point, which is not focusable —
      * MapLibre's canvas is. Returning there is the closest true statement: it
      * puts the keyboard back where the selection was made, and the canvas is
      * where the arrow keys pan from. Without this, focus falls to <body> and
      * the next Tab starts from the top of the page.
      */
+    const row = trigger?.isConnected ? trigger : null;
+    trigger = null;
+    if (row) {
+      sheetExpanded = true;
+      queueMicrotask(() => row.focus());
+      return;
+    }
+
     queueMicrotask(() => {
       document.querySelector<HTMLElement>('.maplibregl-canvas')?.focus();
     });
@@ -271,7 +317,12 @@
         district={data.entry}
         visibleLayers={selectedLayers}
         visibleCategories={selected}
-        onSelectResource={selectResource}
+        onSelectResource={(id) => {
+          trigger = null;
+          selectResource(id);
+        }}
+        categories={data.district.resource_categories}
+        selectedResource={requestedResource}
       />
     {/if}
 
@@ -285,26 +336,55 @@
           {categoryLabel}
           districtSlug={data.district.slug}
           onClose={closePopup}
+          {detailQuery}
         />
       </div>
     {/if}
 
-    <BottomSheet label="Resources and layers for {data.district.display_name}">
+    <BottomSheet label="Resources and layers for {data.district.display_name}" bind:expanded={sheetExpanded}>
       {#snippet header()}
         <TabBar
           idBase="mapsheet"
           tabs={[
-            { id: 'resources', label: 'Resources' },
+            { id: 'list', label: 'List' },
+            { id: 'categories', label: 'Categories' },
             { id: 'layers', label: 'Layers' }
           ]}
           active={activeTab}
-          onSelect={(id) => (activeTab = id as 'resources' | 'layers')}
+          onSelect={(id) => (activeTab = id as 'list' | 'categories' | 'layers')}
         />
       {/snippet}
 
       {#snippet children()}
         <div id="mapsheet-panel" role="tabpanel" aria-labelledby="mapsheet-tab-{activeTab}">
-          {#if activeTab === 'resources'}
+          {#if activeTab === 'list'}
+            {#if listGroups}
+              <!-- Figma: two pieces of text 12px apart, no separator
+                   (Andrew, 2026-10-20). "Change" is the way to Categories. -->
+              <p class="summary">
+                <span>{listGroups.length > 0 ? listSummary(listGroups) : 'No categories on'}</span>
+                <button
+                  type="button"
+                  class="change"
+                  aria-label="Change categories"
+                  onclick={() => (activeTab = 'categories')}
+                >
+                  Change
+                </button>
+              </p>
+              {#if listGroups.length > 0}
+                <ResourceList
+                  groups={listGroups}
+                  selectedId={requestedResource}
+                  onSelect={selectFromList}
+                  headingLevel={2}
+                  idBase="sheet-group"
+                />
+              {:else}
+                <p class="empty">Turn on a category to list its resources.</p>
+              {/if}
+            {/if}
+          {:else if activeTab === 'categories'}
             <!-- All twelve stay listed whatever the selection (§7.3) —
                  filtering the LIST would strand someone who arrived from a
                  CategoryRow link with no way to turn anything else on. -->
@@ -378,6 +458,39 @@
     list-style: none;
     margin: 0;
     padding: 0;
+  }
+
+  /* In line with the rows' text, which sits 12px inside each row. */
+  .summary {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-300);
+    margin: var(--space-300) 0 0;
+    padding-inline: var(--space-300);
+    font-size: var(--font-size-small);
+    line-height: var(--line-height-tight);
+  }
+
+  /* A button, since it switches the tab rather than going anywhere; drawn as
+     the frame's underlined text, with a 44px target taken as padding. */
+  .change {
+    background: none;
+    border: 0;
+    font: inherit;
+    color: var(--color-text-primary);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    cursor: pointer;
+    padding: calc((var(--touch-target-min) - 1lh) / 2) var(--space-200);
+    margin: calc((var(--touch-target-min) - 1lh) / -2) calc(var(--space-200) * -1);
+  }
+
+  .empty {
+    margin: 0;
+    padding: var(--space-400) var(--space-300);
+    font-size: var(--font-size-small);
+    line-height: var(--line-height-tight);
+    color: var(--color-text-secondary);
   }
 
   /* Desktop: a page in the sidebar like any other. No viewport-tall stage;

@@ -35,9 +35,12 @@
     districtSlug: string;
     /** Fired by the close control. Focus returns to the trigger in the caller. */
     onClose?: () => void;
+    /** The map's state, from mapStateQuery(), carried on the detail link so
+     *  the map persists through the resource page and back. */
+    detailQuery?: string;
   }
 
-  let { resource, categoryLabel, districtSlug, onClose }: Props = $props();
+  let { resource, categoryLabel, districtSlug, onClose, detailQuery }: Props = $props();
 
   let container = $state<HTMLElement>();
 
@@ -67,7 +70,10 @@
   }
 
   const subtitle = $derived(subtitleFor(resource, categoryLabel));
-  const href = $derived(detailPath(resource, districtSlug));
+  const href = $derived.by(() => {
+    const path = detailPath(resource, districtSlug);
+    return path && detailQuery ? `${path}?${detailQuery}` : path;
+  });
 </script>
 
 <!-- role="dialog" so a screen reader announces the boundary, and
@@ -145,17 +151,12 @@
     border: 0.4px solid var(--color-text-primary);
     border-radius: 1px; /* Figma's literal; no token for it */
 
-    /* Figma applies opacity: 0.95 to the whole frame. Here it is 95% on the
-     * BACKGROUND only, so the text composites at full strength.
-     *
-     * The distinction matters because this sits over map imagery. §10 already
-     * flags it: "the popup's 95% white fill sits over map imagery, so the
-     * composite is what matters." Fading the text as well makes its contrast a
-     * function of whatever tiles happen to be underneath, which cannot be
-     * measured or guaranteed. The fill still reads as translucent.
-     *
-     * Revert to `opacity: .95` on the element for literal fidelity. */
-    background: rgb(254 252 250 / 0.95); /* --color-off-white/primary at 95% */
+    /* Opaque #fefcfa (Andrew, 2026-10-20), the surface the resource list
+     * pane already uses. Was 95% of it, from Figma's frame opacity, which let
+     * map imagery and stacked points show through; §10 flagged that the
+     * composite over imagery is what sets the text's contrast. Opaque, the
+     * text is always 19.34:1 on the surface. */
+    background: var(--color-surface);
 
     font-size: var(--font-size-small);
     line-height: var(--line-height-tight);

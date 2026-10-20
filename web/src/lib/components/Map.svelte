@@ -1,19 +1,23 @@
 <script lang="ts">
   import * as maplibregl from 'maplibre-gl';
+  import { untrack } from 'svelte';
   import 'maplibre-gl/dist/maplibre-gl.css';
   import { dataUrl } from '$lib/data';
   import { BASEMAP_STYLE, INITIAL_CENTER, INITIAL_ZOOM } from '$lib/map/basemap';
-  import type { GeoJSONSource } from 'maplibre-gl';
   import { overlaySpecs } from '$lib/map/overlays';
   import { registerMapProtocols } from '$lib/map/protocols';
   import { configureMapWorker } from '$lib/map/worker';
   import type { MapDistrict } from '$lib/mapView';
+  import { categoryInitial } from '$lib/categories';
+  import { recallCamera, rememberCamera } from '$lib/map/camera';
+  import { pointScale } from '$lib/map/pointScale';
+  import type { ResourceCategory } from '$lib/types';
 
   /**
    * The district map. Step 8: the basemap, the PMTiles protocol, the district
    * outline, and the overlays driven by `?layers=`.
    *
-   * The resource points, the popup and the bottom sheet are step 9.
+   * Resource points are HTML markers - see the worked example below.
    *
    * WHY EVERYTHING IS SET UP ONCE AND MUTATED AFTER. MapLibre owns its own
    * canvas and its own state; re-creating the map when a toggle changes would
@@ -55,6 +59,15 @@
     selectableDistricts?: string[];
     /** The districts named on the overview, at their `point_on_surface`. */
     overviewDistricts?: MapDistrict[];
+    /** The district's categories, for each point's mark. Until they arrive a
+     *  point shows its category slug's first letter. */
+    categories?: ResourceCategory[] | null;
+    /** The resource in `?resource=`: its point is drawn selected, and the map
+     *  eases to it if it is out of view. */
+    selectedResource?: string | null;
+    /** px of the map covered by something floating over it - the desktop
+     *  list pane - so "in view" and the eased-to centre ignore that part. */
+    coveredLeft?: number;
   }
 
   let {
@@ -65,14 +78,11 @@
     onSelectResource,
     onSelectDistrict,
     selectableDistricts = [],
-    overviewDistricts = []
+    overviewDistricts = [],
+    categories = null,
+    selectedResource = null,
+    coveredLeft = 0
   }: Props = $props();
-
-  /** The resource points layer id, used by the filter effect and the click
-   *  handler. `layers/resources/<slug>.geojson` carries only resource_id,
-   *  name, category, source and is_coad_member — the popup's address and
-   *  operator come from the join the page does (§7.4). */
-  const RESOURCE_LAYER = 'resource-points';
 
   /** Invisible fill over the other clickable districts. A line layer is only
    *  hit on its 0.75px stroke, so clicking inside a district needs a fill. */
@@ -81,8 +91,6 @@
   /** Matches no feature: the starting filter for layers whose real filter
    *  depends on `district`, which the effects below set. */
   const NOTHING: maplibregl.FilterSpecification = ['==', ['get', 'cdta2020'], ''];
-
-  const EMPTY: GeoJSON.FeatureCollection = { type: 'FeatureCollection', features: [] };
 
   let container = $state<HTMLDivElement>();
   let map: maplibregl.Map | undefined;
@@ -170,39 +178,15 @@
         }
       }
 
-      // Per-district resource points — 178 KB at the largest, against 1.19 MB
-      // for one Queens-wide file. A district map needs only its own. Starts
-      // empty; the effect below says which file, if any, to load.
-      instance.addSource('resources', { type: 'geojson', data: EMPTY });
-
-      instance.addLayer({
-        id: RESOURCE_LAYER,
-        type: 'circle',
-        source: 'resources',
-        paint: {
-          'circle-radius': ['interpolate', ['linear'], ['zoom'], 11, 3, 16, 7],
-          'circle-color': '#3258a3',
-          'circle-stroke-width': 1,
-          'circle-stroke-color': '#fefcfa'
-        }
+      // A district you can click through to: the cursor is the only affordance
+      // on a pointer device that it can be clicked at all. Resource points are
+      // HTML markers below, with their own cursor.
+      instance.on('mouseenter', DISTRICT_HIT_LAYER, () => {
+        instance.getCanvas().style.cursor = 'pointer';
       });
-
-      instance.on('click', RESOURCE_LAYER, (e) => {
-        const id = e.features?.[0]?.properties?.resource_id;
-        if (typeof id === 'string') onSelectResource?.(id);
+      instance.on('mouseleave', DISTRICT_HIT_LAYER, () => {
+        instance.getCanvas().style.cursor = '';
       });
-
-      // A point is a 6px circle; the cursor is the only affordance on a
-      // pointer device that it can be tapped at all. The same goes for a
-      // district you can click through to.
-      for (const layerId of [RESOURCE_LAYER, DISTRICT_HIT_LAYER]) {
-        instance.on('mouseenter', layerId, () => {
-          instance.getCanvas().style.cursor = 'pointer';
-        });
-        instance.on('mouseleave', layerId, () => {
-          instance.getCanvas().style.cursor = '';
-        });
-      }
 
       instance.addLayer({
         id: 'cdta-current',
@@ -222,6 +206,22 @@
 
       instance.on('zoom', scaleLabels);
       instance.on('zoomend', layoutLabels);
+
+      // Points grow with zoom: d26's ramp ($lib/map/pointScale.ts), as one
+      // custom property every marker reads, so a zoom frame is one write.
+      const scalePoints = () =>
+        container?.style.setProperty('--point-scale', pointScale(instance.getZoom()).toFixed(3));
+      instance.on('zoom', scalePoints);
+      scalePoints();
+
+      // Record where this district's map is looking, so a remount returns
+      // here rather than re-fitting ($lib/map/camera.ts). Only once it has
+      // been pointed at a district: before that it is looking at nothing.
+      instance.on('moveend', () => {
+        if (!district || fitted !== district.slug) return;
+        const c = instance.getCenter();
+        rememberCamera(district.slug, { center: [c.lng, c.lat], zoom: instance.getZoom() });
+      });
 
       map = instance;
       styleReady = true;
@@ -249,6 +249,7 @@
       fitted = null;
       lastBounds = null;
       labels = [];
+      points = [];
       instance.remove();
     };
   });
@@ -301,6 +302,18 @@
       [bbox[0], bbox[1]],
       [bbox[2], bbox[3]]
     ];
+
+    // A map mounting for a district already looked at this visit goes back
+    // to where it was, as if the reader had moved it there: a later resize
+    // leaves it alone. The phone map after a resource page is the case.
+    const recalled = fitted === null && district ? recallCamera(district.slug) : undefined;
+    if (recalled) {
+      map.jumpTo(recalled);
+      fitted = key;
+      userMoved = true;
+      return;
+    }
+
     map.fitBounds(lastBounds, { padding: 24, animate: fitted !== null && !reduceMotion });
     fitted = key;
     userMoved = false;
@@ -383,13 +396,51 @@
     layoutLabels();
   });
 
+  /* ---- Resource points ------------------------------------------------ */
+
+  /**
+   * WORKED EXAMPLE — resource points as HTML markers. Figma: PointMarker,
+   * 261:1276.
+   *
+   * Each point is the category mark the panel and toolbar already use - a 16px
+   * square with the category's letter in the icon face - so a point, its row
+   * in the list and its toggle read as one thing. Selected, it fills blue with
+   * an off-white letter.
+   *
+   * WHY HTML AND NOT A SYMBOL LAYER. MapLibre draws text from its own glyph
+   * PBFs, not from the page's web fonts, so the letter in its face would need
+   * a sprite rasterised at runtime after the font loads, rebuilt per
+   * selection. HTML markers take the same CSS as the panel's mark, exactly.
+   * The cost is one DOM node per point. Since FacDB was scoped (2026-10-20) a
+   * district holds 10 to 97 located resources, which is comfortable; before
+   * it, q12 held 603, which still worked but was the limit of this approach.
+   *
+   * NOT FOCUSABLE, on purpose. The resource list is the keyboard and
+   * screen-reader route to every point; 97 more tab stops on the map would
+   * only stand between a keyboard user and the list. The markers are
+   * aria-hidden. The hit area is 24px (WCAG 2.5.8) around the 16px square.
+   *
+   * `layers/resources/<slug>.geojson` carries only resource_id, name,
+   * category, source and is_coad_member; the popup's address and operator
+   * come from the join the page does (§7.4).
+   */
+  interface Point {
+    id: string;
+    category: string;
+    marker: maplibregl.Marker;
+    mark: HTMLElement;
+  }
+
+  let points: Point[] = [];
+  let pointsVersion = $state(0);
+
   /**
    * Which points file the map should hold. A string so the effect below only
    * re-runs when it changes: toggling one category of twelve must filter the
    * points already loaded, not fetch them again.
    *
    * `[]` means the page shows no points, so nothing is fetched — the district
-   * page would otherwise download up to 178 KB on every visit to draw nothing.
+   * page would otherwise download the file on every visit to draw nothing.
    */
   const resourcesUrl = $derived(
     !district || visibleCategories?.length === 0
@@ -397,29 +448,123 @@
       : dataUrl(`layers/resources/${district.slug}.geojson`)
   );
 
+  const marks = $derived(new Map((categories ?? []).map((c) => [c.slug, categoryInitial(c)])));
+
+  function markFor(category: string): string {
+    return marks.get(category) ?? category.charAt(0);
+  }
+
   $effect(() => {
     const url = resourcesUrl;
     if (!styleReady || !map) return;
+    const target = map;
 
-    map.getSource<GeoJSONSource>('resources')?.setData(url ?? EMPTY);
+    for (const p of points) p.marker.remove();
+    points = [];
+    // untrack: this effect must not depend on the counter it bumps.
+    untrack(() => pointsVersion++);
+    if (!url) return;
+
+    let cancelled = false;
+    fetch(url)
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
+      .then((layer: GeoJSON.FeatureCollection<GeoJSON.Point>) => {
+        if (cancelled) return;
+        points = layer.features.flatMap((f) => {
+          const id = f.properties?.resource_id;
+          const category = f.properties?.category;
+          if (typeof id !== 'string' || typeof category !== 'string') return [];
+
+          const el = document.createElement('span');
+          el.className = 'point-marker';
+          el.setAttribute('aria-hidden', 'true');
+          const mark = document.createElement('span');
+          mark.className = 'point-marker-mark';
+          mark.textContent = markFor(category);
+          el.append(mark);
+          el.addEventListener('click', (e) => {
+            // Not on to the map's own click: a district under the point would
+            // otherwise take it as a click-through.
+            e.stopPropagation();
+            onSelectResource?.(id);
+          });
+
+          const marker = new maplibregl.Marker({ element: el })
+            .setLngLat(f.geometry.coordinates as [number, number])
+            .addTo(target);
+          return [{ id, category, marker, mark }];
+        });
+        pointsVersion++;
+      })
+      .catch(() => {
+        // §7.7: degrade to nothing. No points is a map, not a broken page.
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  });
+
+  /** Marks follow the categories, which can arrive after the points do. */
+  $effect(() => {
+    void pointsVersion;
+    void marks;
+    for (const p of points) p.mark.textContent = markFor(p.category);
   });
 
   /**
-   * Apply `?categories=` to the resource points.
-   *
-   * A filter rather than add/remove: the source stays loaded, so toggling a
-   * category does not re-download the district's points. `null` means the
-   * parameter was absent, which is the default of everything showing — so the
-   * filter is removed entirely rather than built from all twelve slugs.
+   * Apply `?categories=` to the points: hidden, not removed, so a toggle never
+   * re-downloads them. null is every category.
    */
   $effect(() => {
-    const categories = visibleCategories;
-    if (!styleReady || !map) return;
+    void pointsVersion;
+    const on = visibleCategories === null ? null : new Set(visibleCategories);
+    for (const p of points) {
+      p.marker.getElement().style.display = on && !on.has(p.category) ? 'none' : '';
+    }
+  });
 
-    map.setFilter(
-      RESOURCE_LAYER,
-      categories === null ? null : ['in', ['get', 'category'], ['literal', categories]]
-    );
+  /**
+   * Draw the selected point selected, on top of any it is stacked with, and
+   * bring it into view.
+   *
+   * Eased to only when it is out of view (or under the desktop pane): a
+   * selection made from a visible point should not move the map under the
+   * reader's pointer. An ease counts as the reader moving the map, so a later
+   * resize does not snap back to the district.
+   */
+  let easedTo: string | null = null;
+
+  $effect(() => {
+    void pointsVersion;
+    const id = selectedResource;
+    for (const p of points) p.marker.getElement().classList.toggle('is-selected', p.id === id);
+
+    const target = id ? points.find((p) => p.id === id) : undefined;
+    if (!map || !container || !target || easedTo === id) return;
+    easedTo = id;
+    if (target.marker.getElement().style.display === 'none') return;
+
+    const at = map.project(target.marker.getLngLat());
+    const margin = 24;
+    const inView =
+      at.x >= coveredLeft + margin &&
+      at.x <= container.clientWidth - margin &&
+      at.y >= margin &&
+      at.y <= container.clientHeight - margin;
+    if (inView) return;
+
+    const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    map.easeTo({
+      center: target.marker.getLngLat(),
+      padding: { left: coveredLeft, top: 0, right: 0, bottom: 0 },
+      duration: reduceMotion ? 0 : 400
+    });
+    userMoved = true;
+  });
+
+  $effect(() => {
+    if (!selectedResource) easedTo = null;
   });
 
   /**
@@ -467,6 +612,49 @@
     -webkit-text-stroke: 0.4em #fefcfa;
     paint-order: stroke fill;
     text-shadow: 0 0 2px #fefcfa;
+  }
+
+  /* PointMarker (Figma 261:1276): the panel's category mark on the map. A
+     24px hit area around the 16px square (WCAG 2.5.8). Both grow with zoom by
+     --point-scale (d26's ramp, 1 to 1.75 between zooms 15 and 20). */
+  .map :global(.point-marker) {
+    display: grid;
+    place-items: center;
+    width: calc(24px * var(--point-scale, 1));
+    height: calc(24px * var(--point-scale, 1));
+    cursor: pointer;
+  }
+
+  .map :global(.point-marker-mark) {
+    display: grid;
+    place-items: center;
+    box-sizing: border-box;
+    width: var(--space-400);
+    height: var(--space-400);
+    background: var(--color-surface);
+    border: 0.75px solid var(--color-text-primary);
+    font-family: var(--font-mono-icon);
+    font-size: var(--font-size-small);
+    font-style: italic;
+    line-height: 1;
+    color: var(--color-text-primary);
+    /* A transform, not a bigger font and box: the letter, border and square
+       scale together and stay in the frame's proportions. */
+    transform: scale(var(--point-scale, 1));
+  }
+
+  /* Over whatever it is stacked with. */
+  .map :global(.point-marker.is-selected) {
+    z-index: 1;
+  }
+
+  /* No white edge (Andrew, 2026-10-20; Figma's Selected=True still draws an
+     off-white stroke). The border stays, in the fill's colour, so the square
+     keeps its size and the selected point does not shift by a hairline. */
+  .map :global(.is-selected .point-marker-mark) {
+    background: var(--color-accent);
+    border-color: var(--color-accent);
+    color: var(--color-surface);
   }
 
   /* MapLibre's controls are 29px by default, under the 44px minimum. */

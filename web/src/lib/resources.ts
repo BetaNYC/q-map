@@ -31,7 +31,7 @@ function normalise(value: string): string {
  * under NYC Department of Parks and Recreation, "Socrates Sculpture Park" under
  * the same, "P.S. 2 Alfred Zimberg" under Hanac Inc.
  */
-function isSameOrganisation(operator: string, name: string): boolean {
+export function isSameOrganisation(operator: string, name: string): boolean {
   const a = normalise(operator);
   const b = normalise(name);
   if (!a || !b) return false;
@@ -129,7 +129,11 @@ export function detailPath(resource: Resource, districtSlug: string): string | n
  *
  *   /q14/map?categories=food-assistance&resource=franc%3Athe-campaign-…
  *
- * DERIVED FROM THE RECORD, NOT ROUND-TRIPPED. The alternative was to carry the
+ * DERIVED FROM THE RECORD, NOT ROUND-TRIPPED - now the fallback. Revised
+ * 2026-10-20: a page opened from the popup carries the map's state and gets
+ * it back; see the note above MAP_STATE below. The original reasoning:
+ *
+ * The alternative was to carry the
  * map's live query string through the popup's detail link and read it back
  * here, which preserves a wider selection and any `?layers=`/`?hazard=`. That
  * was rejected:
@@ -153,11 +157,71 @@ export function detailPath(resource: Resource, districtSlug: string): string | n
  * Unlike detailPath() this never returns null: every record has a category and
  * a resource_id, and a FacDB record has no page to link back FROM.
  */
-export function mapReturnPath(resource: Resource, districtSlug: string): string {
+export function mapReturnPath(
+  resource: Resource,
+  districtSlug: string,
+  carried?: URLSearchParams
+): string {
   const params = new URLSearchParams();
-  params.set('categories', resource.category);
+  const fromMap = carried && MAP_STATE.some((name) => carried.has(name));
+  if (fromMap) {
+    for (const name of MAP_STATE) {
+      const value = carried.get(name);
+      if (value !== null) params.set(name, value);
+    }
+  } else {
+    params.set('categories', resource.category);
+  }
   params.set('resource', resource.resource_id);
   return `/${districtSlug}/map?${params}`;
+}
+
+/**
+ * REVISED 2026-10-20 (Andrew): the map persists through a resource page.
+ *
+ * The note on mapReturnPath() above records why the back link was derived
+ * rather than round-tripped. Both of its reasons still hold, which is why the
+ * derivation stays as the fallback: a shared or bookmarked resource page has
+ * no map state to return to, and the prerendered href is the derived one.
+ * What changed is that a resource page opened FROM the popup now carries the
+ * map's state in its own query string, and the back link returns it:
+ *
+ *   /q14?categories=emergency-services,food-assistance&layers=surge_current
+ *   -> popup link /q14/resource/franc/acqc?categories=…&layers=…
+ *   -> back link  /q14/map?categories=…&layers=…&resource=franc%3Aacqc
+ *
+ * On desktop nothing else is needed for the map beside the resource page:
+ * the root layout already lays `?categories=`/`?layers=` over any page's
+ * defaults. The reset rule (every page opens on its own defaults) still holds
+ * for every other link, none of which carries a query string.
+ */
+const MAP_STATE = ['categories', 'layers', 'hazard'] as const;
+
+/**
+ * The query string a popup's detail link carries: the map's EFFECTIVE state,
+ * written out in full.
+ *
+ * Effective, not as given in the URL, because "absent" means each page's own
+ * default and the defaults differ: absent `?categories=` is every category on
+ * the phone map but none on a desktop page, and absent `?layers=` on a hazard
+ * page is that hazard's layers. Carried as absent, they would change meaning
+ * on arrival. An empty selection is written as `categories=`, which parses as
+ * "none" rather than "default".
+ *
+ * `hazard` is the hazard the map was titled by: `?hazard=` on the phone map,
+ * the route's own hazard on a desktop hazard page, so the back link reaches
+ * the hazard page again rather than the district page.
+ */
+export function mapStateQuery(state: {
+  categories: readonly string[];
+  layers: readonly string[];
+  hazard: string | null;
+}): string {
+  const params = new URLSearchParams();
+  params.set('categories', state.categories.join(','));
+  params.set('layers', state.layers.join(','));
+  if (state.hazard) params.set('hazard', state.hazard);
+  return params.toString();
 }
 
 /**
