@@ -184,6 +184,10 @@
   /** The list row that opened the popup, if a row did. */
   let trigger: HTMLElement | null = null;
 
+  /** The list row under the mouse or keyboard focus (a tablet with a mouse,
+   *  a keyboard); its point is drawn hovered. */
+  let hoveredId = $state<string | null>(null);
+
   /**
    * A row does what tapping its point does, then gets out of the way: the
    * sheet drops to peek so the point, which the map eases to, and the popup
@@ -323,6 +327,7 @@
         }}
         categories={data.district.resource_categories}
         selectedResource={requestedResource}
+        hoveredResource={hoveredId}
       />
     {/if}
 
@@ -379,6 +384,7 @@
                   onSelect={selectFromList}
                   headingLevel={2}
                   idBase="sheet-group"
+                  onHover={(id) => (hoveredId = id)}
                 />
               {:else}
                 <p class="empty">Turn on a category to list its resources.</p>

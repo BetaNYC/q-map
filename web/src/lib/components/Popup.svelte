@@ -1,7 +1,7 @@
 <script lang="ts">
   import { base } from '$app/paths';
   import ArrowRightIcon from '$lib/icons/ArrowRightIcon.svelte';
-  import { detailLinkText, detailPath, subtitleFor } from '$lib/resources';
+  import { detailLinkText, detailPath, sourceLabel, subtitleFor } from '$lib/resources';
   import type { Resource } from '$lib/types';
 
   /**
@@ -70,6 +70,7 @@
   }
 
   const subtitle = $derived(subtitleFor(resource, categoryLabel));
+  const source = $derived(sourceLabel(resource));
   const href = $derived.by(() => {
     const path = detailPath(resource, districtSlug);
     return path && detailQuery ? `${path}?${detailQuery}` : path;
@@ -100,19 +101,30 @@
     {/if}
   </div>
 
-  {#if href}
-    <!-- §10: link text must stand alone. The visible text is §7.4's wording,
-         and the resource name is appended in the accessible name so a screen
-         reader hears "Contact and services, Greek Cultural Center, Inc."
-         rather than a string that could belong to any of 248 links. -->
-    <!-- detailPath() returns a site-relative path; `base` is applied here, the
-         same as every other link in the app. Without it this resolves to the
-         origin root and 404s under /q-map/. -->
-    <a class="detail" href="{base}{href}">
-      <span aria-hidden="true">{detailLinkText(resource)}</span>
-      <span class="visually-hidden">{detailLinkText(resource)}, {resource.name}</span>
-      <ArrowRightIcon />
-    </a>
+  <!-- Where the record came from, then (QNPD and FRANC) the way to its
+       page: the source sits above the link, so it reads as part of the
+       record rather than as the link's caption (Andrew, 2026-10-21). -->
+  {#if source || href}
+    <div class="footer">
+      {#if source}
+        <p class="source">Source: {source}</p>
+      {/if}
+
+      {#if href}
+        <!-- §10: link text must stand alone. The visible text is §7.4's wording,
+             and the resource name is appended in the accessible name so a screen
+             reader hears "Contact and services, Greek Cultural Center, Inc."
+             rather than a string that could belong to any of 248 links. -->
+        <!-- detailPath() returns a site-relative path; `base` is applied here, the
+             same as every other link in the app. Without it this resolves to the
+             origin root and 404s under /q-map/. -->
+        <a class="detail" href="{base}{href}">
+          <span aria-hidden="true">{detailLinkText(resource)}</span>
+          <span class="visually-hidden">{detailLinkText(resource)}, {resource.name}</span>
+          <ArrowRightIcon />
+        </a>
+      {/if}
+    </div>
   {/if}
 
   {#if onClose}
@@ -194,6 +206,20 @@
     font-weight: var(--font-weight-bold);
   }
 
+  /* The source and the link, 8px apart: one block under the record. */
+  .footer {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-200);
+  }
+
+  .source {
+    margin: 0;
+    font-size: var(--font-size-caption);
+    color: var(--color-text-secondary);
+  }
+
   .detail {
     display: flex;
     align-items: center;
@@ -221,14 +247,25 @@
     width: var(--touch-target-min);
     height: var(--touch-target-min);
 
+    /* The × on the name's first line, not centred in the box (Andrew,
+     * 2026-10-21: centred, it sat ~5px below the heading and ~10px in from
+     * the text's right edge). The box is unchanged, so the target is too:
+     * the glyph moves to the box's top-right, inset by the popup's own
+     * padding, and set in the name's size and line height so its line box
+     * is the name's first line box exactly. Then 3px up: the × draws
+     * on the lowercase midline, and against a bold name's capitals that read
+     * as low. Measured, this centres its ink on the name's cap height. */
     display: flex;
-    align-items: center;
-    justify-content: center;
+    align-items: flex-start;
+    justify-content: flex-end;
+    box-sizing: border-box;
+    padding: calc(var(--space-200) - 3px) var(--space-300) 0 0;
 
     background: none;
     border: 0;
     font: inherit;
     font-size: var(--font-size-body);
+    line-height: var(--line-height-tight);
     color: var(--color-text-primary);
     cursor: pointer;
   }

@@ -36,9 +36,37 @@
     idBase: string;
     /** The desktop pane's lighter treatment: see `.is-light` below. */
     light?: boolean;
+    /** Fired with the row under the mouse or keyboard focus, null when none,
+     *  so the map can draw that row's point hovered. */
+    onHover?: (resourceId: string | null) => void;
   }
 
-  let { groups, selectedId, onSelect, headingLevel = 3, idBase, light = false }: Props = $props();
+  let { groups, selectedId, onSelect, headingLevel = 3, idBase, light = false, onHover }: Props =
+    $props();
+
+  /**
+   * The row being pointed at, mirrored onto its point (Andrew, 2026-10-21).
+   *
+   * Mouse only, not touch: a tap fires pointerenter with no pointerleave
+   * until the next tap elsewhere, which would leave a point stuck hovered on
+   * a phone. Keyboard focus counts too, when it is visible focus, so tabbing
+   * down the list shows each point in turn.
+   */
+  let hovered: string | null = null;
+
+  function hover(id: string | null) {
+    if (hovered === id) return;
+    hovered = id;
+    onHover?.(id);
+  }
+
+  // A row can vanish under the pointer (its category switched off) without a
+  // pointerleave; so can the whole list. Neither may leave a point hovered.
+  $effect(() => {
+    const ids = new Set(groups.flatMap((g) => g.rows.map((r) => r.resource_id)));
+    if (hovered && !ids.has(hovered)) hover(null);
+  });
+  $effect(() => () => hover(null));
 
   let root = $state<HTMLElement>();
 
@@ -99,6 +127,10 @@
               data-resource-id={resource.resource_id}
               aria-current={resource.resource_id === selectedId ? 'true' : undefined}
               onclick={(e) => onSelect(resource.resource_id, e.currentTarget)}
+              onpointerenter={(e) => e.pointerType === 'mouse' && hover(resource.resource_id)}
+              onpointerleave={(e) => e.pointerType === 'mouse' && hover(null)}
+              onfocus={(e) => e.currentTarget.matches(':focus-visible') && hover(resource.resource_id)}
+              onblur={() => hover(null)}
             >
               <span class="name">{displayName(resource.name)}</span>
               {#if subtitle}
@@ -156,6 +188,15 @@
     font-family: var(--font-mono-icon);
     font-style: italic;
     font-weight: var(--font-weight-regular);
+    /* Optical centring (2026-10-21). Centred by its line box, a lowercase
+       letter sits low: c, e, o and s measured 1.1px below centre in a 16px
+       mark, 1.5px in a 20px point. Text lands on whole pixels, so the finest
+       available correction is one step up, which this is. Measured in the
+       app: c/e/o/s within 0.25px of centre; ascender letters (b, d, hc, l)
+       0.75-0.9px high, the usual trade when lowercase marks are centred on
+       their x-height. g and f keep their descenders. Same rule in
+       MapToggle, ResourceRow, ResourceList and Map.svelte's point. */
+    padding-bottom: 0.1em;
   }
 
   .label {

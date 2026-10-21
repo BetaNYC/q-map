@@ -107,10 +107,9 @@
     'AUTHENTIC Sans Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
     'Helvetica Neue', Arial, sans-serif;
 
-  /* icon/default — NewComputerModernMono10 BookItalic, used for the icon
-   * glyphs. Open-licensed, but d26 carries it as OTF; subset it to woff2
-   * before use. */
-  --font-mono-icon: 'NewComputerModernMono10', ui-monospace, SFMono-Regular, Menlo, monospace;
+  /* icon/default — NewComputerModernMono10 BookItalic in Figma, shipped as
+   * 'QMap Icon Mono': a renamed Basic Latin subset of it (fonts.css). */
+  --font-mono-icon: 'QMap Icon Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
 
   --font-size-title: 18px;   /* title/map-heading */
   --font-size-section: 16px; /* title/section */

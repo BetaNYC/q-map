@@ -211,6 +211,10 @@
   /** The list row that opened the popup, if a row did. */
   let trigger: HTMLElement | null = null;
 
+  /** The list row under the mouse or keyboard focus; its point is drawn
+   *  hovered. */
+  let hoveredId = $state<string | null>(null);
+
   function selectFromList(resourceId: string, row: HTMLElement) {
     trigger = row;
     selectResource(resourceId);
@@ -325,6 +329,7 @@
             }}
             {categories}
             selectedResource={selectedId}
+            hoveredResource={hoveredId}
             coveredLeft={paneOpen ? PANE.inset + PANE.width : 0}
           />
         {/await}
@@ -337,6 +342,7 @@
             collapsed={paneCollapsed}
             onToggle={() => (paneCollapsed = !paneCollapsed)}
             maxHeight={paneMaxHeight}
+            onHover={(id) => (hoveredId = id)}
           />
         {/if}
 
