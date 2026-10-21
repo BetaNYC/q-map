@@ -33,3 +33,6 @@ export const BASEMAP_STYLE = 'https://basemaps.cartocdn.com/gl/positron-gl-style
  */
 export const INITIAL_CENTER: [number, number] = [-73.82, 40.71];
 export const INITIAL_ZOOM = 10;
+export const MIN_ZOOM = 8.75;
+export const MAX_ZOOM = 19;
+export const MAX_BOUNDS: [[number, number], [number, number]] = [[-74.8, 40.05], [-72.75, 41.3]];

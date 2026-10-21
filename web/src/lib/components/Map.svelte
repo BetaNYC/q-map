@@ -3,7 +3,14 @@
   import { untrack } from 'svelte';
   import 'maplibre-gl/dist/maplibre-gl.css';
   import { dataUrl } from '$lib/data';
-  import { BASEMAP_STYLE, INITIAL_CENTER, INITIAL_ZOOM } from '$lib/map/basemap';
+  import {
+    BASEMAP_STYLE,
+    INITIAL_CENTER,
+    INITIAL_ZOOM,
+    MAX_BOUNDS,
+    MAX_ZOOM,
+    MIN_ZOOM
+  } from '$lib/map/basemap';
   import { overlaySpecs } from '$lib/map/overlays';
   import { registerMapProtocols } from '$lib/map/protocols';
   import { configureMapWorker } from '$lib/map/worker';
@@ -113,6 +120,9 @@
       style: BASEMAP_STYLE,
       center: INITIAL_CENTER,
       zoom: INITIAL_ZOOM,
+      minZoom: MIN_ZOOM,
+      maxZoom: MAX_ZOOM,
+      maxBounds: MAX_BOUNDS,
       // The overlays are the content; tilting and spinning them adds nothing
       // and makes a one-handed phone gesture ambiguous.
       pitchWithRotate: false,
