@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { mapReturnPath, mapStateQuery } from './resources';
+import { mapReturnPath, mapStateQuery, sourceLabel } from './resources';
 import { parseSelection } from './mapState';
 import type { Resource } from './types';
 
@@ -42,4 +42,14 @@ describe('mapReturnPath', () => {
     const p = back(mapReturnPath(acqc, 'q14', new URLSearchParams('layers=&utm_source=x')));
     expect([...p.keys()]).toEqual(['layers', 'resource']);
   });
+});
+
+describe('sourceLabel', () => {
+  it.each([
+    ['facdb', 'DCP Facilities Database'],
+    ['qnpd', 'Queens Nonprofit Directory'],
+    ['franc', 'FRANC Resource Map'],
+    ['manual', null],
+    ['something-new', null]
+  ])('%s -> %s', (source, label) => expect(sourceLabel({ source })).toBe(label));
 });

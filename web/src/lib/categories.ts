@@ -39,6 +39,17 @@ export function assertInitialsDistinct(categories: ResourceCategory[], context: 
 
   for (const category of categories) {
     const mark = categoryInitial(category);
+
+    // The icon face ships a-z only (src/fonts.css): any other character
+    // would draw in the fallback font, off-centre and in another style.
+    if (!/^[a-z]+$/.test(mark)) {
+      throw new Error(
+        `${context}: category "${category.slug}" renders the mark "${mark}", outside a-z, ` +
+          `the only characters the icon font carries. Add an override in src/lib/categories.ts ` +
+          `or widen the subset (src/fonts/README-qmap-icon-mono.txt).`
+      );
+    }
+
     const previous = seen.get(mark);
 
     if (previous && previous !== category.slug) {

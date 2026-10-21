@@ -268,9 +268,9 @@ far-future cache header, which `static/` does not — Pages serves that at
 The condensed cuts exist in d26 but no frame in `Final-UI` uses them, so they
 are not carried here.
 
-`NewComputerModernMono10` (`--font-mono-icon`) is **not** loaded as a webfont —
-see Icons below. The token remains declared, falling through to the system
-monospace stack, in case a genuinely typographic use appears.
+The category marks' face (`--font-mono-icon`) is self-hosted too since
+2026-10-21: `src/fonts/qmap-icon-mono-italic.woff2`, a renamed a–z subset of
+NewComputerModernMono10 BookItalic. See Icons below.
 
 ## Icons
 
@@ -313,10 +313,12 @@ q01: categories "health-care" and "housing-and-shelter" both render the mark "h"
 
 The twelve marks for Queens: `c hc p f l e b g o d s i`.
 
-`--font-mono-icon` currently falls through to the system monospace stack.
-Subsetting `NewCMMono10-BookItalic.otf` to those marks plus `i!` and converting
-to woff2 is the outstanding work; the OTF is 584 KB and a 2-glyph subset
-measured 2,000 bytes, so a 13-glyph one is small.
+**The webfont ships** (2026-10-21) as `QMap Icon Mono`: d26's
+`NewCMMono10-BookItalic.otf` subset to a–z and converted to woff2, 4.4 KB from
+584 KB. Renamed, as the GUST Font License requests of derived works; the
+manifest and licence are in `src/fonts/README-qmap-icon-mono.txt`. `i` and
+`!` are not in it: COAD and AlertBanner draw SVG. The build now also fails if
+a mark has any character outside a–z, which would draw in the fallback face.
 
 The two fixed marks ship as inline SVG in `src/lib/icons/`, with outlines
 extracted from
@@ -749,6 +751,12 @@ Four deviations from the frame, each deliberate:
   wording is used instead — "Contact and services" for QNPD, "About this
   resource" for FRANC — with the resource name appended in the accessible name.
   Verified from the accessibility tree: `"Contact and services, Her Care Inc"`.
+- **A source line**, "Source: <name>" (Andrew, 2026-10-21): DCP Facilities
+  Database, Queens Nonprofit Directory or FRANC Resource Map
+  (`sourceLabel()` in `$lib/resources`). Caption size, secondary grey, under
+  the record and above the detail link, 8px from it. FacDB has no link, so it
+  ends the popup. Hand-added (`manual`) records show no line until a name is
+  decided.
 - **An opaque fill, `#fefcfa`** (Andrew, 2026-10-20), the surface the
   resource list pane uses. It was 95% on the background only, after Figma's
   `opacity: .95` on the frame, which let map imagery and stacked points show
@@ -758,6 +766,9 @@ Four deviations from the frame, each deliberate:
   enough and Escape is not reachable by touch. Figma draws none, so this is a
   44px hit area over a glyph, and it is the one piece of the popup that is not
   from the design.
+  The × sits on the name's first line, at the text's right edge, inside the
+  same 44px box in the corner (Andrew, 2026-10-21): centred in the box it
+  read ~5px low and ~10px in. Its ink is centred on the name's cap height.
 
 #### The subtitle rule, measured
 
@@ -1136,6 +1147,8 @@ and row text, and is tested on the real q14 payload.
   `?resource=`, the map eases to the point if it is out of view or under the
   pane, and the Popup opens. Clicking a point scrolls its row into view.
   Closing the Popup returns focus to the row that opened it.
+  Hovering a row (or giving it visible keyboard focus) draws its point in the
+  row's hover grey and on top of any stack.
 - **Second line:** the operator where it adds to the name, never the
   category, which the group heading already says.
 - **Points are the category marks**, as HTML markers rather than a symbol

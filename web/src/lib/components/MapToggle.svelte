@@ -88,6 +88,15 @@
     font-family: var(--font-mono-icon);
     font-style: italic;
     font-weight: var(--font-weight-regular);
+    /* Optical centring (2026-10-21). Centred by its line box, a lowercase
+       letter sits low: c, e, o and s measured 1.1px below centre in a 16px
+       mark, 1.5px in a 20px point. Text lands on whole pixels, so the finest
+       available correction is one step up, which this is. Measured in the
+       app: c/e/o/s within 0.25px of centre; ascender letters (b, d, hc, l)
+       0.75-0.9px high, the usual trade when lowercase marks are centred on
+       their x-height. g and f keep their descenders. Same rule in
+       MapToggle, ResourceRow, ResourceList and Map.svelte's point. */
+    padding-bottom: 0.1em;
   }
 
   .swatch {

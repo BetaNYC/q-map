@@ -26,9 +26,11 @@
     onToggle: () => void;
     /** px. See HEIGHT above. */
     maxHeight: number;
+    /** See ResourceList. */
+    onHover?: (resourceId: string | null) => void;
   }
 
-  let { groups, selectedId, onSelect, collapsed, onToggle, maxHeight }: Props = $props();
+  let { groups, selectedId, onSelect, collapsed, onToggle, maxHeight, onHover }: Props = $props();
 
   const total = $derived(groups.reduce((n, g) => n + g.rows.length, 0));
 </script>
@@ -59,7 +61,7 @@
 
   <div class="body" id="resource-pane-body" hidden={collapsed}>
     {#if groups.length > 0}
-      <ResourceList {groups} {selectedId} {onSelect} headingLevel={3} idBase="pane-group" light />
+      <ResourceList {groups} {selectedId} {onSelect} headingLevel={3} idBase="pane-group" light {onHover} />
     {:else}
       <!-- The district page's default: no category on, so no points and no
            rows. Hiding the pane instead would leave nobody knowing it exists. -->

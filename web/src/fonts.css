@@ -45,3 +45,30 @@
   font-style: normal;
   font-display: swap;
 }
+
+/* QMap Icon Mono — the category marks' face (icon/default in Figma:
+ * NewComputerModernMono10 BookItalic). Added 2026-10-21: until then it was
+ * named in --font-mono-icon but never shipped, so it rendered only where it
+ * happened to be installed, and every other visitor got ui-monospace.
+ *
+ * A SUBSET of NewCMMono10-BookItalic 7.1.0 (Antonis Tsolomitis, GUST Font
+ * License), taken from d26's OTF: a-z only (U+0061-007A), since a mark is
+ * always a lowercase initial ($lib/categories.ts), no OpenType layout
+ * features, woff2. 4.4 KB, from 584 KB. Renamed, file and
+ * internal names both, as the licence requests of derived works; see
+ * fonts/README-qmap-icon-mono.txt. The new family name also means a locally
+ * installed NewComputerModernMono10 is never picked up instead, so the marks
+ * render the same for everyone.
+ *
+ * Declared at 433, the regular weight the marks ask for, and italic.
+ *
+ * block, not swap: the marks are decorative (aria-hidden; the label beside
+ * each one carries the meaning), and a fallback letter drawn first would sit
+ * off-centre and then jump. The file is small and same-origin. */
+@font-face {
+  font-family: 'QMap Icon Mono';
+  src: url('./fonts/qmap-icon-mono-italic.woff2') format('woff2');
+  font-weight: 433;
+  font-style: italic;
+  font-display: block;
+}

@@ -65,6 +65,9 @@
     /** The resource in `?resource=`: its point is drawn selected, and the map
      *  eases to it if it is out of view. */
     selectedResource?: string | null;
+    /** The list row being hovered: its point is drawn hovered, as if the
+     *  pointer were on it. */
+    hoveredResource?: string | null;
     /** px of the map covered by something floating over it - the desktop
      *  list pane - so "in view" and the eased-to centre ignore that part. */
     coveredLeft?: number;
@@ -81,6 +84,7 @@
     overviewDistricts = [],
     categories = null,
     selectedResource = null,
+    hoveredResource = null,
     coveredLeft = 0
   }: Props = $props();
 
@@ -568,6 +572,14 @@
     if (!selectedResource) easedTo = null;
   });
 
+  /** The point of the list row being hovered: drawn hovered and on top, so
+   *  it can be found even in a stack. */
+  $effect(() => {
+    void pointsVersion;
+    const id = hoveredResource;
+    for (const p of points) p.marker.getElement().classList.toggle('is-hovered', p.id === id);
+  });
+
   /**
    * Apply `?layers=` to the map.
    *
@@ -629,8 +641,11 @@
   }
 
   .map :global(.point-marker-mark) {
-    display: grid;
-    place-items: center;
+    /* Flex, as the panel's marks: in a grid the line box overflows the
+       square and the centring padding below has no effect (measured). */
+    display: flex;
+    align-items: center;
+    justify-content: center;
     box-sizing: border-box;
     width: var(--point-size, 20px);
     height: var(--point-size, 20px);
@@ -643,19 +658,43 @@
     /* Figma's 12px letter in a 16px square, kept in proportion. */
     font-size: calc(var(--point-size, 20px) * 0.75);
     font-style: italic;
-    line-height: 1;
+    /* normal, as the panel's marks: the centring below was measured on it. */
+    line-height: var(--line-height-tight);
     color: var(--color-text-primary);
+    /* Optical centring (2026-10-21). Centred by its line box, a lowercase
+       letter sits low: c, e, o and s measured 1.1px below centre in a 16px
+       mark, 1.5px in a 20px point. Text lands on whole pixels, so the finest
+       available correction is one step up, which this is. Measured in the
+       app: c/e/o/s within 0.25px of centre; ascender letters (b, d, hc, l)
+       0.75-0.9px high, the usual trade when lowercase marks are centred on
+       their x-height. g and f keep their descenders. Same rule in
+       MapToggle, ResourceRow, ResourceList and Map.svelte's point. */
+    padding-bottom: 0.1em;
   }
 
-  /* Over whatever it is stacked with. */
+  /* Hover, from the pointer on the point or on its row in the resource list
+     (Andrew, 2026-10-21): the list row's hover fill, grey/100. */
+  .map :global(.point-marker:hover .point-marker-mark),
+  .map :global(.point-marker.is-hovered .point-marker-mark) {
+    background: var(--color-surface-muted);
+  }
+
+  /* Over whatever it is stacked with; a hovered row's point over even the
+     selected one, so the point being pointed at can always be seen. */
   .map :global(.point-marker.is-selected) {
     z-index: 1;
+  }
+
+  .map :global(.point-marker.is-hovered) {
+    z-index: 2;
   }
 
   /* No white edge (Andrew, 2026-10-20; Figma's Selected=True still draws an
      off-white stroke). The border stays, in the fill's colour, so the square
      keeps its size and the selected point does not shift by a hairline. */
-  .map :global(.is-selected .point-marker-mark) {
+  /* As specific as the hover rules above and after them, so a selected
+     point stays blue when hovered. */
+  .map :global(.point-marker.is-selected .point-marker-mark) {
     background: var(--color-accent);
     border-color: var(--color-accent);
     color: var(--color-surface);

@@ -86,6 +86,25 @@ export function plainText(value: string): string {
 }
 
 /**
+ * A source's name as the popup gives it: "Source: <name>" (Andrew,
+ * 2026-10-21). The names are DATA_SOURCES.md's.
+ *
+ * null for `manual` (hand-added rows) and anything unknown: the popup then
+ * shows no source line rather than an invented one. The resource page credits
+ * manual rows to "the Queens Resource Map team", which is placeholder copy;
+ * a popup name for them is still to be decided.
+ */
+const SOURCE_LABELS: Record<string, string> = {
+  facdb: 'DCP Facilities Database',
+  qnpd: 'Queens Nonprofit Directory',
+  franc: 'FRANC Resource Map'
+};
+
+export function sourceLabel(resource: Pick<Resource, 'source'>): string | null {
+  return SOURCE_LABELS[resource.source] ?? null;
+}
+
+/**
  * FacDB records have no detail page by design — they are popup-only, and their
  * permalink is /q{NN}/map?resource=facdb:<hash>. QNPD, FRANC and hand-added
  * (`manual`) records get a page.
