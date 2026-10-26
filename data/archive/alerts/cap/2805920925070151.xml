@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?><alert xmlns="urn:oasis:names:tc:emergency:cap:1.2"><identifier>2805920925070151</identifier><sender>2805920925070151</sender><sent>2026-10-26T13:01:06-04:00</sent><status>Actual</status><msgType>Alert</msgType><scope>Public</scope><code>CAPSv1.2</code><info><language>en-US</language><category>Rescue</category><event>Civil Emergency Message</event><urgency>Immediate</urgency><severity>Severe</severity><certainty>Observed</certainty><eventCode><valueName>SAME</valueName><value>CEM</value></eventCode><expires>2026-10-26T15:01:06-04:00</expires><senderName>NYCEM [English]</senderName><headline>Notify NYC - Silver Alert - Zhu Lan Tongzhu</headline><description>Silver Alert issued 10-26-2026 at 01:00 PM.
+
+
+A Silver Alert has been issued for Zhu Lan Tongzhu, a 65-year-old Asian Female, last seen near Lexington Avenue and East 26th Street in Manhattan at approximately 5:30 PM on 10-25-2026. Zhu Lan has dementia, may seem disoriented, and may be in need of medical attention.
+
+Description: gray hair. Last seen wearing: unknown.
+
+If you see Zhu Lan, please call 1-800-577-8477 (TIPS) or 9-1-1.
+
+A photo of Zhu Lan is available here: https://flic.kr/p/2sJowhm
+
+To view this message in American Sign Language (ASL), العربية, বাঙালি, 中文, Français, Kreyòl Ayisyen, Italiano, 한국어, Polski, Pусский, Español, اردو or ייִדיש : http://on.nyc.gov/1ZlUYf1.</description><parameter><valueName>timezone</valueName><value>EST</value></parameter><area><areaDesc>Bronx,Kings,New York,Queens,Staten Island</areaDesc><geocode><valueName>SAME</valueName><value>036005</value></geocode><geocode><valueName>SAME</valueName><value>036047</value></geocode><geocode><valueName>SAME</valueName><value>036061</value></geocode><geocode><valueName>SAME</valueName><value>036081</value></geocode><geocode><valueName>SAME</valueName><value>036085</value></geocode></area></info></alert>
