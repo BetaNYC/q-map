@@ -1,13 +1,13 @@
-# Mass Casualty
-# Authored content: the pipeline validates and copies content below
+# Mass Casualty Incident
+# Authored content: the pipeline validates and copies it to
+# data/processed/hazards/mass-casualty.json.
 #
-# Rewritten 2026-10-14 from the SME-reviewed "Core Readiness Messages by
-# Threat" (test/Core Readiness Messages by Threat.pdf, reviewed 8 October
-# 2026), using the mapping documented in heavy-rain.yml. Its "Suggested first
-# links" are "Start here"; its "Additional candidate links" are "More help".
+# From the SME partners' final "Core Readiness Messages by Threat"
+# (test/Core Readiness Messages by Threat.pdf, delivered 2026-10-26), using
+# the mapping documented in flooding.yml.
 
 slug: mass-casualty
-label: Mass Casualty
+label: Mass Casualty Incident
 jra_category: mass-casualty-incident
 
 summary: >
@@ -24,8 +24,8 @@ sections:
       - label: For an active shooter, escape if safe
         note: true
         body: >
-          Otherwise, lock or block a door, hide, and silence your
-          phone. Fight only as a last resort to survive.
+          Otherwise, lock or block a door, hide, and silence your phone.
+          Fight only as a last resort to survive.
       - label: Once safe, call 911 and keep your hands visible to responders
         note: true
         body: Follow school instructions about picking up children.
@@ -33,41 +33,25 @@ sections:
         note: true
         body: Call 911 as soon as you can safely do so.
 
-  - id: start-here
-    title: Start here
+  - id: preparedness
+    title: Get Ready
     items:
       - label: Learn how to respond to an active shooter
         link_label: PlanNowNYC and NYPD
         url: https://plannownyc.cityofnewyork.us/active-shooter/
         body: Avoid, barricade, and confront only when needed to survive.
-      - label: Get local emergency alerts
-        link_label: Notify NYC
-        url: https://a858-nycnotify.nyc.gov/notifynyc/
-        body: >
-          Free alerts by app, text, email, or phone. Select basement
-          alerts if needed. Multilingual alerts and ASL videos.
-      - label: Get support after crime or violence
-        link_label: Safe Horizon NYC Hotline
-        url: https://www.safehorizon.org/hotline
-        body: >
-          Confidential support and referrals, 24/7. Call 800-621-4673.
-          Phone translation in more than 25 languages.
-
-  - id: more-help
-    title: More help
-    items:
       - label: Understand school emergency procedures
         link_label: NYC Public Schools
         url: https://www.schools.nyc.gov/school-life/safe-schools/emergency-readiness
         body: >
-          Lockdown, shelter, and evacuation procedures. Wait for
-          school instructions about pickup or reunification.
+          Lockdown, shelter, and evacuation procedures. Wait for school
+          instructions about pickup or reunification.
       - label: Take a free hands-only CPR class
         link_label: FDNY
         url: https://www.nyc.gov/site/fdny/education/cpr/be-911-cpr-program.page
         body: >
-          Public CPR training. Check dates and locations; this program
-          does not provide CPR certification.
+          Public CPR training. Check dates and locations; this program does
+          not provide CPR certification.
       - label: Find bleeding control training in Queens
         link_label: Bayside Volunteer Ambulance Corps
         url: https://www.bvacorps.org/stop-the-bleed
@@ -78,24 +62,34 @@ sections:
         link_label: American Red Cross Greater New York
         url: https://www.redcross.org/local/new-york/greater-new-york/about-us/locations/greater-new-york-region.html
         body: First aid and CPR training. Class fees and schedules vary.
+
+  - id: response
+    title: When Something Happens
+    items:
+      - label: Get support after crime or violence
+        link_label: Safe Horizon NYC Hotline
+        url: https://www.safehorizon.org/hotline
+        body: >
+          Confidential support and referrals, 24/7. Call 800-621-4673. Phone
+          translation in more than 25 languages.
       - label: Talk to someone about stress or distress
         link_label: NYC 988
         url: https://www.nyc.gov/site/doh/health/health-topics/988.page
         body: >
-          Free, confidential mental health support, 24/7. Call or text
-          988. Phone support in 200+ languages; text and chat in
-          English and Spanish.
+          Free, confidential mental health support, 24/7. Call or text 988.
+          Phone support in 200+ languages; text and chat in English and
+          Spanish.
       - label: Find a local crime victim advocate
         link_label: NYPD and Safe Horizon
         url: https://www.nyc.gov/site/nypd/services/victim-services/cvap.page
         body: >
-          Victim advocates in precincts. Find the advocate serving
-          your neighborhood.
+          Victim advocates in precincts. Find the advocate serving your
+          neighborhood.
       - label: Find victim services and possible financial help
         link_label: New York State Office of Victim Services
         url: https://ovs.ny.gov/help-crime-victims
         body: >
-          Local providers and possible compensation for eligible
-          crime-related expenses.
+          Local providers and possible compensation for eligible crime-related
+          expenses.
 
 map_layers: []

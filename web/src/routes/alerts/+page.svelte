@@ -37,7 +37,7 @@
 </script>
 
 <svelte:head>
-  <title>Emergency Alerts | Queens Resource Map</title>
+  <title>Emergency Alerts | Queens Readiness Resources</title>
   <meta name="description" content="Active Notify NYC emergency alerts for Queens and the whole city." />
 </svelte:head>
 
@@ -50,7 +50,7 @@
     <PageHeader
       title="Emergency Alerts"
       secondary={subtitle}
-      back={{ href: '/', label: 'Back', name: 'Back to Queens Resource Map' }}
+      back={{ href: '/', label: 'Back', name: 'Back to Queens Readiness Resources' }}
     />
 
     <HorizontalRule />

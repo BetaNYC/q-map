@@ -44,7 +44,7 @@
 </script>
 
 <svelte:head>
-  <title>{content.label} in {district.display_name} | Queens Resource Map</title>
+  <title>{content.label} in {district.display_name} | Queens Readiness Resources</title>
 </svelte:head>
 
 <!-- Screen 03. Figma: "03 Hazard - Mobile", nodes 40:200 and 58:403. -->

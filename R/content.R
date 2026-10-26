@@ -21,7 +21,60 @@ HAZARD_CONTENT_DIR <- "content/hazards"
 # Everything that varies only numerically should use templating against the
 # district payload instead (PIPELINE_DESIGN.md section 3: "emit facts, let the
 # frontend write the sentence"), not an overlay.
-HAZARD_OVERLAY_KEYS <- c("summary", "sections", "map_layers", "resource_categories")
+HAZARD_OVERLAY_KEYS <- c("summary", "sections", "parts", "map_layers", "resource_categories")
+
+# Parts: a hazard made of named sub-hazards.
+#
+# Added 2026-10-26 with the SME partners' final messaging, which regroups the
+# hazards into nine categories and nests two of them: Flooding holds Heavy Rain
+# and Coastal Storm, and Temperature Extremes holds Extreme Heat and Extreme
+# Cold. Each sub-hazard keeps a complete page of its own: a summary, core
+# actions, a 911 line, Get Ready and When Something Happens.
+#
+# A hazard file therefore carries EXACTLY ONE of:
+#
+#   sections   a single-subject hazard, as before
+#   parts      two or more sub-hazards, each with its own `sections`
+#
+# Never both. A hazard with `parts` and top-level `sections` would leave the
+# renderer guessing which comes first and whether the top-level sections
+# belong to every part, and the copy never needs that: the document has no
+# category-level text on either nested category.
+#
+# Considered and rejected:
+#   - Flattening sub-hazards into sections (`heavy-rain-core-actions`). Breaks
+#     the closed section vocabulary, which would then need a copy of every id
+#     per sub-hazard, and loses the per-part summary.
+#   - One file per sub-hazard, grouped by a category key. Eleven files for nine
+#     pages, and the ranking model, the catalog check, the routes and the gap
+#     registry would all have to learn a second level of slug. One file per
+#     page keeps "one hazard, one file, one URL".
+#
+# Part ids are an anchor surface (/q14/flooding#coastal-storm) and the value
+# the gap registry's `part` column points at, so they are constrained like
+# slugs and treated as stable.
+PART_KEYS <- c("id", "label", "summary", "sections")
+PART_ID_PATTERN <- "^[a-z0-9]+(-[a-z0-9]+)*$"
+
+# Every section a hazard carries, whichever shape it is authored in, each
+# tagged with where it came from: "core-actions" for a single-subject hazard,
+# "heavy-rain/core-actions" inside a part. One walk shared by the link checker
+# and the "is it authored" test, so a nested section cannot be skipped by one
+# of them - an unchecked link in a part would look identical to a checked one.
+hazard_all_sections <- function(y) {
+  if (length(y$parts %||% list()) == 0) {
+    return(lapply(y$sections %||% list(), function(s) {
+      s$.where <- s$id %||% NA_character_
+      s
+    }))
+  }
+  unlist(lapply(y$parts, function(p) {
+    lapply(p$sections %||% list(), function(s) {
+      s$.where <- paste0(p$id %||% NA_character_, "/", s$id %||% NA_character_)
+      s
+    })
+  }), recursive = FALSE)
+}
 
 # Section ids. A CLOSED vocabulary but no longer a required set.
 #
@@ -137,7 +190,7 @@ merge_hazard_overlay <- function(base, overlay) {
   # that is not, so a "draft content" banner keyed on status would have shown
   # on the one district hazard page that is actually finished.
   if (!"status" %in% replaced && identical(base$status, "stub") &&
-      hazard_sections_authored(base$sections)) {
+      hazard_sections_authored(hazard_all_sections(base))) {
     base$status <- "authored"
   }
   base
@@ -192,10 +245,8 @@ validate_hazard_content <- function(content, model_slugs, registry_ids = charact
     # renders one - the page opens on its first section - so requiring it
     # forced placeholder prose into every file ("This is placeholder summary
     # text for the heavy rain hazard") that no screen would ever show.
-    for (f in c("label", "sections")) {
-      if (is.null(y[[f]]) || !nzchar(as.character(y[[f]])[1])) {
-        stop(where, ": missing required field `", f, "`")
-      }
+    if (is.null(y$label) || !nzchar(as.character(y$label)[1])) {
+      stop(where, ": missing required field `label`")
     }
     # Optional, but not empty-if-present: a `summary:` key with nothing under
     # it is a half-finished edit, not a decision.
@@ -203,16 +254,19 @@ validate_hazard_content <- function(content, model_slugs, registry_ids = charact
       stop(where, ": `summary` is present but empty - remove the key or write it")
     }
 
-    ids <- vapply(y$sections, function(s) s$id %||% NA_character_, character(1))
-    if (anyNA(ids)) stop(where, ": a section has no `id`")
-    if (anyDuplicated(ids)) stop(where, ": duplicate section id")
+    # Exactly one of `sections` and `parts` - see PART_KEYS.
+    has_sections <- !is.null(y$sections)
+    has_parts <- !is.null(y$parts)
+    if (has_sections == has_parts) {
+      stop(where, ": a hazard carries exactly one of `sections` (a single ",
+           "subject) or `parts` (sub-hazards, each with its own sections). ",
+           if (has_sections) "This file has both." else "This file has neither.")
+    }
 
-    # No section is required any more - see SECTION_IDS. The vocabulary is
-    # still closed, so a typo is still an error.
-    unknown <- setdiff(ids, SECTION_IDS)
-    if (length(unknown) > 0) {
-      stop(where, ": unknown section id(s) ", paste(unknown, collapse = ", "),
-           " - add to SECTION_IDS if intended")
+    if (has_sections) {
+      validate_section_list(y$sections, where)
+    } else {
+      validate_parts(y$parts, where)
     }
 
     # `map_layers:` with nothing under it parses to NULL, not to an empty list,
@@ -251,10 +305,63 @@ validate_hazard_content <- function(content, model_slugs, registry_ids = charact
              "empty. Ship the layer first, or drop it from the content file.")
       }
     }
-
-    validate_sections(y$sections, where)
   }
   TRUE
+}
+
+# A list of sections, wherever it appears: a hazard's top level, a part, or a
+# standalone page. Ids are checked per list, so the same id may appear once in
+# each part - Heavy Rain and Coastal Storm both open on `core-actions`.
+validate_section_list <- function(sections, where) {
+  ids <- vapply(sections, function(s) s$id %||% NA_character_, character(1))
+  if (anyNA(ids)) stop(where, ": a section has no `id`")
+  if (anyDuplicated(ids)) stop(where, ": duplicate section id")
+
+  # No section is required any more - see SECTION_IDS. The vocabulary is
+  # still closed, so a typo is still an error.
+  unknown <- setdiff(ids, SECTION_IDS)
+  if (length(unknown) > 0) {
+    stop(where, ": unknown section id(s) ", paste(unknown, collapse = ", "),
+         " - add to SECTION_IDS if intended")
+  }
+  validate_sections(sections, where)
+}
+
+validate_parts <- function(parts, where) {
+  # Two or more. A single part is a single-subject hazard written the long
+  # way, and it would render a sub-heading repeating the page title.
+  if (!is.list(parts) || length(parts) < 2 || !is.null(names(parts))) {
+    stop(where, ": `parts` must be a list of two or more sub-hazards. ",
+         "For one subject, write `sections` at the top level instead.")
+  }
+  ids <- vapply(parts, function(p) p$id %||% NA_character_, character(1))
+  if (anyNA(ids)) stop(where, ": a part has no `id`")
+  if (anyDuplicated(ids)) stop(where, ": duplicate part id")
+
+  for (p in parts) {
+    at <- paste0(where, " part '", p$id, "'")
+    unknown <- setdiff(names(p), PART_KEYS)
+    if (length(unknown) > 0) {
+      stop(at, ": unknown key(s) ", paste(unknown, collapse = ", "),
+           ". A part has: ", paste(PART_KEYS, collapse = ", "))
+    }
+    if (!grepl(PART_ID_PATTERN, p$id)) {
+      stop(at, ": id must be lowercase words joined by hyphens - it is a URL ",
+           "anchor and the gap registry's `part` value")
+    }
+    if (is.null(p$label) || !nzchar(trimws(p$label))) {
+      stop(at, ": missing `label`")
+    }
+    if (!is.null(p$summary) && !nzchar(trimws(p$summary))) {
+      stop(at, ": `summary` is present but empty - remove the key or write it")
+    }
+    if (length(p$sections %||% list()) == 0) {
+      stop(at, ": no `sections`. A part with nothing in it renders as a bare ",
+           "heading.")
+    }
+    validate_section_list(p$sections, at)
+  }
+  invisible(TRUE)
 }
 
 # An item is one of four things, and which one must be deliberate:
@@ -493,11 +600,14 @@ hazard_links <- function(content, overlays = list()) {
   }
   rows <- lapply(names(all_content), function(slug) {
     y <- all_content[[slug]]
-    lapply(y$sections, function(s) {
+    # Through every part, not just y$sections: a parts hazard has no top-level
+    # sections, so walking those alone would check none of its links and
+    # still report a clean run.
+    lapply(hazard_all_sections(y), function(s) {
       items <- flatten_items(s$items %||% list())
       if (length(items) == 0) return(NULL)
       tibble::tibble(
-        slug = slug, section = s$id,
+        slug = slug, section = s$.where,
         label = vapply(items, function(i) i$label, character(1)),
         url = vapply(items, function(i) i$url, character(1))
       )
@@ -601,7 +711,7 @@ validate_hazard_links <- function(content, overlays = list(),
 # map layer emitted `"map_layers": "hvi_choropleth"` while every other hazard
 # emitted `[]`. A frontend iterating that field works on seven hazards and
 # breaks on the eighth. I() marks a value AsIs, which auto_unbox leaves alone.
-HAZARD_ARRAY_FIELDS <- c("sections", "items", "map_layers")
+HAZARD_ARRAY_FIELDS <- c("sections", "parts", "items", "map_layers")
 
 force_arrays <- function(x, fields = HAZARD_ARRAY_FIELDS) {
   if (is.list(x)) {
@@ -637,6 +747,19 @@ normalise_sections <- function(sections) {
   })
 }
 
+# The same idea one level up: every hazard file ships BOTH `sections` and
+# `parts`, and exactly one of them is empty. Seven of nine hazards have no
+# parts, so a frontend reading `content.parts.length` must not meet undefined
+# on the common case - the reasoning normalise_sections() gives for `items`.
+normalise_hazard <- function(y) {
+  y$sections <- normalise_sections(y$sections)
+  y$parts <- lapply(y$parts %||% list(), function(p) {
+    p$sections <- normalise_sections(p$sections)
+    p
+  })
+  y
+}
+
 # Copy, not generate. The internal `.file` marker is dropped; everything else
 # ships exactly as authored.
 write_hazard_content <- function(content, dir) {
@@ -644,7 +767,7 @@ write_hazard_content <- function(content, dir) {
   paths <- vapply(names(content), function(slug) {
     y <- content[[slug]]
     y$.file <- NULL
-    y$sections <- normalise_sections(y$sections)
+    y <- normalise_hazard(y)
     p <- file.path(dir, paste0(slug, ".json"))
     jsonlite::write_json(force_arrays(y), p, auto_unbox = TRUE,
                          null = "null", na = "null")
@@ -661,13 +784,23 @@ validate_hazard_output <- function(paths) {
     if (!is.null(j$map_layers) && !is.list(j$map_layers)) {
       stop(basename(p), ": map_layers is not a JSON array")
     }
-    if (!is.list(j$sections) || !is.null(names(j$sections))) {
-      stop(basename(p), ": sections is not a JSON array")
-    }
-    for (s in j$sections) {
-      if (!is.null(s$items) && (!is.list(s$items) || !is.null(names(s$items)))) {
-        stop(basename(p), " [", s$id, "]: items is not a JSON array")
+    is_array <- function(x) is.list(x) && is.null(names(x))
+    check_sections <- function(sections, at) {
+      if (!is_array(sections)) stop(at, ": sections is not a JSON array")
+      for (s in sections) {
+        if (!is.null(s$items) && !is_array(s$items)) {
+          stop(at, " [", s$id, "]: items is not a JSON array")
+        }
       }
+    }
+    check_sections(j$sections, basename(p))
+    if (!is_array(j$parts)) stop(basename(p), ": parts is not a JSON array")
+    for (part in j$parts) {
+      check_sections(part$sections, paste0(basename(p), " part '", part$id, "'"))
+    }
+    # The invariant normalise_hazard() promises the frontend.
+    if (length(j$sections) > 0 && length(j$parts) > 0) {
+      stop(basename(p), ": both sections and parts are non-empty")
     }
   }
   TRUE
@@ -774,6 +907,19 @@ validate_hazard_overlays <- function(overlays, content, district_slugs) {
          paste(bad_district, collapse = ", "),
          " - expected a district slug like q14")
   }
+  # The merge replaces whole keys, so an overlay must replace the key its base
+  # actually uses. `sections` laid over a parts hazard would ship both, and
+  # the page would render the override beside every part it meant to replace.
+  for (key in names(overlays)) {
+    hazard <- strsplit(key, "/", fixed = TRUE)[[1]][1]
+    base_key <- if (is.null(content[[hazard]]$parts)) "sections" else "parts"
+    wrong_key <- setdiff(c("sections", "parts"), base_key)
+    if (wrong_key %in% names(overlays[[key]])) {
+      stop("Overlay ", key, " sets `", wrong_key, "`, but ", hazard,
+           " is authored with `", base_key, "`. Override `", base_key,
+           "` instead.")
+    }
+  }
   TRUE
 }
 
@@ -790,7 +936,7 @@ write_hazard_overlays <- function(content, overlays, dir) {
     merged <- merge_hazard_overlay(content[[hazard]], ov)
     merged$.file <- NULL
     merged$.overridden <- NULL
-    merged$sections <- normalise_sections(merged$sections)
+    merged <- normalise_hazard(merged)
     out_dir <- file.path(dir, district, "hazards")
     dir.create(out_dir, showWarnings = FALSE, recursive = TRUE)
     p <- file.path(out_dir, paste0(hazard, ".json"))
@@ -860,15 +1006,7 @@ validate_page_content <- function(pages, reserved, routes_dir = "web/src/routes"
       stop(where, ": no route at ", file.path(routes_dir, slug),
            " - the page would be published and shown nowhere")
     }
-    ids <- vapply(y$sections, function(s) s$id %||% NA_character_, character(1))
-    if (anyNA(ids)) stop(where, ": a section has no `id`")
-    if (anyDuplicated(ids)) stop(where, ": duplicate section id")
-    unknown_ids <- setdiff(ids, SECTION_IDS)
-    if (length(unknown_ids) > 0) {
-      stop(where, ": unknown section id(s) ", paste(unknown_ids, collapse = ", "),
-           " - add to SECTION_IDS if intended")
-    }
-    validate_sections(y$sections, where)
+    validate_section_list(y$sections, where)
   }
   TRUE
 }

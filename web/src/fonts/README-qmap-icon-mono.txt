@@ -19,7 +19,7 @@ Changes from the original:
   - renamed (file name, family, full and PostScript names), as clause 1 of
     the GUST Font License requests of derived works.
 
-Used by the Queens Resource Map web app for the one- and two-letter category
+Used by the Queens Readiness Resources web app for the one- and two-letter category
 marks (web/src/fonts.css, --font-mono-icon in web/src/tokens.css).
 
 Regenerate from the original:

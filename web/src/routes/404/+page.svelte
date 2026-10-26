@@ -17,7 +17,7 @@
      SCAFFOLD ONLY — copy and layout land in step 6. -->
 
 <svelte:head>
-  <title>Page not found | Queens Resource Map</title>
+  <title>Page not found | Queens Readiness Resources</title>
 </svelte:head>
 
 <h1>Page not found</h1>

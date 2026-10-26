@@ -1,0 +1,230 @@
+# Flooding
+# Authored content: the pipeline validates and copies it to
+# data/processed/hazards/flooding.json.
+#
+# From the SME partners' final "Core Readiness Messages by Threat"
+# (test/Core Readiness Messages by Threat.pdf, delivered 2026-10-26). That
+# document groups the hazards into nine categories. This file is the worked
+# example for the mapping every hazard file uses:
+#
+#   category heading         -> the file: `slug`, `label`
+#   sub-hazard heading       -> one entry in `parts` (Flooding and Temperature
+#                               Extremes only). A category with no sub-heading
+#                               has no `parts`: its summary and sections sit
+#                               at the top level instead. Never both - see
+#                               PART_KEYS in R/content.R.
+#   intro paragraph          -> `summary`, the part's or the hazard's
+#   Core actions (bullets)   -> section `core-actions`, one NOTE per bullet:
+#                               the first sentence is the heading (`label`),
+#                               the rest is `body`
+#   "...? Call 911." line    -> the last NOTE in `core-actions`: the question
+#                               is the `label`, the instruction the `body`
+#   "Get Ready"              -> section `preparedness`
+#   "When Something Happens" -> section `response`
+#   "Label — Source: text"   -> a LINK: `label` = Label, `link_label` =
+#                               Source, `body` = text. The url is the
+#                               hyperlink on the label in the PDF.
+#
+# Where the source is written into the sentence instead of before the colon
+# ("FloodHelpNY, a nonprofit resource: ..."), the name is `link_label` and the
+# description moves to the start of `body` ("A nonprofit resource: ...").
+#
+# Copy edits against the PDF, each confirmed by Andrew 2026-10-26:
+#   - "Find practical rainfall preparation steps — NYC from DEP" is garbled;
+#     `link_label` is "NYC DEP".
+#
+# Part ids are a URL anchor (/q14/flooding#coastal-storm) and the value of
+# `part` in data/registry/resource_gaps.csv. Treat them like slugs.
+
+slug: flooding
+label: Flooding
+# The JRA counts flooding and coastal storm as two hazards (ranked 1st and
+# 5th). This category holds both; its key is the higher-ranked one.
+jra_category: flooding
+
+parts:
+  - id: heavy-rain
+    label: Heavy Rain
+    summary: >
+      Heavy rain can overwhelm drains and sewers, causing water to rise
+      quickly in streets, basements, and other low places.
+    sections:
+      - id: core-actions
+        title: Core actions
+        items:
+          - label: Know where you can go above ground
+            note: true
+            body: >
+              If you live in a basement, move early when flooding is
+              forecast or warned.
+          - label: Never walk or drive through floodwater
+            note: true
+            body: Stay away from downed wires and flooded electrical equipment.
+          - label: Keep exits clear and essentials ready
+            note: true
+            body: Follow local alerts; report damage to 311 after you are safe.
+          - label: Trapped by rising water or facing immediate danger?
+            note: true
+            body: Call 911.
+
+      - id: preparedness
+        title: Get Ready
+        items:
+          - label: Learn what to do before and after flooding
+            link_label: NYC Emergency Management
+            url: https://www.nyc.gov/site/em/ready/flooding.page
+            body: Flood safety, basement precautions, and recovery steps.
+          - label: Check rainfall flooding risks
+            link_label: NYC DEP
+            url: https://www.nyc.gov/site/dep/whats-new/plan-for-intense-storms.page
+            body: >
+              Links to stormwater flood maps and ways to protect your home.
+              Maps are planning tools, not live warnings.
+          - label: Understand flood insurance and home protection
+            link_label: FloodHelpNY
+            url: https://www.floodhelpny.org/en
+            body: >
+              A nonprofit resource: flood risk, separate flood insurance, and
+              home improvements. Program eligibility varies. Website in nine
+              languages.
+          - label: Explore ways to keep water out
+            link_label: Blue Dots
+            url: https://bluedots.nyc/
+            body: >
+              A private NYC platform: property improvements and local
+              providers. Work may cost money; compare providers independently.
+          - label: Find practical rainfall preparation steps
+            link_label: NYC DEP
+            url: https://www.nyc.gov/site/dep/whats-new/prepare-for-the-storm.page
+            body: Prepare drains, property, and household plans before intense rain.
+
+      - id: response
+        title: When Something Happens
+        items:
+          - label: See water levels at nearby flood sensors
+            link_label: FloodNet NYC
+            url: https://dataviz.floodnet.nyc/
+            body: >
+              Near-real-time readings at sensor locations. Coverage is
+              limited; a blank map does not mean a street is safe.
+          - label: Clean up safely after a flood
+            link_label: NYC Health
+            url: https://www.nyc.gov/site/doh/health/emergency-preparedness/emergencies-extreme-weather-coastal-storm.page
+            body: Safe cleanup, food and water safety, and steps to reduce mold.
+          - label: Get guidance on mold and dampness
+            link_label: NYC Health
+            url: https://www.nyc.gov/site/doh/health/health-topics/mold.page
+            body: >
+              Preventing and removing mold. Tenants can report unresolved
+              conditions through 311. Translated mold guide.
+          - label: Report a sewer backup
+            link_label: NYC311
+            url: https://portal.311.nyc.gov/article/?kanumber=KA-01510
+            body: >
+              Report sewage flooding in a building. Call 911 if floodwater
+              creates immediate danger.
+          - label: Get help if you cannot return home
+            link_label: Back Home NYC
+            url: https://backhome.nyc.gov/
+            body: >
+              Help for tenants displaced by emergencies or vacate orders.
+              Call 212-389-6670.
+
+  - id: coastal-storm
+    label: Coastal Storm
+    summary: >
+      A coastal storm, such as a hurricane or nor’easter, can bring strong
+      winds, heavy rain, and seawater pushed onto land.
+    sections:
+      - id: core-actions
+        title: Core actions
+        items:
+          - label: >
+              Check your hurricane evacuation zone and choose a safe place
+              to stay
+            note: true
+            body: Rainfall flooding can happen outside evacuation zones.
+          - label: >
+              If ordered to leave, go early with your Go Bag, medicines, and
+              pet supplies
+            note: true
+            body: Plan transportation before the storm.
+          - label: Stay away from floodwater and downed wires
+            note: true
+            body: >
+              Return only when safe; use the cleanup guidance before entering
+              damaged spaces and if running a generator never place it
+              indoors.
+          - label: >
+              Need an open evacuation center or accessible transportation
+              during an ordered evacuation?
+            note: true
+            body: Call 311. Immediate danger? Call 911.
+
+      - id: preparedness
+        title: Get Ready
+        items:
+          - label: Find your evacuation zone and centers
+            link_label: NYC Hurricane Evacuation Zone Finder
+            url: https://finder.nyc.gov/hurricane
+            body: >
+              Enter an address. Follow current orders and confirm which
+              centers are open.
+          - label: Prepare for a coastal storm
+            link_label: NYC Emergency Management
+            url: https://www.nyc.gov/site/em/ready/coastal-storms-hurricanes.page
+            body: Storm preparation, evacuation decisions, and safety after a storm.
+          - label: Plan for pets and service animals
+            link_label: NYC Emergency Management
+            url: https://www.nyc.gov/site/em/ready/pets.page
+            body: >
+              Supplies and evacuation. City disaster evacuation centers accept
+              pets and service animals.
+          - label: Understand flood insurance and home protection
+            link_label: FloodHelpNY
+            url: https://www.floodhelpny.org/en
+            body: >
+              A nonprofit resource: flood risk, separate flood insurance, and
+              home improvements. Program eligibility varies. Website in nine
+              languages.
+
+      - id: response
+        title: When Something Happens
+        items:
+          - label: Get evacuation and transportation guidance
+            link_label: NYC Emergency Management
+            url: https://www.nyc.gov/site/em/ready/hurricane-evacuation.page
+            body: >
+              How to evacuate. For accessible transportation during an
+              ordered evacuation, call 311.
+          - label: Clean up safely after a flood
+            link_label: NYC Health
+            url: https://www.nyc.gov/site/doh/health/emergency-preparedness/emergencies-extreme-weather-coastal-storm.page
+            body: Safe cleanup, food and water safety, and steps to reduce mold.
+          - label: Get guidance on mold and dampness
+            link_label: NYC Health
+            url: https://www.nyc.gov/site/doh/health/health-topics/mold.page
+            body: >
+              Preventing and removing mold. Tenants can report unresolved
+              conditions through 311. Translated mold guide.
+          - label: Get help after a disaster
+            link_label: American Red Cross Greater New York
+            url: https://www.redcross.org/local/new-york/greater-new-york/get-help.html
+            body: >
+              Disaster assistance and recovery referrals. Call 877-733-2767;
+              support depends on the incident.
+          - label: Get help if you cannot return home
+            link_label: Back Home NYC
+            url: https://backhome.nyc.gov/
+            body: >
+              Help for tenants displaced by emergencies or vacate orders.
+              Call 212-389-6670.
+
+# Both parts' layers. They stay at the hazard level because the page has one
+# map button and one docked map; see the open question in METHODOLOGY.md,
+# "Nine hazard categories".
+map_layers:
+  - stormwater_moderate_2_13
+  - stormwater_limited_1_77
+  - surge_current
+  - hurricane_evac_zones

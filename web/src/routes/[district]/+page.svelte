@@ -17,7 +17,7 @@
   <!-- Both names, because a shared link's preview should say which district
        AND which community district — they are different strings and people
        search on both. -->
-  <title>{district.display_name} — {district.cd_label} | Queens Resource Map</title>
+  <title>{district.display_name} — {district.cd_label} | Queens Readiness Resources</title>
 </svelte:head>
 
 <!-- Screen 02. Figma: "02 District - Mobile", node 13:839.

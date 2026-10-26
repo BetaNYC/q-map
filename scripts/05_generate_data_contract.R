@@ -190,7 +190,11 @@ gap_displayed    <- all_of(districts_all, "gaps_displayed")
 resource_records <- all_of(resources_all, "resources")
 gap_rows         <- all_of(gaps_all, "gaps")
 cat_entries      <- all_of(districts_all, "resource_categories")
-section_records  <- all_of(hazards_all, "sections")
+# A hazard's sections are at its top level OR inside its parts (never both),
+# so the section table is drawn from both or it silently describes half of them.
+part_records     <- all_of(hazards_all, "parts")
+section_records  <- c(all_of(hazards_all, "sections"),
+                      all_of(part_records, "sections"))
 language_records <- unlist(lapply(districts_all,
                                   function(d) d$population$languages),
                            recursive = FALSE)
@@ -238,7 +242,8 @@ NOTES_GAPS <- list(
 )
 
 NOTES_HAZARD <- list(
-  sections = "`preparedness`, `response` and `general` are always present. Others are hazard-specific.",
+  sections = "**Always an array.** Empty exactly when `parts` is not. Ids come from a closed vocabulary; none is required.",
+  parts = "**Always an array.** Empty exactly when `sections` is not. Sub-hazards, each a complete set of sections - see `parts[]`.",
   map_layers = "Layer ids from `data/registry/map_layers.csv`. **Always an array**, even with one element.",
   jra_category = "The NYC JRA hazard this maps to. q-map's 8 re-cut the JRA's 10."
 )
@@ -387,6 +392,21 @@ paste("Same shape as a base hazard file, plus `meta`. `status` is derived: an",
 field_table(overrides_all, list(
   meta = "`{district, overridden}`. `overridden` lists the top-level keys this file replaced - the only way to see what the merge changed, since it is not a deep merge.",
   status = "`stub` or `authored`. Derived from whether every section carries content."
+)),
+"",
+"### `parts[]`",
+"",
+paste("**A hazard carries `sections` or `parts`, never both, and ships both keys** -",
+      "the unused one is `[]`. Render `parts` when it is non-empty, otherwise",
+      "`sections`. Each part is a sub-hazard with its own `summary` and",
+      "`sections` (Flooding: Heavy Rain and Coastal Storm). The hazard-level",
+      "`summary` is absent on a parts hazard; each part carries its own."),
+"",
+field_table(part_records, list(
+  id = "**Stable.** A URL anchor (`/q14/flooding#coastal-storm`) and the value of `part` in the gap registry. Lowercase, hyphenated, unique within the hazard.",
+  label = "The sub-hazard's heading.",
+  summary = "Optional. The sub-hazard's opening description.",
+  sections = "Same shape as a hazard's `sections[]`, below. Section ids repeat across parts - both Flooding parts open on `core-actions` - so key on part id + section id."
 )),
 "",
 "### `sections[]`",

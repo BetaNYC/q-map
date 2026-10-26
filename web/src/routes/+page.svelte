@@ -26,7 +26,7 @@
 </script>
 
 <svelte:head>
-  <title>Queens Resource Map</title>
+  <title>Queens Readiness Resources</title>
   <meta
     name="description"
     content="Emergency preparedness for the 14 Queens community districts: hazards, local resources and where the gaps are."

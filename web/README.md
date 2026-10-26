@@ -1,4 +1,4 @@
-# web — the Queens Resource Map frontend
+# web — the Queens Readiness Resources frontend
 
 Svelte 5 + MapLibre GL JS, prerendered to static HTML, deployed to GitHub Pages
 at `https://betanyc.github.io/q-map/`.
@@ -1102,7 +1102,7 @@ degrades around rather than depends on:
 
 Two components, both from Figma (2026-10-07):
 
-- **`SiteHeader`** — "Queens Resource Map" on every page, from the root
+- **`SiteHeader`** — "Queens Readiness Resources" on every page, from the root
   layout. Full width on a phone, the top of the sidebar on desktop. The h1 on
   the entry page (which has no page header); a link home everywhere else.
   44px tall (`--site-header-height`), which the phone map page subtracts from
