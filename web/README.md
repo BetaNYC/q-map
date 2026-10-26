@@ -67,7 +67,7 @@ Static prerender, one HTML file per route. **All 389 exist**, plus `404.html`:
 |---|---|---|
 | `/` | 1 | — |
 | `/q{NN}` | 14 | `districts.json`, filtered on `boro` |
-| `/q{NN}/{hazard}` | 112 | each district payload's `hazards[]` |
+| `/q{NN}/{hazard}` | 126 | each district payload's `hazards[]` |
 | `/q{NN}/map` | 14 | `districts.json` |
 | `/q{NN}/resource/{source}/{slug}` | 248 | `resources/q*.json`, `source !== 'facdb'` |
 
@@ -395,20 +395,27 @@ file — `slug`, `label`, `jra_category` and `summary` are byte-identical to the
 base's, and `meta.overridden` lists only `sections` and `map_layers` as
 replaced. One fetch either way, no client-side merge to get wrong.
 
-Only `q14` / `coastal-storm` has one today, and it is what gives that page its
-fourth section ("Leaving the peninsula") and its two map layers where every
-other district's coastal-storm page is a stub with none.
+None ships today. `q14` / `coastal-storm` had one until #29 (2026-10-14)
+removed it; its JSON lingered in `data/processed` until 2026-10-26, when the
+pipeline began pruning override files no overlay produces.
 
 **`conditions.json` is fetched only where a section declares it** — one hazard,
 `infectious-disease`. It is 2 KB, but fetching it unconditionally would inline
-it into all 112 hazard pages for the 14 that use it.
+it into all 126 hazard pages for the 14 that use it. A `current-conditions`
+section inside a part counts too (`+page.ts` walks `parts`).
+
+**Flooding and Temperature Extremes carry `parts`, not `sections`**
+(2026-10-26, `DATA_CONTRACT.md` §6). The hazard page stacks each part under
+its label, with an `id` anchor (`/q14/flooding#coastal-storm`). That layout
+is a stopgap pending Andrew's design; see the comment in
+`[district]/[hazard]/+page.svelte` for what is open.
 
 #### `default_resource_categories` does not exist
 
 `DATA_CONTRACT.md` §6 documents it on **all 8** hazard files, with an example
 of `array[5]`, and §5 has the resource-map button carry it as `?categories=`.
 
-It is absent from all 8 emitted files, absent from every `content/hazards/*.yml`,
+It is absent from all 9 emitted files, absent from every `content/hazards/*.yml`,
 absent from `R/` and `scripts/`, and absent from **every committed version of
 `data/processed/hazards/`** — checked back through four pipeline commits. The
 contract claims to read field lists off real outputs, so either it was

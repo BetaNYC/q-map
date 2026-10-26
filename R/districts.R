@@ -63,10 +63,17 @@ build_district_payloads <- function(crosswalk, hazards, measures, chp, lep,
           rank = h$rank, ranked = h$ranked
         )
         if (h$ranked) {
-          # One integer 1-5 (0 for an unexposed coastal district), on the same
-          # scale for all three, which is what makes them comparable without a
-          # weight. Replaces the former risk / severity / exposure triple.
+          # One integer 1-5, on the same scale for both categories, which is
+          # what makes them comparable without a weight. The max of the
+          # category's measured parts (CATEGORY_PARTS).
           out$score <- as.integer(h$score)
+          # The parts behind that max, so the row can say which measure set
+          # it: Flooding in QN04 is 5 on stormwater and 0 on surge, and "5 out
+          # of 5" alone would not say which kind of flooding. `part` is the
+          # part id in the hazard's content file - the page anchor.
+          out$part_scores <- lapply(CATEGORY_PARTS[[h$slug]], function(p) {
+            list(part = p, score = as.integer(m[[PART_SCORE_COL[[p]]]]))
+          })
         } else {
           out$reason <- h$pin_reason
         }
@@ -143,8 +150,11 @@ build_district_payloads <- function(crosswalk, hazards, measures, chp, lep,
         sort(overlay_index$hazard[overlay_index$district == row$slug]),
 
       meta = list(
-        hazard_model = "reviewed_unweighted_1_5",
-        hazard_model_status = "expert_reviewed_2026_09_22",
+        # Two categories, each the max of reviewed 1-5 part scores. The part
+        # scores are expert-reviewed (2026-09-22); the category rule is
+        # Andrew's decision of 2026-10-26 and has not been reviewed.
+        hazard_model = "category_max_of_reviewed_parts_1_5",
+        hazard_model_status = "parts_reviewed_2026_09_22_categories_2026_10_26",
         citywide_baseline_population = as.integer(chp_city$Overall_Pop)
       )
     )
@@ -165,8 +175,11 @@ num_or_null <- function(x) {
 # other district emits an array. Not currently reachable - every district has
 # five languages - but lep_for_district() takes head(n), so it is one config
 # change away from being reachable, and it fails silently on one district.
-DISTRICT_ARRAY_FIELDS <- c("hazards", "languages", "hazard_overrides",
-                           "resource_categories", "gaps_displayed")
+# `part_scores` IS reachable: Temperature Extremes scores on one part, so it
+# would ship as a bare object beside Flooding's array of two.
+DISTRICT_ARRAY_FIELDS <- c("hazards", "part_scores", "languages",
+                           "hazard_overrides", "resource_categories",
+                           "gaps_displayed")
 
 write_district_payloads <- function(payloads, dir) {
   dir.create(dir, showWarnings = FALSE, recursive = TRUE)
@@ -189,6 +202,12 @@ validate_district_output <- function(paths) {
     for (f in c("hazards")) {
       if (!is.list(j[[f]]) || !is.null(names(j[[f]]))) {
         stop(basename(p), ": ", f, " is not a JSON array")
+      }
+    }
+    for (h in j$hazards) {
+      ps <- h$part_scores
+      if (!is.null(ps) && (!is.list(ps) || !is.null(names(ps)))) {
+        stop(basename(p), ": ", h$slug, " part_scores is not a JSON array")
       }
     }
     L <- j$population$languages
@@ -226,7 +245,7 @@ validate_district_payloads <- function(payloads, crosswalk) {
     }
     if (is.null(tot$source)) stop(slug, ": population total has no source")
 
-    # Every hazard appears exactly once, ranks are 1..8 with no gaps, and the
+    # Every hazard appears exactly once, ranks are 1..n with no gaps, and the
     # ranked ones come first. A gap here would render as a missing row.
     if (length(p$hazards) != n_total) {
       stop(slug, ": expected ", n_total, " hazards, got ", length(p$hazards))
@@ -238,11 +257,10 @@ validate_district_payloads <- function(payloads, crosswalk) {
     slugs <- vapply(p$hazards, function(h) h$slug, character(1))
     if (anyDuplicated(slugs)) stop(slug, ": duplicate hazard slug")
     is_ranked <- vapply(p$hazards, function(h) isTRUE(h$ranked), logical(1))
-    # Ranked hazards come first. Up to n_ranked of them: a ranked hazard that
-    # scores 0 is unranked and placed last (build_hazards, 2026-10-14).
-    k <- sum(is_ranked)
-    if (k > n_ranked || !identical(is_ranked, c(rep(TRUE, k), rep(FALSE, n_total - k)))) {
-      stop(slug, ": ranked hazards must occupy the first positions (at most ", n_ranked, ")")
+    # Ranked hazards come first, exactly n_ranked of them: no category can
+    # score 0 (validate_hazard_measures), so none drops out of the ranking.
+    if (!identical(is_ranked, c(rep(TRUE, n_ranked), rep(FALSE, n_total - n_ranked)))) {
+      stop(slug, ": the first ", n_ranked, " hazards must be the ranked ones")
     }
 
     # A pinned hazard must carry its reason, or the UI has no way to say why it
@@ -268,9 +286,12 @@ validate_district_payloads <- function(payloads, crosswalk) {
 }
 
 # The Rockaways is the calibration case for the whole hazard model: the most
-# surge-exposed district in Queens by a wide margin. If it is not coastal-storm
-# led, the coastal measure or the tie-break is wrong. Asserted rather than
-# spot-checked so a future change cannot quietly break it.
+# surge-exposed district in Queens by a wide margin. It must lead with
+# Flooding, and Flooding's score there must come from coastal storm at 5 - if
+# not, the coastal measure, the category max or the tie-break is wrong.
+# Asserted rather than spot-checked so a future change cannot quietly break
+# it. (Before 2026-10-26 the check was "leads with coastal-storm"; coastal
+# storm is now a part of Flooding.)
 #
 # The old second case - "QN01 must not lead with hazmat" - is gone because
 # hazmat is pinned now, so it cannot lead any district by construction. The
@@ -279,21 +300,29 @@ validate_district_payloads <- function(payloads, crosswalk) {
 validate_hazard_calibration <- function(payloads) {
   qn14 <- payloads[["q14"]]
   if (is.null(qn14)) stop("q14 (The Rockaways) payload missing")
-  if (qn14$hazards[[1]]$slug != "coastal-storm") {
-    stop("Calibration: QN14 The Rockaways leads with '",
-         qn14$hazards[[1]]$slug, "', expected 'coastal-storm'")
+  lead <- qn14$hazards[[1]]
+  if (lead$slug != "flooding") {
+    stop("Calibration: QN14 The Rockaways leads with '", lead$slug,
+         "', expected 'flooding'")
+  }
+  coastal <- Filter(function(ps) ps$part == "coastal-storm", lead$part_scores)
+  if (length(coastal) != 1 || coastal[[1]]$score != 5L || lead$score != 5L) {
+    stop("Calibration: QN14's Flooding should score 5 from coastal storm at 5")
   }
 
-  # Ranks 1-3 are ranked and carry a score; 4-8 are pinned and carry a reason.
+  # The ranked categories come first and carry a score; the pinned ones follow
+  # and carry a reason.
   # A pinned hazard reaching the top three would read to a resident as a risk
   # ordering when it is not one.
   for (slug in names(payloads)) {
     hz <- payloads[[slug]]$hazards
-    if (length(hz) != 8) {
-      stop("Calibration: ", slug, " has ", length(hz), " hazards, expected 8")
+    n_expected <- length(HAZARD_PRIORITY) + length(HAZARD_PINNED)
+    if (length(hz) != n_expected) {
+      stop("Calibration: ", slug, " has ", length(hz), " hazards, expected ",
+           n_expected)
     }
-    # Ranked first, as many as score above 0 (build_hazards, 2026-10-14).
-    n_scored <- sum(vapply(hz, function(h) isTRUE(h$ranked), logical(1)))
+    # Every ranked category is ranked in every district: none can score 0.
+    n_scored <- length(HAZARD_PRIORITY)
     for (i in seq_along(hz)) {
       should_rank <- i <= n_scored
       if (!identical(hz[[i]]$ranked, should_rank)) {

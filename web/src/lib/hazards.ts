@@ -8,13 +8,14 @@ import type { Hazard } from './types';
  */
 
 /**
- * The measure a ranked hazard's score is quoting. Deliberately not in the
- * payload (handoff §7.1) — hardcoded per slug.
+ * The measure each measured PART's score quotes. Deliberately not in the
+ * payload (handoff §7.1) — hardcoded per part id.
  *
- * The lookup is total over the ranked set: across all 14 district payloads,
- * exactly three slugs are ever ranked — coastal-storm, heavy-rain and
- * extreme-heat, 14 times each — and the ranked and pinned sets never overlap.
- * Verified against data/processed/, not assumed.
+ * Keyed by part since 2026-10-26: the ranked hazards are now the categories
+ * Flooding and Temperature Extremes, each scoring the max of its parts
+ * (`part_scores`). The lookup is total over the parts that appear: across all
+ * 14 payloads, `part_scores` names exactly these three. Verified against
+ * data/processed/, not assumed.
  */
 const MEASURE_LABEL: Record<string, string> = {
   'coastal-storm': 'Storm Surge Flood Vulnerability Index',
@@ -43,35 +44,29 @@ export const SCORE_MAX = 5;
 const RANK_SEVERITY = ['extreme', 'severe', 'moderate'] as const;
 export type Severity = (typeof RANK_SEVERITY)[number] | 'minor';
 
+/**
+ * Since 2026-10-26 there are two ranked positions, so 'moderate' is never
+ * reached; it stays in the ramp so a third ranked category needs no change
+ * here. The score-0 grey is gone: a category's score is never 0 (the max of
+ * its parts, one of which is always 1-5).
+ */
 export function severityFor(hazard: Hazard): Severity {
-  // A ranked hazard scoring 0 takes the pinned grey, not its rank colour. It
-  // occupies a ranked position but does not apply to the district, and an amber
-  // "moderate" chip beside "does not experience coastal flooding" said two
-  // contradictory things at once. Affects 5 of 14 districts.
-  if (hazard.ranked && hazard.score === 0) return 'minor';
-
   return hazard.ranked ? (RANK_SEVERITY[hazard.rank - 1] ?? 'minor') : 'minor';
 }
 
 /**
  * What the rank chip shows, and whether a screen reader should hear it.
  *
- * Three states, not two — the middle one is why this returns an object rather
- * than a string:
+ *   ranked   "2"   announced. §10: the number carries the meaning, colour is
+ *                  decoration on top of it.
+ *   pinned   none  empty chip, not announced. Decoration; `reason` carries
+ *                  what a pinned row means.
  *
- *   ranked, scored     "3"   announced. §10: the number carries the meaning,
- *                            colour is decoration on top of it.
- *   ranked, score 0    "-"   shown, NOT announced. The dash is a visual
- *                            placeholder holding the chip's shape in the
- *                            column; "dash Coastal Storm Neighborhood does
- *                            not experience coastal flooding" reads worse than
- *                            the sentence alone, which already says it.
- *   pinned             none  empty chip, not announced. Decoration; `reason`
- *                            carries what a pinned row means.
+ * The third state, "-" for a ranked hazard scoring 0, went with the
+ * 2026-10-26 categories: no category can score 0.
  */
 export function rankChip(hazard: Hazard): { text: string | null; decorative: boolean } {
   if (!hazard.ranked) return { text: null, decorative: true };
-  if (hazard.score === 0) return { text: '-', decorative: true };
   return { text: String(hazard.rank), decorative: false };
 }
 
@@ -86,14 +81,19 @@ export function measureLine(hazard: Hazard): string {
     return hazard.reason ?? '';
   }
 
-  // Coastal storm alone admits score 0, meaning the district has no exposed
-  // tract — five districts, and in all five it sits at rank 3. "0/5" would read
-  // as a measured low score rather than a hazard that does not apply here.
-  if (hazard.score === 0) {
-    return 'Neighborhood does not experience coastal flooding';
-  }
+  // The category's score is the max of its parts, so quote the part that set
+  // it: "Storm Surge Flood Vulnerability Index: 5 out of 5" is a true sentence
+  // about QN14's Flooding, where "Flooding: 5 out of 5" would not say which
+  // kind. A tie goes to the first part in `part_scores` (the pipeline orders
+  // them coastal storm, then heavy rain). Whether Flooding should show BOTH
+  // parts is a design question, left open.
+  const parts = hazard.part_scores ?? [];
+  const lead = parts.find((p) => p.score === hazard.score) ?? parts[0];
+  const label = lead ? MEASURE_LABEL[lead.part] : undefined;
 
   // "4 out of 5", not "4/5". A screen reader reads a solidus as "slash", and
   // handoff §10's own example is written out in words.
-  return `${MEASURE_LABEL[hazard.slug]}: ${hazard.score} out of ${SCORE_MAX}`;
+  return label
+    ? `${label}: ${hazard.score} out of ${SCORE_MAX}`
+    : `${hazard.score} out of ${SCORE_MAX}`;
 }

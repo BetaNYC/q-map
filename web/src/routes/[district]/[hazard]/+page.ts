@@ -23,8 +23,8 @@ export const load: PageLoad = async ({ fetch, params }) => {
    * THE OVERRIDE IS FETCHED INSTEAD OF THE BASE, NOT IN ADDITION TO IT.
    *
    * `hazard_overrides` on the district payload names which hazards have a
-   * district-specific file, and §3 says to fetch it only for those — one
-   * district, one hazard, today: q14 / coastal-storm.
+   * district-specific file, and §3 says to fetch it only for those — none
+   * today (q14 / coastal-storm's was removed 2026-10-14).
    *
    * The contract describes the override as replacing whole top-level keys
    * rather than deep-merging, which reads like the frontend has a merge to
@@ -50,10 +50,12 @@ export const load: PageLoad = async ({ fetch, params }) => {
 
   /**
    * `conditions.json` is fetched only where a section declares it — one
-   * hazard, infectious-disease. It is 2 KB, but fetching it on all 112 hazard
+   * hazard, infectious-disease. It is 2 KB, but fetching it on all 126 hazard
    * pages would inline it into 112 prerendered pages for the 14 that use it.
    */
-  const wantsConditions = content.sections.some((s) => s.id === 'current-conditions');
+  // Through parts too: a data-backed section inside a part must still load.
+  const allSections = [...content.sections, ...content.parts.flatMap((p) => p.sections)];
+  const wantsConditions = allSections.some((s) => s.id === 'current-conditions');
 
   let conditions: Conditions | null = null;
   if (wantsConditions) {

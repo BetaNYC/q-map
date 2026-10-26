@@ -4,14 +4,14 @@ import type { DistrictIndexEntry, DistrictPayload } from '$lib/types';
 import type { EntryGenerator } from './$types';
 
 /**
- * The 112 hazard routes — 14 Queens districts x 8 hazards.
+ * The 126 hazard routes — 14 Queens districts x 9 hazards.
  *
  * Same `entries()` pattern as [district]/+page.server.ts, one level deeper: the
  * parameter space is read from the payloads rather than hand-listed, so a
  * hazard added or renamed upstream changes the route set on the next build
  * instead of silently 404ing.
  *
- * Every district carries all 8, so this is exactly 14 x 8. That is asserted
+ * Every district carries all 9, so this is exactly 14 x 9. That is asserted
  * below rather than assumed, because a short payload would otherwise just
  * produce fewer pages and nothing would say so.
  */
@@ -25,6 +25,9 @@ const dataDir = join(process.cwd(), 'static', 'data');
  */
 const STATIC_SIBLINGS = ['map', 'resource'];
 
+/** The hazard count every district payload carries (DATA_CONTRACT.md §3). */
+const HAZARDS_PER_DISTRICT = 9;
+
 const index: DistrictIndexEntry[] = JSON.parse(
   readFileSync(join(dataDir, 'districts.json'), 'utf8')
 );
@@ -37,8 +40,10 @@ export const entries: EntryGenerator = () => {
       readFileSync(join(dataDir, 'districts', `${d.slug}.json`), 'utf8')
     );
 
-    if (payload.hazards.length !== 8) {
-      throw new Error(`${d.slug}: expected 8 hazards, got ${payload.hazards.length}`);
+    if (payload.hazards.length !== HAZARDS_PER_DISTRICT) {
+      throw new Error(
+        `${d.slug}: expected ${HAZARDS_PER_DISTRICT} hazards, got ${payload.hazards.length}`
+      );
     }
 
     for (const h of payload.hazards) {
@@ -52,8 +57,10 @@ export const entries: EntryGenerator = () => {
     return payload.hazards.map((h) => ({ district: d.slug, hazard: h.slug }));
   });
 
-  if (routes.length !== queens.length * 8) {
-    throw new Error(`expected ${queens.length * 8} hazard routes, built ${routes.length}`);
+  if (routes.length !== queens.length * HAZARDS_PER_DISTRICT) {
+    throw new Error(
+      `expected ${queens.length * HAZARDS_PER_DISTRICT} hazard routes, built ${routes.length}`
+    );
   }
 
   return routes;

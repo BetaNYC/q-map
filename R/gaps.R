@@ -37,17 +37,16 @@ GAP_PSEUDO_HAZARDS <- "cross-cutting"
 # label in HAZARD_LABELS.
 #
 # Every gap in gaps/<slug>.json carries its hazard_slug, and the "see all gaps"
-# view groups them. Two slugs have no page behind them: `cross-cutting` is the
-# registry-only pseudo-hazard above, and `air-quality` is where three retired
-# gaps hang - retired precisely because air quality is not one of q-map's eight
-# hazards, so acquiring NYCCAS data would not make them displayable.
+# view groups them. One slug has no page behind it: `cross-cutting`, the
+# registry-only pseudo-hazard above. (`air-quality` was the second until
+# 2026-10-26, when it became a hazard; its three retired gaps now hang on a
+# pinned hazard instead of a missing one.)
 #
 # Without these, a grouped view renders raw slugs as headings. Labels live here
 # rather than in a hazard_label column on the CSV because a per-row label would
 # be denormalised across 33 rows and would drift from HAZARD_LABELS.
 GAP_ORPHAN_HAZARD_LABELS <- c(
-  `cross-cutting` = "Cross-cutting",
-  `air-quality`   = "Air quality"
+  `cross-cutting` = "Cross-cutting"
 )
 
 # The label for any hazard_slug a gap may carry, page-backed or not.
@@ -79,9 +78,16 @@ read_gap_registry <- function(path) {
   ))
 }
 
-validate_gap_registry <- function(reg, ranked_slugs, pinned_slugs) {
+# `ranked_parts` is CATEGORY_PARTS: each ranked category's measured parts.
+# Since 2026-10-26 a gap on a ranked category is filed to one of its parts, and
+# selection draws one gap per part (district_gap_slots), so the part is what
+# the feasibility and determinism checks are about.
+validate_gap_registry <- function(reg, ranked_slugs, pinned_slugs, ranked_parts) {
   required <- c("gap_id", "hazard_slug", "priority", "label", "primitive",
                 "unit", "polarity", "status")
+  if (!"part" %in% names(reg)) {
+    stop("resource_gaps.csv: missing column `part`")
+  }
   missing <- setdiff(required, names(reg))
   if (length(missing) > 0) {
     stop("resource_gaps.csv: missing column(s) ", paste(missing, collapse = ", "))
@@ -106,12 +112,31 @@ validate_gap_registry <- function(reg, ranked_slugs, pinned_slugs) {
 
   live <- reg |> filter(status != "retired")
 
-  # Selection walks the district's hazard ranking and picks by priority. A tie
-  # inside a hazard would make the choice depend on row order, so the displayed
-  # gap could change between rebuilds with no data change.
-  dupes <- live |> count(hazard_slug, priority) |> filter(n > 1)
+  # A live gap on a ranked category names one of its measured parts; a live
+  # gap anywhere else names none. A part-less flooding gap would match no
+  # slot and never display; a part on cross-cutting would mean nothing.
+  # Retired rows are exempt - they record where the gap used to hang.
+  for (i in seq_len(nrow(live))) {
+    g <- live[i, ]
+    allowed <- ranked_parts[[g$hazard_slug]]
+    has_part <- !is.na(g$part) && nzchar(g$part)
+    if (!is.null(allowed) && !(has_part && g$part %in% allowed)) {
+      stop("resource_gaps.csv: gap ", g$gap_id, " is on ", g$hazard_slug,
+           " and must name one of its measured parts in `part` (",
+           paste(allowed, collapse = ", "), "); it has '", g$part, "'")
+    }
+    if (is.null(allowed) && has_part) {
+      stop("resource_gaps.csv: gap ", g$gap_id, " names part '", g$part,
+           "', but ", g$hazard_slug, " is not a ranked category with parts")
+    }
+  }
+
+  # Selection picks by priority within a slot (a part, or a hazard without
+  # parts). A tie inside one would make the choice depend on row order, so the
+  # displayed gap could change between rebuilds with no data change.
+  dupes <- live |> count(hazard_slug, part, priority) |> filter(n > 1)
   if (nrow(dupes) > 0) {
-    stop("resource_gaps.csv: (hazard_slug, priority) is not unique for ",
+    stop("resource_gaps.csv: (hazard_slug, part, priority) is not unique for ",
          paste(unique(dupes$hazard_slug), collapse = ", "),
          " - gap selection would not be deterministic")
   }
@@ -146,24 +171,35 @@ validate_gap_registry <- function(reg, ranked_slugs, pinned_slugs) {
   # feature silently degrades to one or two sentences everywhere.
   #
   # This is the check that matters: the first draft of this registry had three
-  # available gaps across two hazards, and extreme heat - which leads 11 of the
-  # 14 districts - had none at all.
-  by_hazard <- vapply(ranked_slugs, function(h) {
-    sum(live$hazard_slug == h & live$status == "available")
+  # available gaps across two hazards, and extreme heat - which then led 11 of
+  # the 14 districts - had none at all.
+  #
+  # Asked per PART since 2026-10-26, because a slot is a part: Flooding with
+  # available heavy-rain gaps and no coastal one would still leave every
+  # surge-exposed district a sentence short.
+  slot_keys <- unlist(lapply(ranked_slugs, function(h) {
+    parts <- ranked_parts[[h]]
+    if (is.null(parts)) h else paste0(h, "/", parts)
+  }))
+  live_keys <- ifelse(is.na(live$part) | !nzchar(live$part), live$hazard_slug,
+                      paste0(live$hazard_slug, "/", live$part))
+  by_slot <- vapply(slot_keys, function(k) {
+    sum(live_keys == k & live$status == "available")
   }, integer(1))
-  barren <- names(by_hazard)[by_hazard == 0]
+  barren <- names(by_slot)[by_slot == 0]
   if (length(barren) > 0) {
-    stop("resource_gaps.csv: ranked hazard(s) ",
+    stop("resource_gaps.csv: ranked part(s) ",
          paste(barren, collapse = ", "),
-         " have no gap with status 'available'. Every district leading with ",
-         "one of those will fall through, so the 02 screen cannot show three ",
+         " have no gap with status 'available'. Every district where that part ",
+         "has a slot will fall through, so the 02 screen cannot show three ",
          "sentences. Unblock a gap or accept fewer sentences explicitly.")
   }
 
-  # The same feasibility question for the third slot. A district whose third
-  # ranked hazard scores 0 ranks only two (build_hazards), and cross-cutting is
-  # the only thing that may fill the slot after them. Five districts depend on
-  # it today, so its absence is a missing sentence, not a dormant branch.
+  # The same feasibility question for the slot after the last part. Coastal
+  # storm scores 0 in five districts and gets no slot there
+  # (district_gap_slots), leaving two, and cross-cutting is the only thing that
+  # may fill the third. Five districts depend on it today, so its absence is a
+  # missing sentence, not a dormant branch.
   n_cross <- sum(live$hazard_slug %in% GAP_PSEUDO_HAZARDS &
                    live$status == "available")
   if (n_cross == 0) {
@@ -239,7 +275,7 @@ validate_gap_registry <- function(reg, ranked_slugs, pinned_slugs) {
 gap_registry_summary <- function(reg, ranked_slugs) {
   reg |>
     filter(status != "retired") |>
-    group_by(hazard_slug) |>
+    group_by(hazard_slug, part) |>
     summarise(
       live = dplyr::n(),
       available = sum(status == "available"),

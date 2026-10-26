@@ -25,9 +25,11 @@
      * conditions panel for `current-conditions`.
      */
     dataSection?: Snippet<[HazardSection]>;
+    /** 3 inside a hazard part, whose own heading is the h2. */
+    headingLevel?: 2 | 3;
   }
 
-  let { summary, sections, emptyText, dataSection }: Props = $props();
+  let { summary, sections, emptyText, dataSection, headingLevel = 2 }: Props = $props();
 
   /**
    * §7.6: skip any section with no `items` AND no `body`.
@@ -70,7 +72,7 @@
        container around them, and the NestedContainers inside bring their own
        12px. -->
   {#if section.title}
-    <Section title={section.title}>
+    <Section title={section.title} level={headingLevel}>
       {@render sectionBody(section)}
     </Section>
   {:else}

@@ -222,13 +222,13 @@ NOTES_IDX <- list(
 )
 
 NOTES_DISTRICT <- list(
-  hazards = "Always 8, ordered. Ranked hazards (`ranked: true`, up to 3) come first, then the pinned ones; a ranked hazard scoring 0 is unranked and placed last, with a `reason`. See gotchas.",
+  hazards = "Always 9, ordered. The two ranked categories (`ranked: true`) come first, then the seven pinned hazards in a fixed order. See gotchas.",
   risk_profile = "Every entry is a **stat object**, never a bare number.",
   population = "`total` is a stat object too, and its `source` differs from `surge_pop_pct`'s. See gotchas.",
   resource_categories = "**Derived per district.** Do not hardcode a global list.",
   hazard_overrides = "Slugs with district-specific guidance. Fetch the override file only for these.",
-  gaps_displayed = "Exactly 3, ordered by `risk_rank`. One per ranked hazard; where a district ranks fewer than three hazards, the remaining slots hold a `cross-cutting` gap. Every entry carries `risk_rank`; a stand-in also carries `fallback_from` naming the ranked hazard whose slot it fills.",
-  meta = "Carries `hazard_model` and `hazard_model_status`. Currently `reviewed_unweighted_1_5` and `expert_reviewed_2026_09_22`."
+  gaps_displayed = "Exactly 3, in display order. One per **measured part** of a ranked category (Flooding: coastal storm and heavy rain; Temperature Extremes: extreme heat), skipping a part that scores 0 here; after the last part, a `cross-cutting` gap. Both Flooding gaps carry `risk_rank` 1. A stand-in also carries `fallback_from`/`fallback_part` naming the slot it fills.",
+  meta = "Carries `hazard_model` and `hazard_model_status`. Currently `category_max_of_reviewed_parts_1_5` and `parts_reviewed_2026_09_22_categories_2026_10_26`."
 )
 
 NOTES_RESOURCES <- list(
@@ -245,7 +245,7 @@ NOTES_HAZARD <- list(
   sections = "**Always an array.** Empty exactly when `parts` is not. Ids come from a closed vocabulary; none is required.",
   parts = "**Always an array.** Empty exactly when `sections` is not. Sub-hazards, each a complete set of sections - see `parts[]`.",
   map_layers = "Layer ids from `data/registry/map_layers.csv`. **Always an array**, even with one element.",
-  jra_category = "The NYC JRA hazard this maps to. q-map's 8 re-cut the JRA's 10."
+  jra_category = "The NYC JRA hazard this maps to. **Absent on `air-quality`**, which the JRA does not list. Flooding (flooding + coastal storm) and Infectious Disease Outbreak (pandemic + outbreak) each cover two JRA hazards and name one."
 )
 
 # --- assemble ----------------------------------------------------------------
@@ -301,9 +301,10 @@ field_table(districts_all, NOTES_DISTRICT),
 "### `hazards[]`",
 "",
 field_table(hazard_entries, list(
-  ranked = "`true` for the ranked hazards, which come first: up to 3, fewer where a ranked hazard scores 0 (today only coastal storm can). When `false`, `score` is absent and `reason` is present.",
-  score = "Integer on a shared 1-5 scale, so the three ranked hazards compare directly - there is no weight. A score of 0 (coastal storm, no exposed tract) is not shipped: that hazard is unranked, placed last, and carries a `reason` instead. Ties are already resolved in `rank`; do not re-sort on `score`.",
-  reason = "Why this hazard is not ranked - pinned, or, for coastal storm where it scores 0, \"Neighborhood does not experience coastal flooding\". Always present when `ranked` is `false`. Render it - it is what stops a pinned hazard reading as \"least dangerous\"."
+  ranked = "`true` for the two ranked categories, which always come first in every district. When `false`, `score` and `part_scores` are absent and `reason` is present.",
+  score = "Integer 1-5: the **max** of `part_scores`, on the scale both categories share, so they compare directly - there is no weight. Never 0. Ties are already resolved in `rank`; do not re-sort on `score`.",
+  part_scores = "Ranked only. `[{part, score}]`, one per measured part, **always an array** (Temperature Extremes has one). `part` is the part id in `hazards/<slug>.json` - the page anchor. Use it to say which measure set the score: Flooding 5 may be surge or stormwater. A part `score` can be 0 (coastal storm, no exposed tract).",
+  reason = "Why this hazard is not ranked. Always present when `ranked` is `false`. Render it - it is what stops a pinned hazard reading as \"least dangerous\". Provisional copy, to be rewritten."
 )),
 "",
 "### `risk_profile` entries",
@@ -346,8 +347,9 @@ field_table(cat_entries, list(
 field_table(gap_displayed, list(
   sentence_template = "Interpolate `facts` into this. **The pipeline does not write the sentence.**",
   facts = "Keys vary by gap. Interpolate by name, do not assume a fixed set.",
-  risk_rank = "The rank of the hazard this gap measures, always 1-3. **Always present.** The one exception is a `cross-cutting` gap, which measures no ranked hazard and instead carries the slot it fills: the rank of the hazard named in `fallback_from`, or, with no `fallback_from`, a slot after the district's last ranked hazard (3 in a district ranking two). `hazard_slug` tells you which reading applies.",
-  fallback_from = "Present only on a `cross-cutting` gap standing in for a ranked hazard of this district that had nothing to report. Names that hazard, so the UI can say so. **Absent** on a cross-cutting gap filling a slot after the last ranked hazard - nothing is stood in for there, so show no note. Absent on every district today; handle it anyway.",
+  part = "The part of `hazard_slug` this gap measures - `heavy-rain`, `coastal-storm` or `extreme-heat`. Absent on a hazard with no parts and on `cross-cutting`.",
+  risk_rank = "The rank of the category this gap measures, 1 or 2, so two Flooding gaps share 1. **Always present.** A `cross-cutting` gap measures no ranked hazard and carries the position it fills instead: the rank of `fallback_from`, or, with no `fallback_from`, its sentence number after the last part (3). `hazard_slug` tells you which reading applies. Order by the array, not by this.",
+  fallback_from = "Present only on a `cross-cutting` gap standing in for a slot of this district that had nothing to report; `fallback_part` names the part where the hazard has parts. **Absent** on a cross-cutting gap after the last part - nothing is stood in for there, so show no note. Absent on every district today; handle it anyway.",
   polarity = "`higher_is_worse` or `higher_is_better`. **Do not assume.**"
 )),
 "",
@@ -389,7 +391,7 @@ paste("Same shape as a base hazard file, plus `meta`. `status` is derived: an",
       "override that authors every section reads `authored` even where the base",
       "it replaces is a stub."),
 "",
-field_table(overrides_all, list(
+if (length(overrides_all) == 0) "**No override files ship today.** `hazard_overrides` is `[]` in every district payload; the shape is kept for when one is authored." else field_table(overrides_all, list(
   meta = "`{district, overridden}`. `overridden` lists the top-level keys this file replaced - the only way to see what the merge changed, since it is not a deep merge.",
   status = "`stub` or `authored`. Derived from whether every section carries content."
 )),
@@ -412,9 +414,9 @@ field_table(part_records, list(
 "### `sections[]`",
 "",
 paste("**Every section carries both `items` and `body`**, one of which is empty.",
-      "Seven of eight hazards are unwritten stubs whose sections carry neither",
-      "content nor items, so a consumer iterating `section.items` must not",
-      "assume the key exists - it always does now, and is often `[]`."),
+      "A note-only section has `body: \"\"`; a data-backed one",
+      "(`current-conditions`) has both empty. A consumer iterating",
+      "`section.items` can rely on the key existing - it is often `[]`."),
 "",
 field_table(section_records, list(
   id = "From a closed vocabulary. `current-conditions` is data-backed - render conditions.json there, not authored content.",
@@ -540,8 +542,8 @@ paste("**The map popup needs a join.** It shows name, category and address,",
 "- **`point_on_surface` is not a centroid.** QN14's true centroid is in open water.",
 "- **Two population figures from two sources.** `population.total` is CHP; `surge_pop_pct`'s denominator is ACS. They disagree by up to 20% per district. **Multiplying the share by the total does not give a headcount.** Both carry `source`.",
 "- **`polarity` is data, not a UI assumption.** These indicators mix deficits, supplies and distances. A single \"more filled = more\" rule is wrong.",
-"- **Pinned hazards are not \"least dangerous\".** Positions 4-8 mean *not differentiable by district*. Hazmat is pinned *because* it scores high everywhere in Queens, not because it scores low. Read `ranked` and show `reason`; do not present pinned hazards as a continuation of the ranking.",
-"- **The hazard ordering is expert-reviewed.** It reproduces `queens-hazard-ranking` exactly and the pipeline asserts that it does. Ties in `score` are broken by geographic specificity (coastal storm, then heavy rain, then extreme heat) and are already resolved in `rank` - do not re-sort on `score`, or a tie will reorder.",
+"- **Pinned hazards are not \"least dangerous\".** Positions 3-9 mean *not compared by district*. Hazmat is pinned *because* it scores high everywhere in Queens, not because it scores low. Read `ranked` and show `reason`; do not present pinned hazards as a continuation of the ranking.",
+"- **The part scores are expert-reviewed; the category rule is not.** Coastal storm, heavy rain and extreme heat reproduce `queens-hazard-ranking` exactly and the pipeline asserts it. A category takes the max of its parts (decided 2026-10-26, not reviewed). Ties are broken by geographic specificity (Flooding, then Temperature Extremes) and already resolved in `rank` - do not re-sort on `score`, or a tie will reorder.",
 "- **`score` and `surge_pop_pct` measure different things.** Coastal storm's `score` is the *worst-case* tract in the district; `risk_profile.surge_pop_pct` is the *share of residents* in any exposed tract. They are not monotonic in each other - QN07 is 30.1% exposed and scores 4, QN10 is 23% and scores 5. Label which one a sentence is quoting.",
 "- **Check `status` before reading a gap's `value`.** Most of the 33 have none, and 10 are retired - examined and rejected, which is a different claim from waiting on data. Group a 'see all gaps' view by `status`, not by hazard.",
 "- **`resource_categories` is per-district.** Two wireframe screens show different lists because they render different districts. Both are right.",
@@ -552,7 +554,7 @@ paste("**The map popup needs a join.** It shows name, category and address,",
 "- **A gap sentence may be a finding of absence.** Where a `higher_is_worse` gap is zero the pipeline swaps in different copy (\"None of ... sit in an area that floods\") and sorts it last within its hazard, so it only appears when the hazard has nothing else. The template you receive already reflects that - do not branch on the value yourself.",
 "- **`capacity` is omitted, never `0`.** FacDB uses 0 for \"not reported\". If the key is absent, capacity is unknown, not zero.",
 "- **Names and addresses are already title-cased** by the pipeline, with an acronym exception list. Do not re-case them in a component; `PS 811Q` and `O\'Brien` are correct as given.",
-"- **Every section has both `items` and `body`.** One of them is empty. Seven of eight hazards are unwritten stubs, so that is the normal case, not the edge case.",
+"- **Every section has both `items` and `body`**, and every hazard file has both `sections` and `parts`. One of each pair is empty. Render `parts` when it is non-empty.",
 "- **`current-conditions` is a section with no content.** Render `conditions.json` there. It is citywide - show `geography_label`.",
 "- **`direction` and `trend` can disagree, and currently do.** `direction` is the last two weeks; `trend` is the whole window. Visits are up this week and down over twelve. Showing only `direction` beside a sparkline puts an arrow against a visibly falling line.",
 ""

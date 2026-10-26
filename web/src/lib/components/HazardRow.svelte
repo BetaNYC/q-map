@@ -27,20 +27,19 @@
    *
    * 3. RANK IS IN THE ACCESSIBLE NAME. §10: the chips are numbered with
    *    coloured fills and the NUMBER carries the meaning. It is real text inside
-   *    the link, so the accessible name reads "1 Coastal Storm Storm Surge Flood
+   *    the link, so the accessible name reads "1 Flooding Storm Surge Flood
    *    Vulnerability Index: 5/5" — colour is decoration on top of that, never
    *    the only channel.
    *
-   * 4. THE CHIP HAS THREE STATES, NOT TWO. Ranked and scored shows the number
-   *    and is announced. Pinned is an empty coloured box — decoration, so
-   *    aria-hidden, with `reason` carrying the meaning. Ranked but scoring 0
-   *    shows "-" in the pinned grey and is also hidden: the hazard holds a
-   *    ranked position but does not apply here. rankChip() in $lib/hazards owns
-   *    that decision so the markup stays one branch.
+   * 4. THE CHIP HAS TWO STATES. Ranked shows the number and is announced.
+   *    Pinned is an empty coloured box — decoration, so aria-hidden, with
+   *    `reason` carrying the meaning. (A third, "-" for a ranked hazard
+   *    scoring 0, went with the 2026-10-26 categories.) rankChip() in
+   *    $lib/hazards owns that decision so the markup stays one branch.
    *
    * 5. SCORE IS TEXT, NOT A SCALE. §10 again. measureLine() builds it, reading
-   *    "4 out of 5" rather than "4/5" — a solidus is announced as "slash" — and
-   *    swapping in the score-0 copy where a number would mislead.
+   *    "4 out of 5" rather than "4/5" — a solidus is announced as "slash" —
+   *    and naming the measured part that set a category's score.
    */
 
   interface Props {
