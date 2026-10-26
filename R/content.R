@@ -91,27 +91,23 @@ hazard_all_sections <- function(y) {
 # The vocabulary stays closed: a typo'd id should still be an error rather than
 # a section nobody notices is missing.
 SECTION_IDS <- c(
-  "preparedness", "response", "general",
-  # The three protective actions every hazard leads with, from the SME-reviewed
-  # "Core Readiness Messages by Threat" (2026-10-14): one NOTE per action, and
-  # the "...? Call 911." line as the last.
-  "core-actions",
-  # The same document's link groups: its "Suggested first links" (the three
-  # recommended starting points) and "Additional candidate links".
-  "start-here", "more-help",
-  # `cooling` groups the Extreme Heat page's air-conditioning and green-space
-  # guidance. Named for its content rather than for a phase, which is what the
-  # page's structure is now organised around.
-  "cooling",
-  "signs-of-heat-illness", "prevention", "evacuation", "after",
-  "flooding-basements", "air-quality", "power-outage",
-  # Utility contact numbers. The only section built from PHONE items, and the
-  # reason the item schema grew `tel`/`tty` - see NANP_PHONE below.
-  "utility-interruptions",
+  # The SME document's spine, on every hazard (2026-10-26): the protective
+  # actions each hazard leads with, one NOTE per action and the "...? Call
+  # 911." line last; then its two link groups, "Get Ready" and "When
+  # Something Happens".
+  "core-actions", "preparedness", "response",
+  # The General page's three further groups: "After Something Happened",
+  # "For Health Needs", "For Food, Financial & Legal Support".
+  "after", "health", "food-financial-legal",
   # A section with no authored content: the frontend renders the citywide
   # respiratory-illness readout from conditions.json in its place.
   "current-conditions"
 )
+# Pruned 2026-10-26 to the ids in use. The vocabulary exists to turn a typo
+# into an error; eleven ids that no file used (general, start-here, more-help,
+# cooling, signs-of-heat-illness, prevention, evacuation, flooding-basements,
+# air-quality, power-outage, utility-interruptions) were eleven typos it would
+# have let through. They are in git history if a layout needs one back.
 
 # Sections whose body the frontend supplies rather than the content file.
 #
@@ -764,6 +760,14 @@ normalise_hazard <- function(y) {
 # ships exactly as authored.
 write_hazard_content <- function(content, dir) {
   dir.create(dir, showWarnings = FALSE, recursive = TRUE)
+  # Remove files for hazards that no longer exist. Without this, a retired
+  # slug's JSON stays in data/processed - which CI commits and the site
+  # deploys - so /hazards/heavy-rain.json would keep serving the 2026-10-14
+  # copy after the 2026-10-26 regrouping, with nothing in the catalog to say
+  # it is stale.
+  stale <- setdiff(list.files(dir, pattern = "\\.json$"),
+                   paste0(names(content), ".json"))
+  if (length(stale) > 0) file.remove(file.path(dir, stale))
   paths <- vapply(names(content), function(slug) {
     y <- content[[slug]]
     y$.file <- NULL
@@ -927,6 +931,18 @@ validate_hazard_overlays <- function(overlays, content, district_slugs) {
 # files would be the alternative; this emits 8 base files plus one per real
 # override, and the district payload says which exist.
 write_hazard_overlays <- function(content, overlays, dir) {
+  # Remove override files that no overlay produces any more, for the reason
+  # write_hazard_content() prunes. Found 2026-10-26: q14/coastal-storm's
+  # override was deleted on 2026-10-14 (#29), but its JSON stayed in
+  # data/processed/districts/q14/hazards/ and kept deploying, with nothing
+  # in any district payload pointing at it.
+  existing <- list.files(dir, pattern = "\\.json$", recursive = TRUE)
+  existing <- existing[grepl("^[^/]+/hazards/[^/]+\\.json$", existing)]
+  wanted <- vapply(strsplit(names(overlays) %||% character(), "/", fixed = TRUE), function(x)
+    file.path(x[2], "hazards", paste0(x[1], ".json")), character(1))
+  stale <- setdiff(existing, wanted)
+  if (length(stale) > 0) file.remove(file.path(dir, stale))
+
   if (length(overlays) == 0) return(character())
   paths <- vapply(names(overlays), function(key) {
     parts <- strsplit(key, "/", fixed = TRUE)[[1]]

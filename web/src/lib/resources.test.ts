@@ -17,8 +17,8 @@ describe('the map state a popup link carries', () => {
   });
 
   it('keeps the hazard the map was titled by', () => {
-    expect(new URLSearchParams(mapStateQuery({ categories: [], layers: ['surge_current'], hazard: 'coastal-storm' })).get('hazard')).toBe(
-      'coastal-storm'
+    expect(new URLSearchParams(mapStateQuery({ categories: [], layers: ['surge_current'], hazard: 'flooding' })).get('hazard')).toBe(
+      'flooding'
     );
   });
 });
@@ -30,11 +30,11 @@ describe('mapReturnPath', () => {
   });
 
   it('with carried state, returns it and adds the resource', () => {
-    const carried = new URLSearchParams(mapStateQuery({ categories: ['emergency-services', 'health-care'], layers: ['surge_current'], hazard: 'coastal-storm' }));
+    const carried = new URLSearchParams(mapStateQuery({ categories: ['emergency-services', 'health-care'], layers: ['surge_current'], hazard: 'flooding' }));
     const p = back(mapReturnPath(acqc, 'q14', carried));
     expect(p.get('categories')).toBe('emergency-services,health-care');
     expect(p.get('layers')).toBe('surge_current');
-    expect(p.get('hazard')).toBe('coastal-storm');
+    expect(p.get('hazard')).toBe('flooding');
     expect(p.get('resource')).toBe('franc:acqc');
   });
 

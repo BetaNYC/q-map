@@ -5,7 +5,7 @@
   import HorizontalRule from '$lib/components/HorizontalRule.svelte';
   import FrozenHead from '$lib/components/FrozenHead.svelte';
   import PageHeader from '$lib/components/PageHeader.svelte';
-  import type { ConditionsMetric } from '$lib/types';
+  import type { ConditionsMetric, HazardSection } from '$lib/types';
 
   let { data } = $props();
 
@@ -72,22 +72,58 @@
     <HorizontalRule />
   </FrozenHead>
 
-  <ContentSections
-    summary={content.summary}
-    sections={content.sections}
-    emptyText="Guidance for this hazard has not been written yet."
-  >
-    {#snippet dataSection(section)}
-      {#if section.id === 'current-conditions' && data.conditions}
-        <!-- Data-backed: conditions.json in place of authored content (§7.6). -->
-        <ConditionsPanel metrics={conditionMetrics} />
+  {#if content.parts.length}
+    <!-- STOPGAP (2026-10-26), pending Andrew's layout for sub-hazards.
+         Flooding and Temperature Extremes carry `parts` instead of
+         `sections` (DATA_CONTRACT.md §6): each part is a full sub-page with
+         its own summary and sections. This stacks them in order, each under
+         its label, with a rule between - existing components only, and the
+         part heading borrows Section's title tokens. Outline (Andrew,
+         2026-10-26): the hazard label is the page's one h1, each part an h2,
+         its sections h3. Open: jump links, whether the rule is right, and
+         the part heading's visual weight - it currently matches the section
+         headings. `id` is the stable part anchor. -->
+    {#each content.parts as part, i (part.id)}
+      {#if i > 0}
+        <HorizontalRule />
       {/if}
-    {/snippet}
-  </ContentSections>
+      <h2 class="part-title" id={part.id}>{part.label}</h2>
+      <ContentSections
+        summary={part.summary}
+        sections={part.sections}
+        emptyText="Guidance for this hazard has not been written yet."
+        dataSection={conditionsSection}
+        headingLevel={3}
+      />
+    {/each}
+  {:else}
+    <ContentSections
+      summary={content.summary}
+      sections={content.sections}
+      emptyText="Guidance for this hazard has not been written yet."
+      dataSection={conditionsSection}
+    />
+  {/if}
 </div>
+
+{#snippet conditionsSection(section: HazardSection)}
+  {#if section.id === 'current-conditions' && data.conditions}
+    <!-- Data-backed: conditions.json in place of authored content (§7.6). -->
+    <ConditionsPanel metrics={conditionMetrics} />
+  {/if}
+{/snippet}
 
 
 <style>
+  /* Section's title tokens and inset (see the stopgap note above). */
+  .part-title {
+    margin: 0;
+    padding: 10px;
+    font-size: var(--font-size-section);
+    font-weight: var(--font-weight-bold);
+    line-height: var(--line-height-tight);
+  }
+
   .screen {
     display: flex;
     flex-direction: column;

@@ -291,7 +291,7 @@ compute_available_gaps <- function(reg, inputs) {
   # about - is a second lookup table living in prose, which is the kind of
   # thing DATA_CONTRACT.md exists to avoid.
   bind_rows(out) |>
-    left_join(select(reg, gap_id, hazard_slug, priority, label, unit, polarity,
+    left_join(select(reg, gap_id, hazard_slug, part, priority, label, unit, polarity,
                      sentence_template, sentence_template_zero,
                      sentence_template_unreliable, status),
               by = "gap_id") |>
@@ -308,7 +308,7 @@ compute_available_gaps <- function(reg, inputs) {
       status == "available" & is.na(value) &
         !is.na(dplyr::coalesce(facts_unavailable_reason, NA_character_)),
       "not_applicable", status)) |>
-    relocate(gap_id, hazard_slug, priority, cdta2020, value)
+    relocate(gap_id, hazard_slug, part, priority, cdta2020, value)
 }
 
 # The district name as the sentence templates spell it. Kept as its own
@@ -375,45 +375,90 @@ gap_extremeness <- function(gaps, shipped) {
     (\(x) { x$is_non_finding <- gap_non_finding_flags(x); x })()
 }
 
-# Select up to three gaps per district by walking its hazard ranking.
+# The slots a district's gap sentences fill, in order (2026-10-26).
 #
-# Section 8d: the guarantee is three sentences, achieved by descending the
-# ranking until three resolve. That creates a specific hazard the data must
-# defend against - the three gaps shown may not correspond to the three risks
-# listed above them on the same screen. So every selected gap carries
-# risk_rank, and one drawn from outside the top three carries fallback_from
-# naming the risk it stands in for.
+# A SLOT IS A MEASURED PART OF A RANKED CATEGORY. Gaps were drawn one per
+# ranked hazard until the SME categories merged coastal storm and heavy rain
+# into Flooding. One gap per category would have cut a surge-exposed
+# district's two flood sentences to one, so selection draws one per part
+# instead (Andrew, 2026-10-26). A category with no parts is one slot.
 #
-# The walk stops at the last RANKED hazard. A pinned hazard has no
-# district-specific measure, so a gap attached to one has no district-specific
-# justification either. cross-cutting is eligible as a final fallback because it
-# is by definition not tied to any single hazard.
+# Ordered by category rank, then within a category by part score descending,
+# with CATEGORY_PARTS order (coastal before rain, the review's specificity
+# order) breaking ties.
 #
-# A district can rank fewer than three hazards (a zero score is unranked -
-# build_hazards). The slots after its last ranked hazard are filled from
-# cross-cutting too, with risk_rank set to the slot number and NO
-# fallback_from: there is no ranked hazard being stood in for, and naming the
-# unranked one would put back the hazard the ranking just took off the screen.
+# A PART SCORING 0 GETS NO SLOT. Coastal storm scores 0 in five districts
+# (QN04, QN05, QN08, QN09, QN12). From 2026-10-14 it was unranked there and
+# drew no gap; this keeps that. Those districts have two slots, and the third
+# sentence comes from cross-cutting.
 #
-# WITHIN a hazard, the pick is the most extreme value for this district rather
-# than the lowest registry priority - see gap_extremeness(). The walk order
-# across hazards is unchanged: it still follows the district's risk ranking,
-# because which hazard matters here is not a question about gap values.
-select_district_gaps <- function(gaps, hazards, crosswalk, n_target = 3) {
-  ranked <- hazards |> filter(ranked) |> arrange(cdta2020, rank)
+# `risk_rank` is the CATEGORY's rank, so both flooding slots carry rank 1.
+# `slot` is the sentence position.
+district_gap_slots <- function(hazards, measures) {
+  ranked <- hazards |> filter(ranked) |> select(cdta2020, slug, rank)
+  rows <- lapply(seq_len(nrow(ranked)), function(i) {
+    h <- ranked[i, ]
+    parts <- CATEGORY_PARTS[[h$slug]]
+    if (is.null(parts)) {
+      return(tibble::tibble(cdta2020 = h$cdta2020, hazard_slug = h$slug,
+                            part = NA_character_, risk_rank = h$rank,
+                            part_score = NA_integer_, part_order = 1L))
+    }
+    m <- measures[measures$cdta2020 == h$cdta2020, ]
+    tibble::tibble(
+      cdta2020 = h$cdta2020, hazard_slug = h$slug, part = parts,
+      risk_rank = h$rank,
+      part_score = vapply(parts, function(p) as.integer(m[[PART_SCORE_COL[[p]]]]),
+                          integer(1)),
+      part_order = seq_along(parts)
+    )
+  })
+  bind_rows(rows) |>
+    filter(is.na(part_score) | part_score > 0) |>
+    arrange(cdta2020, risk_rank, desc(part_score), part_order) |>
+    group_by(cdta2020) |>
+    mutate(slot = row_number()) |>
+    ungroup() |>
+    select(cdta2020, slot, hazard_slug, part, risk_rank)
+}
+
+# Select three gaps per district by walking its slots.
+#
+# Section 8d: the guarantee is three sentences. That creates a specific hazard
+# the data must defend against - the gaps shown may not correspond to the
+# risks listed above them on the same screen. So every selected gap carries
+# risk_rank, and a cross-cutting gap standing in for a slot carries
+# fallback_from (and fallback_part) naming what it stands in for.
+#
+# The walk stops at the last slot. A pinned hazard has no district-specific
+# measure, so a gap attached to one has no district-specific justification
+# either. cross-cutting is eligible because it is by definition not tied to
+# any single hazard.
+#
+# Where a district has fewer than three slots, the sentences after its last
+# slot come from cross-cutting too, with risk_rank set to the sentence number
+# and NO fallback_from: nothing is being stood in for.
+#
+# WITHIN a slot, the pick is the most extreme value for this district rather
+# than the lowest registry priority - see gap_extremeness(). The walk order is
+# the district's risk ranking, because which hazard matters here is not a
+# question about gap values.
+select_district_gaps <- function(gaps, slots, crosswalk, n_target = 3) {
   shipped <- crosswalk |> filter(boro_code == 4) |> pull(cdta2020)
   scored <- gap_extremeness(gaps, shipped)
+  slot_key <- function(h, p) ifelse(is.na(p) | !nzchar(p), h, paste0(h, "/", p))
+  scored$slot_key <- slot_key(scored$hazard_slug, scored$part)
 
-  lapply(split(ranked, ranked$cdta2020), function(hz) {
-    district <- hz$cdta2020[1]
+  lapply(split(slots, slots$cdta2020), function(sl) {
+    district <- sl$cdta2020[1]
     pool <- scored |> filter(cdta2020 == district)
-
-    top3 <- hz$slug[hz$rank <= n_target]
+    sl$key <- slot_key(sl$hazard_slug, sl$part)
+    top <- sl[sl$slot <= n_target, ]
     chosen <- list()
 
-    take_from <- function(slug, risk_rank, fallback_from = NA_character_) {
+    take_from <- function(key, slot, risk_rank, fallback = NULL) {
       cand <- pool |>
-        filter(hazard_slug == slug,
+        filter(slot_key == key,
                !gap_id %in% vapply(chosen, function(c) c$gap_id, integer(1))) |>
         # THE NON-FINDING FLOOR, then extremeness, then priority as a
         # deterministic tiebreak.
@@ -423,125 +468,55 @@ select_district_gaps <- function(gaps, hazards, crosswalk, n_target = 3) {
         # hazard even though it says nothing - QN11 drew two such sentences of
         # three, under a heading that reads "Neighborhood Resource Gaps".
         #
-        # A gap that found nothing therefore sorts last within its hazard: it
-        # is used only when the hazard has nothing else to offer, rather than
-        # never, because a district with genuinely nothing to report should
-        # still get a sentence rather than a gap in the list. When it is used,
+        # A gap that found nothing therefore sorts last within its slot: it is
+        # used only when the slot has nothing else to offer, rather than never,
+        # because a district with genuinely nothing to report should still get
+        # a sentence rather than a gap in the list. When it is used,
         # sentence_template_zero states it as a finding of absence.
         arrange(is_non_finding, desc(extremeness), priority)
       if (nrow(cand) == 0) return(NULL)
       row <- cand[1, ]
-      row$risk_rank <- risk_rank
-      row$fallback_from <- fallback_from
+      row$slot <- as.integer(slot)
+      row$risk_rank <- as.integer(risk_rank)
+      row$fallback_from <- if (is.null(fallback)) NA_character_ else fallback$hazard_slug
+      row$fallback_part <- if (is.null(fallback)) NA_character_ else fallback$part
       row
     }
 
-    # The highest-ranked top-three slot nothing has filled yet.
-    #
-    # A slot is filled two ways, and BOTH have to count: by a gap drawn from
-    # that hazard directly, or by a fallback that already claimed it. Counting
-    # only the first hands the same slot to two different fallbacks - with
-    # heat, rain and hazmat all barren, coastal-storm and cross-cutting both
-    # came back `fallback_from: extreme-heat` while heavy-rain and hazmat went
-    # unclaimed.
-    unfilled <- function() {
-      taken   <- vapply(chosen, function(c) c$hazard_slug, character(1))
-      claimed <- vapply(chosen, function(c) {
-        v <- c$fallback_from
-        if (length(v) == 0 || is.na(v)) NA_character_ else as.character(v)
-      }, character(1))
-      setdiff(top3, c(taken, claimed[!is.na(claimed)]))[1]
-    }
-    rank_of <- function(slug) {
-      if (is.na(slug)) return(NA_integer_)
-      as.integer(hz$rank[match(slug, hz$slug)])
-    }
-
-    # First pass: one gap per top-three hazard, in rank order. Not a fallback -
-    # the gap is about the hazard it was drawn from.
-    for (i in seq_len(min(n_target, nrow(hz)))) {
-      got <- take_from(hz$slug[i], hz$rank[i])
+    # First pass: one gap per slot, in order. Not a fallback - the gap is
+    # about the slot it was drawn from.
+    for (i in seq_len(nrow(top))) {
+      got <- take_from(top$key[i], top$slot[i], top$risk_rank[i])
       if (!is.null(got)) chosen[[length(chosen) + 1]] <- got
     }
 
-    # Fall-through: continue down the ranked hazards, then cross-cutting.
+    # A slot that drew nothing gets a cross-cutting stand-in, at that slot's
+    # position and rank, naming what it stands in for.
     #
-    # UNREACHABLE under the reviewed model. It needs more ranked hazards than
-    # slots, and there are now exactly three of each (HAZARD_PRIORITY), so
-    # `nrow(hz) > n_target` is 3 > 3. Kept rather than deleted because it
-    # revives the moment a fourth hazard is ranked. Until then a barren
-    # top-three hazard goes straight to the cross-cutting branch below - and
-    # pinned hazmat's gaps (#27, #28, #31) cannot be displayed at all, because
-    # `hz` is ranked hazards only. They remain in gaps/<slug>.json.
-    if (length(chosen) < n_target && nrow(hz) > n_target) {
-      for (i in seq(n_target + 1, nrow(hz))) {
-        if (length(chosen) >= n_target) break
-        got <- take_from(hz$slug[i], hz$rank[i],
-                         fallback_from = unfilled())
-        if (!is.null(got)) chosen[[length(chosen) + 1]] <- got
-      }
+    # `risk_rank` is normally the rank of the hazard the gap MEASURES.
+    # Cross-cutting measures no ranked hazard and has no rank of its own, so
+    # it borrows the slot's; `hazard_slug: "cross-cutting"` tells a consumer
+    # which reading applies.
+    filled <- vapply(chosen, function(c) c$slot, integer(1))
+    for (i in which(!top$slot %in% filled)) {
+      got <- take_from("cross-cutting", top$slot[i], top$risk_rank[i],
+                       fallback = top[i, ])
+      if (!is.null(got)) chosen[[length(chosen) + 1]] <- got
     }
 
-    # Cross-cutting, last resort.
-    #
-    # This branch carried two latent defects, neither reachable while all 14
-    # districts fill three sentences from their top three - which they do
-    # today, so nothing had ever executed it:
-    #
-    #   1. It passed risk_rank = NA_integer_ into `if (risk_rank > n_target)`,
-    #      which is `if (NA)` and ERRORS - "missing value where TRUE/FALSE
-    #      needed". The fall-through path crashed the build rather than
-    #      degrading.
-    #   2. gap_entry() then dropped risk_rank on NA, so the payload would have
-    #      broken DATA_CONTRACT.md's unconditional promise that every displayed
-    #      gap carries one.
-    #
-    # A cross-cutting gap now takes the rank of the hazard it STANDS IN FOR.
-    #
-    # Be precise about what that does to the field, because it is not uniform.
-    # `risk_rank` is normally the rank of the hazard the gap MEASURES - a
-    # coastal-storm gap standing in for slot 1 still carries rank 4, which is
-    # section 8d's original intent and stays unchanged. Cross-cutting measures
-    # no ranked hazard and has no rank of its own, so it borrows the slot's.
-    #
-    # That is the single case where the two readings differ, and
-    # `hazard_slug: "cross-cutting"` is what tells a consumer which applies -
-    # it is a registry-only pseudo-hazard with no page, so a UI already has to
-    # treat it separately. Together with `fallback_from` the row is fully
-    # legible: fills slot 2, stands in for heavy rain, measures something
-    # cross-cutting.
-    #
-    # The alternative was NA, which is what broke the contract in the first
-    # place. A separate `slot` field would be cleaner still if this ever needs
-    # to be uniform.
-    if (length(chosen) < n_target) {
-      stands_for <- unfilled()
-      if (!is.na(stands_for)) {
-        got <- take_from("cross-cutting",
-                         risk_rank = rank_of(stands_for),
-                         fallback_from = stands_for)
-        if (!is.null(got)) chosen[[length(chosen) + 1]] <- got
-      }
-    }
-
-    # Slots after the last ranked hazard (2026-10-20).
-    #
-    # QN04, QN05, QN08, QN09 and QN12 rank two hazards: coastal storm scores 0
-    # there and is unranked. Slot 3 belongs to no hazard, so it takes a
-    # cross-cutting gap, risk_rank = 3, and no fallback_from - nothing is being
-    # stood in for. Picked by the same floor-extremeness-priority order as any
-    # other slot; take_from() already excludes a gap shown in an earlier slot.
-    for (slot in seq_len(max(0L, n_target - nrow(hz))) + nrow(hz)) {
-      if (length(chosen) >= n_target) break
-      got <- take_from("cross-cutting", risk_rank = as.integer(slot))
+    # Sentences after the last slot (2026-10-20). Five districts have two
+    # slots: coastal storm scores 0 there. Sentence 3 belongs to no hazard, so
+    # it takes a cross-cutting gap, risk_rank = 3, and no fallback_from.
+    for (s in seq_len(max(0L, n_target - nrow(sl))) + nrow(sl)) {
+      got <- take_from("cross-cutting", s, s)
       if (!is.null(got)) chosen[[length(chosen) + 1]] <- got
     }
 
     if (length(chosen) == 0) return(NULL)
-    # Ordered by slot. Only a stand-in can arrive out of order (it is chosen
-    # after the first pass but fills an earlier slot), and the district page
-    # renders gaps_displayed as given.
-    bind_rows(chosen) |> arrange(risk_rank) |> mutate(display_order = row_number())
+    bind_rows(chosen) |>
+      arrange(slot) |>
+      mutate(display_order = row_number()) |>
+      select(-slot_key)
   }) |> bind_rows()
 }
 
@@ -824,6 +799,10 @@ gap_entry <- function(row, include_selection = TRUE) {
     # Present on every gap so a grouped view never renders a raw slug. Two
     # slugs have no hazard page behind them - see GAP_ORPHAN_HAZARD_LABELS.
     hazard_label = gap_hazard_label(row$hazard_slug),
+    # The part of the hazard the gap measures (heavy-rain, coastal-storm,
+    # extreme-heat): the hazard page anchor. Absent on gaps whose hazard has
+    # no parts.
+    part = gap_part(row$part),
     label = row$label,
     value = if (is.na(row$value)) NULL else round(as.numeric(row$value), 3),
     unit = row$unit,
@@ -850,8 +829,16 @@ gap_entry <- function(row, include_selection = TRUE) {
     # from outside the top three is about a different hazard than the risk
     # listed above it, and only this field lets the UI say so.
     e$fallback_from <- if (is.na(row$fallback_from)) NULL else row$fallback_from
+    # Which part of fallback_from the stand-in fills, where that hazard has
+    # parts: "stands in for Flooding's coastal-storm slot".
+    e$fallback_part <- gap_part(row$fallback_part)
   }
   compact_list(e)
+}
+
+# A registry `part` as the payload carries it: the id, or absent.
+gap_part <- function(x) {
+  if (is.null(x) || length(x) == 0 || is.na(x) || !nzchar(x)) NULL else x
 }
 
 # The full 33-gap matrix per district, so absence is legible rather than silent.
@@ -876,6 +863,7 @@ write_gap_matrices <- function(gap_values, registry, crosswalk, dir) {
           gap_id = as.integer(reg$gap_id),
           hazard_slug = reg$hazard_slug,
           hazard_label = gap_hazard_label(reg$hazard_slug),
+          part = gap_part(reg$part),
           label = reg$label,
           value = NULL,
           unit = reg$unit,
@@ -898,7 +886,7 @@ write_gap_matrices <- function(gap_values, registry, crosswalk, dir) {
   unname(paths)
 }
 
-validate_gap_selection <- function(sel, hazards, crosswalk, n_target = 3) {
+validate_gap_selection <- function(sel, slots, crosswalk, n_target = 3) {
   shipped <- crosswalk |> filter(boro_code == 4)
   missing <- setdiff(shipped$cdta2020, sel$cdta2020)
   if (length(missing) > 0) {
@@ -906,15 +894,15 @@ validate_gap_selection <- function(sel, hazards, crosswalk, n_target = 3) {
   }
 
   # Exactly three, not "up to". Since 2026-10-20 the guarantee holds in every
-  # district - the five that rank two hazards fill slot 3 from cross-cutting -
-  # so a short district is now a regression to catch, not a state to allow.
+  # district - those with two slots fill the third from cross-cutting - so a
+  # short district is a regression to catch, not a state to allow.
   counts <- sel |> filter(cdta2020 %in% shipped$cdta2020) |> count(cdta2020)
   short <- counts$cdta2020[counts$n != n_target]
   if (length(short) > 0) {
     stop("Not exactly ", n_target, " gaps selected for ",
          paste(short, collapse = ", "),
-         ". If a district ranks fewer than ", n_target, " hazards, slot ",
-         n_target, " needs an available cross-cutting gap.")
+         ". If a district has fewer than ", n_target, " slots, the rest need ",
+         "an available cross-cutting gap.")
   }
 
   if (any(is.na(sel$risk_rank))) {
@@ -922,71 +910,74 @@ validate_gap_selection <- function(sel, hazards, crosswalk, n_target = 3) {
          paste(unique(sel$cdta2020[is.na(sel$risk_rank)]), collapse = ", "))
   }
 
-  # Section 8d. A gap whose hazard is not in the district's top three MUST name
-  # the risk it stands in for, or the reader sees a sentence about hazard B
-  # sitting under a heading for hazard A.
-  bad <- sel |> filter(risk_rank > n_target, is.na(fallback_from))
-  if (nrow(bad) > 0) {
-    stop(nrow(bad), " selected gap(s) come from outside the top ", n_target,
-         " but carry no fallback_from: ",
-         paste(unique(bad$cdta2020), collapse = ", "))
+  # Every non-cross-cutting gap must sit in one of THIS district's slots, at
+  # that slot's position and rank. Joined to the district's own slots, not the
+  # registry's list of parts: coastal storm is a measured part citywide but
+  # has no slot in the five districts where it scores 0, and before 2026-10-14
+  # those five each showed a coastal-storm gap. This is the check that keeps
+  # it off. Keyed on part as well as hazard, so a heavy-rain gap cannot fill
+  # the coastal slot.
+  key <- function(h, p) {
+    as.character(ifelse(is.na(p) | !nzchar(p), h, paste0(h, "/", p)))
   }
-
-  # Every gap's hazard must apply HERE. Joined to the district's own ranking,
-  # not the registry's list of ranked hazards: coastal storm is a ranked hazard
-  # citywide but unranked in five districts, and before 2026-10-14 those five
-  # each showed a coastal-storm gap. This is the check that keeps it off.
-  ranked_here <- hazards |> filter(ranked) |> select(cdta2020, slug, rank)
-  n_ranked <- ranked_here |> count(cdta2020, name = "n_ranked")
+  slot_tbl <- slots |>
+    mutate(key = key(hazard_slug, part)) |>
+    select(cdta2020, key, slot_pos = slot, slot_rank = risk_rank)
+  n_slots <- slots |> count(cdta2020, name = "n_slots")
   chk <- sel |>
-    left_join(ranked_here, by = c("cdta2020", "hazard_slug" = "slug")) |>
-    left_join(n_ranked, by = "cdta2020") |>
-    mutate(n_ranked = coalesce(n_ranked, 0L))
+    mutate(key = key(hazard_slug, part)) |>
+    left_join(slot_tbl, by = c("cdta2020", "key")) |>
+    left_join(n_slots, by = "cdta2020") |>
+    mutate(n_slots = coalesce(n_slots, 0L))
 
-  stray <- chk |> filter(!hazard_slug %in% GAP_PSEUDO_HAZARDS, is.na(rank))
+  own <- chk |> filter(!hazard_slug %in% GAP_PSEUDO_HAZARDS)
+  stray <- own |> filter(is.na(slot_pos))
   if (nrow(stray) > 0) {
-    stop("Gap(s) from a hazard not ranked in that district: ",
+    stop("Gap(s) from a hazard part with no slot in that district: ",
          paste(sprintf("%s gap %s (%s)", stray$cdta2020, stray$gap_id,
-                       stray$hazard_slug), collapse = ", "))
+                       stray$key), collapse = ", "))
   }
-  misranked <- chk |> filter(!hazard_slug %in% GAP_PSEUDO_HAZARDS,
-                             is.na(fallback_from), risk_rank != rank)
-  if (nrow(misranked) > 0) {
-    stop("Gap(s) whose risk_rank is not their hazard's rank in the district: ",
-         paste(sprintf("%s gap %s", misranked$cdta2020, misranked$gap_id),
+  misplaced <- own |> filter(slot != slot_pos | risk_rank != slot_rank)
+  if (nrow(misplaced) > 0) {
+    stop("Gap(s) not at their slot's position and rank: ",
+         paste(sprintf("%s gap %s", misplaced$cdta2020, misplaced$gap_id),
                collapse = ", "))
   }
 
   # A cross-cutting gap is in one of exactly two positions, and the presence
-  # of fallback_from says which. With it: standing in for a ranked hazard of
-  # this district that drew no gap of its own, at that hazard's rank. Without
-  # it: in a slot after the district's last ranked hazard. Anything else is a
-  # sentence placed where nothing put it.
+  # of fallback_from says which. With it: standing in for a slot of this
+  # district that drew no gap of its own, at that slot's position and rank.
+  # Without it: after the district's last slot. Anything else is a sentence
+  # placed where nothing put it.
   cc <- chk |> filter(hazard_slug %in% GAP_PSEUDO_HAZARDS)
-  stand_in <- cc |> filter(!is.na(fallback_from)) |>
-    left_join(rename(ranked_here, fallback_rank = rank),
-              by = c("cdta2020", "fallback_from" = "slug"))
-  own <- sel |> distinct(cdta2020, hazard_slug)
+  stand_in <- cc |>
+    filter(!is.na(fallback_from)) |>
+    mutate(fb_key = key(fallback_from, fallback_part)) |>
+    left_join(rename(slot_tbl, fb_key = key, fb_pos = slot_pos, fb_rank = slot_rank),
+              by = c("cdta2020", "fb_key"))
+  own_keys <- paste(own$cdta2020, own$key)
   bad_stand_in <- stand_in |>
-    filter(is.na(fallback_rank) | risk_rank != fallback_rank |
-             paste(cdta2020, fallback_from) %in% paste(own$cdta2020, own$hazard_slug))
+    filter(is.na(fb_pos) | slot != fb_pos | risk_rank != fb_rank |
+             paste(cdta2020, fb_key) %in% own_keys)
   bad_slot <- cc |> filter(is.na(fallback_from),
-                           risk_rank <= n_ranked | risk_rank > n_target)
+                           slot <= n_slots | slot > n_target | risk_rank != slot)
   if (nrow(bad_stand_in) + nrow(bad_slot) > 0) {
     stop("Cross-cutting gap(s) in no legitimate slot: ",
-         paste(sprintf("%s gap %s (risk_rank %s, fallback_from %s)",
+         paste(sprintf("%s gap %s (slot %s, fallback_from %s)",
                        c(bad_stand_in$cdta2020, bad_slot$cdta2020),
                        c(bad_stand_in$gap_id, bad_slot$gap_id),
-                       c(bad_stand_in$risk_rank, bad_slot$risk_rank),
+                       c(bad_stand_in$slot, bad_slot$slot),
                        c(bad_stand_in$fallback_from, bad_slot$fallback_from)),
                collapse = ", "))
   }
 
-  # A district must never show the same indicator twice.
+  # A district must never show the same indicator twice, or fill one slot
+  # twice.
   dupes <- sel |> count(cdta2020, gap_id) |> filter(n > 1)
-  if (nrow(dupes) > 0) {
-    stop("Duplicate gap in one district: ",
-         paste(dupes$cdta2020, collapse = ", "))
+  dup_slots <- sel |> count(cdta2020, slot) |> filter(n > 1)
+  if (nrow(dupes) + nrow(dup_slots) > 0) {
+    stop("Duplicate gap or slot in one district: ",
+         paste(unique(c(dupes$cdta2020, dup_slots$cdta2020)), collapse = ", "))
   }
   TRUE
 }

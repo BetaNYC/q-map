@@ -16,21 +16,26 @@
    * thing. A hazard section whose title is absent is not this component — the
    * route renders those unwrapped, which is what the Extreme Heat frame draws.
    *
-   * The heading level is fixed at h2: both screens have exactly one h1 (the
-   * district name, the hazard label) and these sit directly under it. A
-   * `level` prop would invite a caller to produce a heading order that skips.
+   * The heading level is h2 by default: every screen has exactly one h1 (the
+   * district name, the hazard label) and these sit directly under it.
+   *
+   * `level` admits 3 and nothing else (2026-10-26). A hazard with parts puts an
+   * h2 part heading between the h1 and its sections, so those sections are
+   * h3. Typed as 2 | 3 rather than a number, so a caller cannot skip a level.
+   * The visual style does not change with the level.
    */
 
   interface Props {
     title: string;
+    level?: 2 | 3;
     children: Snippet;
   }
 
-  let { title, children }: Props = $props();
+  let { title, level = 2, children }: Props = $props();
 </script>
 
 <section class="section">
-  <h2 class="title">{title}</h2>
+  <svelte:element this={`h${level}`} class="title">{title}</svelte:element>
   {@render children()}
 </section>
 

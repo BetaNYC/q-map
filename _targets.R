@@ -318,7 +318,11 @@ list(
       registry_ids = map_layer_registry$layer_id,
       available_ids = map_layer_registry$layer_id[
         map_layer_registry$status == "available"]
-    )
+    ) &&
+      # The model and the content describe the same nine hazards by the same
+      # labels, and the model's scored parts exist as authored parts.
+      validate_hazard_labels(hazard_content) &&
+      validate_hazard_parts(hazard_content)
   ),
 
   ## Per-district hazard overrides -------------------------------------------
@@ -453,7 +457,8 @@ list(
     validate_gap_registry(
       gap_registry,
       ranked_slugs = HAZARD_PRIORITY,
-      pinned_slugs = HAZARD_PINNED
+      pinned_slugs = HAZARD_PINNED,
+      ranked_parts = CATEGORY_PARTS
     ) &&
       validate_registry_freshness(gap_registry, blocker_facts_now,
                                   "resource_gaps.csv", id_col = "gap_id")
@@ -519,9 +524,11 @@ list(
   # invisible to validate_gap_registry() because the config is well-formed.
   tar_target(gap_values_checks, validate_gap_values(gap_values, cdta_crosswalk)),
 
-  tar_target(gap_selection, select_district_gaps(gap_values, hazards, cdta_crosswalk)),
+  # One slot per measured part of a ranked category (2026-10-26).
+  tar_target(gap_slots, district_gap_slots(hazards, hazard_measures)),
+  tar_target(gap_selection, select_district_gaps(gap_values, gap_slots, cdta_crosswalk)),
 
-  tar_target(gap_selection_checks, validate_gap_selection(gap_selection, hazards, cdta_crosswalk)),
+  tar_target(gap_selection_checks, validate_gap_selection(gap_selection, gap_slots, cdta_crosswalk)),
 
   tar_target(
     gap_matrix_paths,

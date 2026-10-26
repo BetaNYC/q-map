@@ -42,15 +42,16 @@ export interface DistrictPayload {
   coad: string | null;
   /** Present in 1 of 14, in exactly the same district as `coad`. */
   coad_name: string | null;
-  /** Always 8, already ordered. Positions 1-3 ranked, 4-8 pinned. */
+  /** Always 9, already ordered. Positions 1-2 ranked, 3-9 pinned. */
   hazards: Hazard[];
   /** Derived per district — do not hardcode a global list. */
   resource_categories: ResourceCategory[];
-  /** Up to 3, one per ranked hazard. */
+  /** Exactly 3: one per measured part of a ranked category, then
+   *  cross-cutting. Already in display order. */
   gaps_displayed: DisplayedGap[];
   /** Hazard slugs with a district-specific file. Fetch the override INSTEAD of
    *  the base for these — the emitted override is already self-contained.
-   *  Only q14/coastal-storm today. */
+   *  Empty in every district today. */
   hazard_overrides: string[];
 }
 
@@ -73,11 +74,17 @@ export interface DisplayedGap {
   sentence_template: string;
   /** Keys vary by gap — interpolate by name, never a fixed set. */
   facts: Record<string, string | number>;
-  /** The rank of the hazard this gap measures. Always 1-3. */
+  /** The part of `hazard_slug` measured (heavy-rain, coastal-storm,
+   *  extreme-heat). Absent on cross-cutting. */
+  part?: string;
+  /** The rank of the category this gap measures; both Flooding gaps carry
+   *  1. On cross-cutting, the position it fills. Order by the array. */
   risk_rank: number;
-  /** Only on a cross-cutting gap filling a ranked hazard's empty slot.
+  /** Only on a cross-cutting gap filling a slot that had nothing to report.
    *  Absent on all 42 sentences today. */
   fallback_from?: string;
+  /** With `fallback_from`, where that hazard has parts. */
+  fallback_part?: string;
 }
 
 /**
@@ -181,7 +188,8 @@ export interface HazardPart {
 export interface HazardContent {
   slug: string;
   label: string;
-  jra_category: string;
+  /** Absent on air-quality, which the JRA does not list. */
+  jra_category?: string;
   /** `"stub"` on 6 of 8. ABSENT on the two authored ones — test for absence,
    *  not for `status === 'stub'`. */
   status?: string;
@@ -214,7 +222,7 @@ export interface ResourceCategory {
  * DATA_CONTRACT.md §3, `hazards[]`.
  *
  * `score` and `reason` are mutually exclusive and `ranked` is the discriminant:
- * 42 of 112 entries carry `score`, the other 70 carry `reason`. Verified across
+ * 28 of 126 entries carry `score`, the other 98 carry `reason`. Verified across
  * all 14 payloads — no entry carries both, and none carries neither.
  */
 export interface Hazard {
@@ -222,12 +230,22 @@ export interface Hazard {
   label: string;
   /** 1-8. Authoritative — never re-sort on `score`. */
   rank: number;
-  /** true for positions 1-3. */
+  /** true for positions 1-2. */
   ranked: boolean;
-  /** Ranked only. Integer 0-5 on one shared scale. */
+  /** Ranked only. Integer 1-5: the max of `part_scores`. */
   score?: number;
+  /** Ranked only. One per measured part; Temperature Extremes has one. */
+  part_scores?: PartScore[];
   /** Pinned only. Why this hazard is pinned rather than ranked. */
   reason?: string;
+}
+
+/** DATA_CONTRACT.md §3, `hazards[].part_scores[]`. */
+export interface PartScore {
+  /** The part id in the hazard's content file — the page anchor. */
+  part: string;
+  /** 0-5. A part can score 0 (coastal storm, no exposed tract). */
+  score: number;
 }
 
 /**
