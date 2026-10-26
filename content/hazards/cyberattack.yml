@@ -1,0 +1,52 @@
+# Cyberattack
+# Authored content: the pipeline validates and copies it to
+# data/processed/hazards/cyberattack.json.
+#
+# From the SME partners' final "Core Readiness Messages by Threat"
+# (test/Core Readiness Messages by Threat.pdf, delivered 2026-10-26), using
+# the mapping documented in flooding.yml. Split from Utility Interruption.
+#
+# One core action and no 911 line, as in the PDF. The thin page is accepted
+# (Andrew, 2026-10-26).
+
+slug: cyberattack
+label: Cyberattack
+jra_category: cyberattack
+
+summary: >
+  A cyberattack uses digital tools to steal information or disrupt devices
+  and services.
+
+sections:
+  - id: core-actions
+    title: Core actions
+    items:
+      - label: Use unique passwords, extra sign-in verification, and updates
+        note: true
+        body: Avoid unexpected links; contact your bank promptly if money is stolen.
+
+  - id: preparedness
+    title: Get Ready
+    items:
+      - label: Protect accounts and devices
+        link_label: NYC Emergency Management
+        url: https://www.nyc.gov/site/em/ready/cybersecurity.page
+        body: Passwords, updates, scams, and basic cybersecurity steps.
+      - label: Get the free NYC Secure phone app
+        link_label: NYC Cyber Command
+        url: https://secure.nyc/
+        body: >
+          Alerts about some device, app, and Wi-Fi risks. An extra tool
+          alongside good account security.
+
+  - id: response
+    title: When Something Happens
+    items:
+      - label: Report an internet or technology complaint
+        link_label: New York Attorney General
+        url: https://ag.ny.gov/file-complaint
+        body: >
+          Complaints about scams, apps, and technology. If money is stolen,
+          also contact your bank immediately.
+
+map_layers: []

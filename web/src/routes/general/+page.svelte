@@ -10,7 +10,7 @@
 </script>
 
 <svelte:head>
-  <title>{content.label} | Queens Resource Map</title>
+  <title>{content.label} | Queens Readiness Resources</title>
   <meta
     name="description"
     content="Steps that help in any emergency, and where to get help in New York City."
@@ -27,7 +27,7 @@
   <FrozenHead>
     <PageHeader
       title={content.label}
-      back={{ href: '/', label: 'Back', name: 'Back to Queens Resource Map' }}
+      back={{ href: '/', label: 'Back', name: 'Back to Queens Readiness Resources' }}
     />
 
     <HorizontalRule />

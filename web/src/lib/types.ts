@@ -166,6 +166,18 @@ export interface PageContent {
   sections: HazardSection[];
 }
 
+/**
+ * DATA_CONTRACT.md §6, `parts[]` — a sub-hazard (Flooding: Heavy Rain, Coastal
+ * Storm). Section ids repeat across parts, so key on `id` + section id.
+ */
+export interface HazardPart {
+  /** Stable: a URL anchor and the gap registry's `part` value. */
+  id: string;
+  label: string;
+  summary?: string;
+  sections: HazardSection[];
+}
+
 export interface HazardContent {
   slug: string;
   label: string;
@@ -173,9 +185,13 @@ export interface HazardContent {
   /** `"stub"` on 6 of 8. ABSENT on the two authored ones — test for absence,
    *  not for `status === 'stub'`. */
   status?: string;
-  /** Optional since 2026-09-23 — neither authored screen renders one. */
+  /** Absent on a hazard with parts — each part carries its own. */
   summary?: string;
+  /** Always present. Empty exactly when `parts` is not. */
   sections: HazardSection[];
+  /** Always present. Empty exactly when `sections` is not. Render these when
+   *  non-empty, otherwise `sections`. */
+  parts: HazardPart[];
   default_resource_categories: string[];
   map_layers: string[];
 }

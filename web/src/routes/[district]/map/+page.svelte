@@ -287,7 +287,7 @@
   <!-- The hazard name when the link carried one, the district otherwise. The
        prerendered title is the district form, because `?hazard=` is read in
        the browser (§5) — it updates on hydration. -->
-  <title>{hazard ? `${hazard.label} in ${data.district.display_name}` : `${data.district.display_name} map`} | Queens Resource Map</title>
+  <title>{hazard ? `${hazard.label} in ${data.district.display_name}` : `${data.district.display_name} map`} | Queens Readiness Resources</title>
 </svelte:head>
 
 <!-- §3: the map screen is a stage with a bottom sheet — the map fills the

@@ -1,13 +1,21 @@
-# Hazmat / Chemical
-# Authored content: the pipeline validates and copies content below
+# Hazmat Release
+# Authored content: the pipeline validates and copies it to
+# data/processed/hazards/hazmat.json.
 #
-# Rewritten 2026-10-14 from the SME-reviewed "Core Readiness Messages by
-# Threat" (test/Core Readiness Messages by Threat.pdf, reviewed 8 October
-# 2026), using the mapping documented in heavy-rain.yml. Its "Suggested first
-# links" are "Start here"; its "Additional candidate links" are "More help".
+# From the SME partners' final "Core Readiness Messages by Threat"
+# (test/Core Readiness Messages by Threat.pdf, delivered 2026-10-26), using
+# the mapping documented in flooding.yml. The slug predates the split from
+# Chemical Threats and is kept so existing links still resolve.
+#
+# Copy edits against the PDF, confirmed by Andrew 2026-10-26:
+#   - "Know when to leave or stay inside" has no source in the PDF; it is the
+#     same NYC Emergency Management page the General page links.
+#
+# "Call NYC Poison Control" names no source in the PDF. Its link is a NYC311
+# article, so `link_label` is NYC311, as for every other 311 link.
 
 slug: hazmat
-label: Hazmat / Chemical
+label: Hazmat Release
 jra_category: hazardous-materials-release
 
 summary: >
@@ -24,77 +32,58 @@ sections:
       - label: Follow official instructions to leave or stay inside
         note: true
         body: >
-          For an outdoor release, officials may tell you to close
-          windows and ventilation.
-      - label: Store household chemicals safely and never mix cleaners
-        note: true
-        body: Call Poison Control right away after a possible exposure.
-      - label: Trouble breathing, collapse, a gas smell, or an active dangerous release?
+          For an outdoor release, officials may tell you to close windows and
+          ventilation.
+      - label: >
+          Trouble breathing, collapse, a gas smell, or an active dangerous
+          release?
         note: true
         body: Move to safety and call 911.
 
-  - id: start-here
-    title: Start here
+  - id: preparedness
+    title: Get Ready
     items:
-      - label: Call NYC Poison Control
-        link_label: NYC Poison Control
-        url: https://portal.311.nyc.gov/article/?kanumber=KA-01888
-        body: >
-          Free, confidential advice for a possible exposure. Call
-          212-764-7667 immediately; do not wait for symptoms. 24/7
-          phone interpreters in 150 languages.
       - label: Follow chemical spill safety guidance
         link_label: NYC Emergency Management
         url: https://www.nyc.gov/site/em/ready/hazardous-materials-chemical-spills-radiation.page
         body: >
-          Moving away, sheltering, and following official instructions
-          during a hazardous release.
+          Moving away, sheltering, and following official instructions during
+          a hazardous release.
       - label: Get local emergency alerts
         link_label: Notify NYC
         url: https://a858-nycnotify.nyc.gov/notifynyc/
         body: >
-          Free alerts by app, text, email, or phone. Select basement
-          alerts if needed. Multilingual alerts and ASL videos.
-
-  - id: more-help
-    title: More help
-    items:
+          Free alerts by app, text, email, or phone. Select basement alerts if
+          needed. Multilingual alerts and ASL videos.
       - label: Know when to leave or stay inside
         link_label: NYC Emergency Management
         url: https://www.nyc.gov/site/em/ready/get-prepared.page
         body: >
-          Evacuation and shelter-in-place guidance. Follow
-          instructions for the specific emergency.
-      - label: Contact National Grid for a gas emergency
+          Evacuation and shelter-in-place guidance. Follow instructions for
+          the specific emergency.
+
+  - id: response
+    title: When Something Happens
+    items:
+      - label: Call NYC Poison Control
+        link_label: NYC311
+        url: https://portal.311.nyc.gov/article/?kanumber=KA-01888
+        body: >
+          Free, confidential advice for a possible exposure. Call
+          212-764-7667 immediately; do not wait for symptoms. 24/7 phone
+          interpreters in 150 languages.
+      - label: Report a gas emergency
         link_label: National Grid
         url: https://www.nationalgridus.com/NY-Home/Contact-Us/
         body: >
-          Gas service in most of Queens: 718-643-4050. For a gas
-          smell, leave first and call 911 from outside.
-      - label: Contact National Grid for Rockaways gas service
-        link_label: National Grid
+          Gas service in most of Queens: 718-643-4050. For a gas smell, leave
+          first and call 911 from outside.
+      - label: Report a gas emergency in the Rockaways
+        link_label: National Grid Long Island
         url: https://www.nationalgridus.com/Long-Island-NY-Home/Contact-Us/
         body: >
-          Rockaways gas emergency number: 800-490-0045. National Grid
-          supplies gas, not electricity; leave and call 911 for a gas
-          smell.
-      - label: Prevent carbon monoxide poisoning
-        link_label: NYC Health
-        url: https://www.nyc.gov/site/doh/health/health-topics/carbon-monoxide.page
-        body: >
-          Alarm and fuel-burning appliance safety. If an alarm sounds
-          or poisoning is suspected, leave and call 911.
-      - label: Find a safe household waste disposal event
-        link_label: NYC Sanitation SAFE events
-        url: https://www.nyc.gov/site/dsny/what-we-do/programs/safe-disposal-events.page
-        body: >
-          Dispose of accepted chemicals and other harmful household
-          products. Check dates and residency requirements.
-      - label: Find a household special waste drop-off site
-        link_label: NYC Sanitation
-        url: https://www.nyc.gov/site/dsny/what-we-do/programs/special-waste-drop-off.page
-        body: >
-          Accepted products, Queens site, and current hours. Routine
-          disposal service; not for an active spill.
+          Gas service in the Rockaways: 800-490-0045. National Grid supplies
+          gas, not electricity. For a gas smell, leave first and call 911
+          from outside.
 
 map_layers: []

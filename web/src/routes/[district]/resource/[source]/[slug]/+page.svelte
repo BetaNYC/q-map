@@ -40,7 +40,7 @@
 </script>
 
 <svelte:head>
-  <title>{data.resource.name} | {data.district.display_name} | Queens Resource Map</title>
+  <title>{data.resource.name} | {data.district.display_name} | Queens Readiness Resources</title>
 </svelte:head>
 
 <!-- Screen 05. Figma: "05 Resource Detail - Mobile", node 186:1071 - About,

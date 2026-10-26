@@ -2,7 +2,7 @@
   import { base } from '$app/paths';
 
   /**
-   * "Queens Resource Map" on every page. Figma: `SiteHeader`, node 229:956.
+   * "Queens Readiness Resources" on every page. Figma: `SiteHeader`, node 229:956.
    *
    * Full width on phones; the top of the 390px sidebar on desktop, so the
    * docked map keeps its full height (it lives in the root layout's first
@@ -27,9 +27,9 @@
 
 <header class="site">
   {#if isHome}
-    <h1 class="name">Queens Resource Map</h1>
+    <h1 class="name">Queens Readiness Resources</h1>
   {:else}
-    <a class="name" href="{base}/">Queens Resource Map</a>
+    <a class="name" href="{base}/">Queens Readiness Resources</a>
   {/if}
 </header>
 

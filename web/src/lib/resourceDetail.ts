@@ -138,7 +138,7 @@ export function listingNote(r: Resource): string {
   const sources: Record<string, string> = {
     qnpd: 'the Queens Nonprofit Directory',
     franc: 'the FRANC resource map',
-    manual: 'the Queens Resource Map team'
+    manual: 'the Queens Readiness Resources team'
   };
   const source = sources[r.source];
   const call = r.phone ? ' Call to confirm details.' : '';

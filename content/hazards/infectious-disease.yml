@@ -1,14 +1,20 @@
-# Infectious Disease
-# Authored content: the pipeline validates and copies content below
+# Infectious Disease Outbreak
+# Authored content: the pipeline validates and copies it to
+# data/processed/hazards/infectious-disease.json.
 #
-# Rewritten 2026-10-14 from the SME-reviewed "Core Readiness Messages by
-# Threat" (test/Core Readiness Messages by Threat.pdf, reviewed 8 October
-# 2026), using the mapping documented in heavy-rain.yml. Its "Suggested first
-# links" are "Start here"; its "Additional candidate links" are "More help".
+# From the SME partners' final "Core Readiness Messages by Threat"
+# (test/Core Readiness Messages by Threat.pdf, delivered 2026-10-26), using
+# the mapping documented in flooding.yml.
+#
+# `current-conditions` is not in the PDF. It is the data-backed respiratory
+# illness readout (conditions.json), kept by Andrew's decision 2026-10-26,
+# in the position it held before: after the core actions.
 
 slug: infectious-disease
-label: Infectious Disease
-jra_category: pandemic
+label: Infectious Disease Outbreak
+# The JRA ranks pandemic (3rd) and infectious disease outbreak (4th)
+# separately. This page covers both; its key is the category's own name.
+jra_category: infectious-disease-outbreak
 
 summary: >
   Infectious diseases are illnesses caused by germs, such as viruses or
@@ -24,8 +30,8 @@ sections:
       - label: Stay home when sick and wash hands often
         note: true
         body: >
-          For respiratory illness, use a well-fitting mask around
-          others and improve airflow when safe.
+          For respiratory illness, use a well-fitting mask around others and
+          improve airflow when safe.
       - label: >
           Ask a healthcare provider early about testing and treatment,
           especially if you have a higher risk of serious illness
@@ -37,32 +43,50 @@ sections:
   - id: current-conditions
     title: Respiratory illness in New York City right now
 
-  - id: start-here
-    title: Start here
+  - id: preparedness
+    title: Get Ready
     items:
       - label: Prevent and treat respiratory infections
         link_label: NYC Health
         url: https://www.nyc.gov/site/doh/health/health-topics/respiratory-illnesses.page
         body: >
-          Current advice on COVID-19, flu, and RSV, including
-          vaccines, masks, and treatment. Translated factsheets.
+          Current advice on COVID-19, flu, and RSV, including vaccines, masks,
+          and treatment. Translated factsheets.
       - label: Find vaccines near you
         link_label: NYC Health Map
         url: https://a816-health.nyc.gov/NYCHealthMap/ServiceCategory/Vaccines
         body: >
           Search vaccine services. Confirm vaccine availability, age
           eligibility, cost, and hours with the provider.
+      - label: Get healthcare if you are uninsured
+        link_label: NYC Care
+        url: https://www.nyccare.nyc/enroll/
+        body: >
+          Affordable care through NYC Health + Hospitals for eligible NYC
+          residents. Call 646-692-2273; immigration status is no barrier.
+          Interpreters and translated materials.
+      - label: Learn about time off when you are sick
+        link_label: NYC DCWP
+        url: https://www.nyc.gov/site/dca/workers/workersrights/paid-sick-leave-law-for-workers.page
+        body: >
+          Protected time off for covered workers, including illness. Check
+          current rules and reporting options. Translated worker materials.
+
+  - id: response
+    title: When Something Happens
+    items:
       - label: Talk to an urgent care clinician remotely
         link_label: NYC Health + Hospitals Virtual ExpressCare
         url: https://www.nychealthandhospitals.org/get-care/getting-healthcare-from-home/
         body: >
-          24/7 phone or video care. Call 631-397-2273; financial
-          assistance is available. Phone and video language
-          assistance.
-
-  - id: more-help
-    title: More help
-    items:
+          24/7 phone or video care. Call 631-397-2273; financial assistance is
+          available. Phone and video language assistance.
+      - label: Find a City hospital or health center
+        link_label: NYC Health + Hospitals
+        url: https://www.nychealthandhospitals.org/get-care/
+        body: >
+          Care locations, appointments, and financial assistance for insured
+          and uninsured patients. Includes Elmhurst and Queens hospitals.
       - label: Look up a disease and how it spreads
         link_label: New York State Health Department
         url: https://www.health.ny.gov/diseases/communicable/
@@ -73,51 +97,14 @@ sections:
         link_label: NYC Health
         url: https://www.nyc.gov/site/doh/services/allclinics.page
         body: >
-          Immunization, sexual health, and tuberculosis services,
-          regardless of immigration status. Services and charges vary
-          by clinic.
-      - label: Get healthcare if you are uninsured
-        link_label: NYC Care
-        url: https://www.nyccare.nyc/enroll/
-        body: >
-          Affordable care through NYC Health + Hospitals for eligible
-          NYC residents. Call 646-692-2273; immigration status is no
-          barrier. Interpreters and translated materials.
-      - label: Find community healthcare in Flushing
-        link_label: Charles B. Wang Community Health Center
-        url: https://www.cbwchc.org/for-patients
-        body: >
-          Primary and preventive care, insurance help, and discounts
-          based on income. Multilingual staff; confirm your language
-          when booking.
-      - label: Find community healthcare in southeast Queens
-        link_label: Joseph P. Addabbo Family Health Center
-        url: https://www.addabbo.org/
-        body: >
-          Primary and preventive care in Jamaica, Arverne, and Far
-          Rockaway. Ask about costs and language help.
+          Immunization, sexual health, and tuberculosis services, regardless
+          of immigration status. Services and charges vary by clinic.
       - label: Check emergency medicine distribution information
         link_label: NYC Health
         url: https://www.nyc.gov/site/doh/health/emergency-preparedness/emergency-medication-distribution.page
         body: >
-          Medicine or vaccines at temporary POD sites only when
-          activated. Follow official locations; PODs do not treat
-          people already sick.
-      - label: Learn about time off when you are sick
-        link_label: NYC DCWP
-        url: https://www.nyc.gov/site/dca/workers/workersrights/paid-sick-leave-law-for-workers.page
-        body: >
-          Protected time off for covered workers, including illness.
-          Check current rules and reporting options. Translated worker
-          materials.
-      - label: Korean Community Services health navigation
-        link_label: Korean Community Services
-        url: https://www.kcsny.org/phrc
-        body: >
-          Bayside-based nonprofit: health coverage, education, and
-          care connections. Call 718-939-6137. Language support for
-          Korean and Asian American communities; confirm your
-          language.
+          Medicine or vaccines at temporary POD sites only when activated.
+          Follow official locations; PODs do not treat people already sick.
 
 map_layers:
   - pivi_choropleth

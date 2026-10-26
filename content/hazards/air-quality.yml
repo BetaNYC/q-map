@@ -1,0 +1,95 @@
+# Air Quality
+# Authored content: the pipeline validates and copies it to
+# data/processed/hazards/air-quality.json.
+#
+# From the SME partners' final "Core Readiness Messages by Threat"
+# (test/Core Readiness Messages by Threat.pdf, delivered 2026-10-26), using
+# the mapping documented in flooding.yml. New with that document.
+#
+# Copy edits against the PDF, confirmed by Andrew 2026-10-26:
+#   - "Know when to leave or stay inside" has no source in the PDF; it is the
+#     same NYC Emergency Management page the General page links.
+
+slug: air-quality
+label: Air Quality
+# No `jra_category`: air quality is not one of the JRA's ten hazards.
+
+summary: >
+  Poor air quality happens when smoke, pollution, or fumes build up outdoors
+  or indoors. It can make breathing harder, especially for children, older
+  adults, and people with heart or lung conditions.
+
+sections:
+  - id: core-actions
+    title: Core actions
+    items:
+      - label: Follow local alerts
+        note: true
+        body: >
+          When the Air Quality Index (AQI) is above 100, limit time and hard
+          activity outdoors, especially if you have a higher risk.
+      - label: Keep windows closed when outdoor air is unhealthy
+        note: true
+        body: A well-fitting N95 or KN95 mask can help if you must be outside.
+      - label: Install carbon monoxide alarms
+        note: true
+        body: Never run a generator indoors or use a stove for heat.
+      - label: Trouble breathing, chest pain, or a carbon monoxide alarm sounding?
+        note: true
+        body: Move to fresh air and call 911.
+
+  - id: preparedness
+    title: Get Ready
+    items:
+      - label: Prepare for poor air quality days
+        link_label: NYC Emergency Management
+        url: https://www.nyc.gov/site/em/ready/be-ready-new-york.page
+        body: AQI levels, clean-air spaces, air filters and purifiers, and masks.
+      - label: Learn how air pollution affects health
+        link_label: NYC Health
+        url: https://www.nyc.gov/site/doh/health/health-topics/air-quality-air-pollution-protection.page
+        body: >
+          Common pollutants, who is most at risk, and ways to reduce
+          exposure.
+      - label: Prevent carbon monoxide poisoning
+        link_label: NYC Health
+        url: https://www.nyc.gov/site/doh/health/health-topics/carbon-monoxide.page
+        body: >
+          Alarm and fuel-burning appliance safety. If an alarm sounds or
+          poisoning is suspected, leave and call 911.
+
+  - id: response
+    title: When Something Happens
+    items:
+      - label: Check current air quality
+        link_label: AirNow
+        url: https://www.airnow.gov/
+        body: >
+          From the U.S. EPA: current AQI and forecast for your location.
+          Spanish resources available.
+      - label: Check the New York State air quality forecast
+        link_label: NYS DEC
+        url: https://appfactory.dec.ny.gov/AQI/
+        body: >
+          Daily forecast and Air Quality Health Advisories. Air Quality
+          Hotline: 800-535-1345.
+      - label: Protect yourself from smoke and high ozone
+        link_label: NYC Health
+        url: https://www.nyc.gov/site/doh/health/health-topics/air-quality-fire-smoke-and-effect-on-air-quality.page
+        body: >
+          What to do at each AQI level, masks, and portable air cleaners.
+          Translated AQI and mask guidance.
+      - label: Report an indoor air quality problem
+        link_label: NYC311
+        url: https://portal.311.nyc.gov/article/?kanumber=KA-01886
+        body: >
+          Dust, chemical odors, soot, or poor ventilation in your building.
+          Anonymous reports accepted for most issues.
+      - label: Know when to leave or stay inside
+        link_label: NYC Emergency Management
+        url: https://www.nyc.gov/site/em/ready/get-prepared.page
+        body: >
+          Evacuation and shelter-in-place guidance. Follow instructions for
+          the specific emergency.
+
+map_layers: []

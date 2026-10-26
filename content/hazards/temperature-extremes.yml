@@ -1,0 +1,206 @@
+# Temperature Extremes
+# Authored content: the pipeline validates and copies it to
+# data/processed/hazards/temperature-extremes.json.
+#
+# From the SME partners' final "Core Readiness Messages by Threat"
+# (test/Core Readiness Messages by Threat.pdf, delivered 2026-10-26), using
+# the mapping documented in flooding.yml.
+#
+# Where the source names a program and its agency ("HEAP through HRA"), both
+# stay in `link_label`.
+
+slug: temperature-extremes
+label: Temperature Extremes
+jra_category: temperature-extremes
+
+parts:
+  - id: extreme-heat
+    label: Extreme Heat
+    summary: >
+      Extreme heat is weather hot enough to strain your body. Humidity can
+      make it harder to cool down, even indoors.
+    sections:
+      - id: core-actions
+        title: Core actions
+        items:
+          - label: Use air conditioning or spend time in an air-conditioned place
+            note: true
+            body: Fans alone may not keep you safe during extreme heat.
+          - label: Drink water regularly and take breaks from activity
+            note: true
+            body: Check on people living alone or without cooling.
+          - label: Never leave anyone or a pet in a parked car
+            note: true
+            body: Plan now for cooling and help with energy costs.
+          - label: Confusion, fainting, or trouble breathing in the heat?
+            note: true
+            body: Call 911 and start cooling the person.
+
+      - id: preparedness
+        title: Get Ready
+        items:
+          - label: Find an air-conditioned place nearby
+            link_label: NYC Cool Options
+            url: https://finder.nyc.gov/coolingcenters/locations
+            body: >
+              Cooling centers and other places to cool down. Check activation,
+              hours, accessibility, and any entry costs.
+          - label: Learn how to stay safe in hot weather
+            link_label: NYC Health
+            url: https://www.nyc.gov/site/doh/health/emergency-preparedness/emergencies-extreme-weather-heat.page
+            body: >
+              Indoor cooling, heat illness, and checking on people who need
+              support. Translated heat safety materials.
+          - label: Check help buying an air conditioner
+            link_label: HEAP Cooling Assistance through HRA
+            url: https://access.nyc.gov/programs/cooling-assistance-benefit/
+            body: >
+              Equipment and installation for eligible households. Seasonal;
+              2026 applications are closed.
+          - label: Check help buying an air conditioner (for Essential Plan members)
+            link_label: Essential Plan Cooling Program
+            url: https://portal.311.nyc.gov/article/?kanumber=KA-03679
+            body: >
+              An air conditioner for eligible members with qualifying health
+              needs.
+          - label: Ask Con Edison about bill assistance
+            link_label: Con Edison
+            url: https://www.coned.com/en/accounts-billing/payment-plans-assistance/help-paying-your-bill
+            body: >
+              Discounts and payment assistance for eligible customers in most
+              of Queens.
+          - label: Ask PSEG Long Island about bill assistance
+            link_label: PSEG Long Island
+            url: https://www.psegliny.com/myaccount/customersupport/financialassistance
+            body: >
+              Payment and financial assistance for eligible customers in the
+              Rockaways.
+
+      - id: response
+        title: When Something Happens
+        items:
+          - label: Find outdoor water and shade
+            link_label: NYC Parks Cool It NYC
+            url: https://portal.311.nyc.gov/article/?kanumber=KA-03323
+            body: >
+              Spray showers, fountains, and shaded spaces. Air conditioning
+              offers stronger protection during extreme heat.
+          - label: Find your Queens library
+            link_label: Queens Public Library
+            url: https://queenslibrary.org/about-us/locations
+            body: >
+              Local branches, internet access, and community information.
+              Check current hours and closures before going.
+          - label: Learn about time off when you are sick
+            link_label: NYC DCWP
+            url: https://www.nyc.gov/site/dca/workers/workersrights/paid-sick-leave-law-for-workers.page
+            body: >
+              Protected time off for covered workers, including illness. Check
+              current rules and reporting options. Translated worker
+              materials.
+
+  - id: extreme-cold
+    label: Extreme Cold
+    summary: >
+      Extreme cold is weather cold enough to harm your body. Snow and ice can
+      also make travel and everyday tasks harder.
+    sections:
+      - id: core-actions
+        title: Core actions
+        items:
+          - label: Stay in a heated place
+            note: true
+            body: >
+              Outside, wear warm layers, cover your head and hands, and change
+              out of wet clothes.
+          - label: Use safe heating
+            note: true
+            body: >
+              Never use a stove, oven, or indoor generator for warmth. Keep
+              heaters away from anything that can burn.
+          - label: Check on neighbors
+            note: true
+            body: >
+              Report unresolved heat problems and plan where to go if your
+              home becomes too cold.
+          - label: Confusion, unusual drowsiness, or slow breathing after cold exposure?
+            note: true
+            body: Call 911 and move to warmth.
+
+      - id: preparedness
+        title: Get Ready
+        items:
+          - label: Stay safe in winter weather
+            link_label: NYC Emergency Management
+            url: https://www.nyc.gov/site/em/ready/winter-weather-health-safety.page
+            body: Safe heating, cold weather, snow, and utility interruptions.
+          - label: Recognize cold-related health risks
+            link_label: NYC Health
+            url: https://www.nyc.gov/site/doh/health/emergency-preparedness/emergencies-extreme-weather-cold-weather.page
+            body: >
+              Cold weather safety and ways to support people at greater risk.
+              Translated cold weather materials.
+          - label: Check help paying for heat
+            link_label: HEAP through HRA
+            url: https://access.nyc.gov/programs/home-energy-assistance-program-heap/
+            body: >
+              Heating and emergency assistance for eligible households. Check
+              application periods and funding availability. Translated program
+              information.
+          - label: Request repairs in NYCHA housing
+            link_label: NYCHA Customer Contact Center
+            url: https://www.nyc.gov/site/nycha/residents/customer-contact-center.page
+            body: Heat, hot water, and other repairs. Call 718-707-7771.
+          - label: Find support for an older adult
+            link_label: NYC Aging
+            url: https://www.nyc.gov/site/dfta/services/find-help.page
+            body: >
+              Meals, case management, caregiver help, and local centers. Call
+              Aging Connect at 212-244-6469. Phone language assistance
+              available.
+
+      - id: response
+        title: When Something Happens
+        items:
+          - label: Report missing heat or hot water
+            link_label: NYC311
+            url: https://portal.311.nyc.gov/article/?kanumber=KA-01036
+            body: >
+              Contact your landlord first, then report unresolved problems.
+              NYCHA residents should use NYCHA repair channels.
+          - label: Find snow and severe weather updates
+            link_label: NYC Emergency Management
+            url: https://www.nyc.gov/site/severeweather/index.page
+            body: City notices and service updates. Use Notify NYC for alerts.
+          - label: Request help for someone living outside
+            link_label: NYC311
+            url: https://portal.311.nyc.gov/article/?kanumber=KA-01037
+            body: >
+              Homeless outreach and Code Blue information. Call 911 for
+              immediate medical danger.
+          - label: Ask about emergency financial assistance
+            link_label: HRA One Shot Deal
+            url: https://access.nyc.gov/programs/one-shot-deal/
+            body: >
+              Possible help with an emergency, rent, or utility bills.
+              Eligibility applies; some assistance requires repayment.
+          - label: Prevent carbon monoxide poisoning
+            link_label: NYC Health
+            url: https://www.nyc.gov/site/doh/health/health-topics/carbon-monoxide.page
+            body: >
+              Alarm and fuel-burning appliance safety. If an alarm sounds or
+              poisoning is suspected, leave and call 911.
+          - label: Ask Con Edison about bill assistance
+            link_label: Con Edison
+            url: https://www.coned.com/en/accounts-billing/payment-plans-assistance/help-paying-your-bill
+            body: >
+              Discounts and payment assistance for eligible customers in most
+              of Queens.
+          - label: Ask PSEG Long Island about bill assistance
+            link_label: PSEG Long Island
+            url: https://www.psegliny.com/myaccount/customersupport/financialassistance
+            body: >
+              Payment and financial assistance for eligible customers in the
+              Rockaways.
+
+map_layers: []
