@@ -169,7 +169,18 @@ jobs:
             echo "No change to data/processed"
           else
             git commit -m "chore(pipeline): refresh outputs"
-            git push
+            # record-alerts pushes to main every ~20 minutes, so main can move
+            # while this job runs. A bare push was rejected on 2026-10-26, when
+            # slow runner setup stretched the run to an hour and three alert
+            # commits landed during it. Rebase and retry, as record-alerts
+            # does: this job only writes data/processed and that one only
+            # data/archive/alerts, so the rebase cannot conflict.
+            for attempt in 1 2 3; do
+              git pull --rebase --quiet && git push && exit 0
+              sleep $((attempt * 10))
+            done
+            echo "::error::push failed after 3 attempts"
+            exit 1
           fi
 
       # Hand the freshly built outputs to build-web. Not the Pages artifact -
