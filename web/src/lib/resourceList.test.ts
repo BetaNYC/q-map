@@ -58,7 +58,9 @@ describe('row text', () => {
   });
 
   it('never repeats the category: no FRANC or QNPD row has a second line', () => {
-    const scraped = resources.filter((r) => r.source !== 'facdb');
+    // Named, not "everything but facdb": qpl rows carry an operator and are
+    // meant to show it ("Astoria" over "Queens Public Library").
+    const scraped = resources.filter((r) => r.source === 'franc' || r.source === 'qnpd');
     expect(scraped.length).toBeGreaterThan(0);
     expect(scraped.every((r) => listSubtitle(r) === null)).toBe(true);
   });

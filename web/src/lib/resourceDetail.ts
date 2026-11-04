@@ -114,7 +114,10 @@ export function groupsFor(r: Resource): Group[] {
         r.phone ? field('Phone', split(r.phone).map((p) => ({ text: p, href: phoneHref(p) ?? undefined }))) : null,
         field('Contact', [text(r.contact_name)]),
         r.email ? field('Email', split(r.email).filter((e) => e.includes('@')).map((e) => ({ text: e, href: `mailto:${e}` }))) : null,
-        r.website ? field('Website', [websiteLine(r.website)]) : null
+        r.website ? field('Website', [websiteLine(r.website)]) : null,
+        // QPL publishes hours on each branch's page, not as data. Link text is
+        // placeholder copy for Andrew.
+        r.hours_url ? field('Hours', [{ text: 'See hours on queenslibrary.org', href: r.hours_url, external: true }]) : null
       ]
     },
     {
@@ -138,6 +141,7 @@ export function listingNote(r: Resource): string {
   const sources: Record<string, string> = {
     qnpd: 'the Queens Nonprofit Directory',
     franc: 'the FRANC resource map',
+    qpl: 'Queens Public Library',
     manual: 'the Queens Readiness Resources team'
   };
   const source = sources[r.source];

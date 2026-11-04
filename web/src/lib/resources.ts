@@ -97,7 +97,8 @@ export function plainText(value: string): string {
 const SOURCE_LABELS: Record<string, string> = {
   facdb: 'DCP Facilities Database',
   qnpd: 'Queens Nonprofit Directory',
-  franc: 'FRANC Resource Map'
+  franc: 'FRANC Resource Map',
+  qpl: 'Queens Library Branches'
 };
 
 export function sourceLabel(resource: Pick<Resource, 'source'>): string | null {
