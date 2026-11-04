@@ -11,6 +11,10 @@
 { "type": "Feature", "properties": { "resource_id": "qnpd:gallopnyc", "name": "GallopNYC", "category": "children-and-youth", "source": "qnpd", "is_coad_member": false }, "geometry": { "type": "Point", "coordinates": [ -73.83979, 40.65706 ] } },
 { "type": "Feature", "properties": { "resource_id": "qnpd:harmony-4-all-inc--1", "name": "Harmony 4 All, Inc.", "category": "children-and-youth", "source": "qnpd", "is_coad_member": false }, "geometry": { "type": "Point", "coordinates": [ -73.826448, 40.684557 ] } },
 { "type": "Feature", "properties": { "resource_id": "qnpd:harmony-4-all-inc--2", "name": "Harmony 4 All, Inc.", "category": "children-and-youth", "source": "qnpd", "is_coad_member": false }, "geometry": { "type": "Point", "coordinates": [ -73.826448, 40.684557 ] } },
-{ "type": "Feature", "properties": { "resource_id": "qnpd:zion-tabernacle-food-pantry", "name": "Zion Tabernacle Food Pantry", "category": "food-assistance", "source": "qnpd", "is_coad_member": false }, "geometry": { "type": "Point", "coordinates": [ -73.83531, 40.681265 ] } }
+{ "type": "Feature", "properties": { "resource_id": "qnpd:zion-tabernacle-food-pantry", "name": "Zion Tabernacle Food Pantry", "category": "food-assistance", "source": "qnpd", "is_coad_member": false }, "geometry": { "type": "Point", "coordinates": [ -73.83531, 40.681265 ] } },
+{ "type": "Feature", "properties": { "resource_id": "qpl:ozone-park", "name": "Ozone Park", "category": "libraries-and-community", "source": "qpl", "is_coad_member": false }, "geometry": { "type": "Point", "coordinates": [ -73.846489, 40.680867 ] } },
+{ "type": "Feature", "properties": { "resource_id": "qpl:lefferts", "name": "Lefferts", "category": "libraries-and-community", "source": "qpl", "is_coad_member": false }, "geometry": { "type": "Point", "coordinates": [ -73.824815, 40.686872 ] } },
+{ "type": "Feature", "properties": { "resource_id": "qpl:howard-beach", "name": "Howard Beach", "category": "libraries-and-community", "source": "qpl", "is_coad_member": false }, "geometry": { "type": "Point", "coordinates": [ -73.841802, 40.66381 ] } },
+{ "type": "Feature", "properties": { "resource_id": "qpl:south-ozone-park", "name": "South Ozone Park", "category": "libraries-and-community", "source": "qpl", "is_coad_member": false }, "geometry": { "type": "Point", "coordinates": [ -73.809262, 40.674784 ] } }
 ]
 }
