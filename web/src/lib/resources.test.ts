@@ -49,6 +49,7 @@ describe('sourceLabel', () => {
     ['facdb', 'DCP Facilities Database'],
     ['qnpd', 'Queens Nonprofit Directory'],
     ['franc', 'FRANC Resource Map'],
+    ['qpl', 'Queens Library Branches'],
     ['manual', null],
     ['something-new', null]
   ])('%s -> %s', (source, label) => expect(sourceLabel({ source })).toBe(label));

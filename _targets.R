@@ -421,11 +421,30 @@ list(
     validate_canonical_resources(canonical_resources, resource_categories)
   ),
 
+  # Queens Public Library branches. Tier 1, and the one resource source that
+  # skips the canonical file: QPL's own list is fetched every build so a branch
+  # opening or closing reaches the map unaided. See R/qpl.R.
+  #
+  # tar_cue("always") rather than a plain target: completeness is the point of
+  # this source, and a cached fetch would keep publishing last year's branches.
+  # It is 66 rows and two small queries.
+  tar_target(qpl_branches_raw, get_qpl_branches(), cue = tar_cue("always")),
+  tar_target(qpl_branch_lots, get_qpl_branch_lots(qpl_branches_raw$bbl)),
+  tar_target(qpl_branches, build_qpl_branches(qpl_branches_raw, qpl_branch_lots)),
+
   # Hand-removed rows (removed_reason filled) stop here. Everything that
   # publishes a resource reads resources_cdta, never canonical_resources.
   tar_target(
     resources_cdta,
-    resources_to_cdta(live_resources(canonical_resources), cdta_boundaries)
+    resources_to_cdta(bind_rows(live_resources(canonical_resources), qpl_branches),
+                      cdta_boundaries)
+  ),
+
+  tar_target(
+    qpl_branches_checks,
+    validate_qpl_branches(qpl_branches_raw, qpl_branch_lots, qpl_branches,
+                          resources_cdta, canonical_resources, cdta_crosswalk,
+                          resource_categories)
   ),
 
   tar_target(

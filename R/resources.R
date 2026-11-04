@@ -11,6 +11,9 @@
 #                        |
 #         the pipeline reads ONLY the canonical file
 #
+# The exception is Queens Public Library branches (source `qpl`). They are
+# fetched live in the DAG and bound onto the live canonical rows; see R/qpl.R.
+#
 # A scrape never overwrites the canonical file. It proposes a diff. That is
 # what makes hand corrections survive a re-scrape, and it is the whole point of
 # the "trusted messenger" direction.
@@ -612,6 +615,13 @@ validate_canonical_resources <- function(res, cx) {
   # merges two organisations into one page.
   assert_unique(res, "resource_id")
 
+  # QPL branches are fetched by the DAG and bound on after this file is read
+  # (R/qpl.R). A qpl row here would publish the branch twice.
+  if (any(res$source == "qpl")) {
+    stop("resources.csv: qpl rows are fetched from QPL by the pipeline and ",
+         "must not be entered here")
+  }
+
   bad_source <- setdiff(res$source, RESOURCE_SOURCES)
   if (length(bad_source) > 0) {
     stop("resources.csv: unknown source(s) ", paste(bad_source, collapse = ", "))
@@ -757,8 +767,8 @@ write_resource_payloads <- function(res_cdta, crosswalk, dir) {
           name = r$name,
           # The operating organisation, where the facility name alone does not
           # identify it - screen 06 renders "Ravenswood Branch" over "Queens
-          # Public Library". FacDB `opname`; absent for qnpd and franc, where
-          # the record IS the organisation.
+          # Public Library". FacDB `opname`, or QPL_OPERATOR for qpl; absent
+          # for qnpd and franc, where the record IS the organisation.
           operator = na_null(col_or_na(r, "operator")),
           category = r$canonical_category,
           subcategory = na_null(r$subcategory),
@@ -770,6 +780,8 @@ write_resource_payloads <- function(res_cdta, crosswalk, dir) {
           email = na_null(col_or_na(r, "email")),
           phone = na_null(col_or_na(r, "phone")),
           website = na_null(col_or_na(r, "website")),
+          # The branch page where QPL publishes opening hours. qpl only.
+          hours_url = na_null(col_or_na(r, "hours_url")),
           social = na_null(col_or_na(r, "social")),
           languages = na_null(r$languages),
           accepts_referrals = na_null(r$accepts_referrals),

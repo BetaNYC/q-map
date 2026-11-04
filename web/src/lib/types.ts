@@ -119,6 +119,8 @@ export interface Resource {
   /** "Yes" on 164 records, "No" on 4. */
   accepts_referrals?: string;
   website?: string;
+  /** The branch page where QPL publishes opening hours. `qpl` records only. */
+  hours_url?: string;
 }
 
 /**

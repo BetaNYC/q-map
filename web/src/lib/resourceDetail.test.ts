@@ -56,6 +56,31 @@ describe('groupsFor on real records', () => {
   it('a FRANC record with nothing: no groups', () => {
     expect(groupsFor(record('q14', 'franc:101st-precinct'))).toEqual([]);
   });
+
+  // Built, not read: committed data has no qpl rows until the pipeline's first
+  // run after merge. Fields as the pipeline emits qpl:astoria.
+  it('a QPL branch: address, phone and an hours link', () => {
+    const branch: Resource = {
+      resource_id: 'qpl:astoria',
+      name: 'Astoria',
+      operator: 'Queens Public Library',
+      category: 'libraries-and-community',
+      source: 'qpl',
+      address: '14-01 Astoria Boulevard, Astoria, NY 11102',
+      lon: -73.9287421,
+      lat: 40.7723754,
+      phone: '(718) 278-2220',
+      hours_url: 'https://www.queenslibrary.org/about-us/locations/astoria'
+    };
+    expect(groupsFor(branch).map((g) => [g.title, g.fields.map((f) => f.label)])).toEqual([
+      ['Contact', ['Address', 'Phone', 'Hours']]
+    ]);
+    expect(fields(branch).Phone[0].href).toBe('tel:+17182782220');
+    expect(fields(branch).Hours).toEqual([
+      { text: 'See hours on queenslibrary.org', href: 'https://www.queenslibrary.org/about-us/locations/astoria', external: true }
+    ]);
+    expect(listingNote(branch)).toBe('From Queens Public Library. Call to confirm details.');
+  });
 });
 
 describe('listingNote', () => {
