@@ -447,9 +447,24 @@ list(
                           resource_categories)
   ),
 
+  # One row per canonical category: properties of the category itself, today
+  # only `default_on` (which categories a map opens with). See R/resources.R.
+  tar_target(category_registry_path, "data/registry/resource_categories.csv",
+             format = "file"),
+  tar_target(category_registry, read_category_registry(category_registry_path)),
+
   tar_target(
     district_resource_categories,
-    resource_categories_per_district(resources_cdta, resource_categories)
+    resource_categories_per_district(resources_cdta, resource_categories,
+                                     category_registry)
+  ),
+
+  tar_target(
+    category_registry_checks,
+    validate_category_registry(
+      category_registry, resource_categories, district_resource_categories,
+      queens_cdtas = filter(cdta_crosswalk, boro_code == 4)$cdta2020
+    )
   ),
 
   tar_target(
@@ -575,15 +590,28 @@ list(
   # Vector tiles built by scripts/01_mirror_stormwater.R and published in the
   # data-v* release. The DAG copies them through; it never runs tippecanoe.
 
-  tar_target(stormwater_moderate_tiles_src,
-             "data/prepared/stormwater_moderate_2_13.pmtiles", format = "file"),
-  tar_target(stormwater_limited_tiles_src,
-             "data/prepared/stormwater_limited_1_77.pmtiles", format = "file"),
+  # Both rain scenarios in one file, styled on `rain` (2026-11-05, data-v7).
+  tar_target(stormwater_tiles_src,
+             "data/prepared/stormwater.pmtiles", format = "file"),
+
+  # FEMA flood zones, NYC's 2007 effective map. Tiled by
+  # scripts/10_mirror_fema.R; the raw download is mirrored beside the tiles so
+  # the zone classes are checked here, in the DAG, on every run. See
+  # R/flooding.R.
+  tar_target(fema_flood_zones_tiles_src,
+             "data/prepared/fema_flood_zones.pmtiles", format = "file"),
+  tar_target(fema_nfhl_path, "data/prepared/fema_nfhl_queens.geojson",
+             format = "file"),
+  tar_target(fema_nfhl, sf::read_sf(fema_nfhl_path)),
+  tar_target(fema_nfhl_checks, validate_nfhl(fema_nfhl)),
 
   tar_target(
     layer_tile_paths,
-    c(copy_layer(stormwater_moderate_tiles_src, "data/processed/layers"),
-      copy_layer(stormwater_limited_tiles_src, "data/processed/layers")),
+    prune_layer_tiles(
+      c(copy_layer(stormwater_tiles_src, "data/processed/layers"),
+        copy_layer(fema_flood_zones_tiles_src, "data/processed/layers")),
+      "data/processed/layers"
+    ),
     format = "file"
   ),
 
@@ -601,6 +629,8 @@ list(
                                  "data/processed/layers/hurricane_evac_zones.geojson"),
       layer_surge_current(fvi, queens_shape,
                           "data/processed/layers/surge_current.geojson"),
+      layer_tidal_2020s(fvi, queens_shape,
+                        "data/processed/layers/tidal_2020s.geojson"),
       layer_evacuation_centers(evac_centers, queens_shape,
                                "data/processed/layers/evacuation_centers.geojson"),
       layer_cooling_centers(cool_options, queens_shape,

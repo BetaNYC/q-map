@@ -20,20 +20,22 @@
     onToggle: () => void;
     /** Resource toggles: the category mark (src/lib/categories.ts). */
     mark?: string;
+    /** Resource toggles: the mark's group colour (categoryFill). */
+    markFill?: string | null;
     /** Resource toggles: the district's count for the category. */
     count?: number;
     /** Layer toggles: the layer's map colour (src/lib/layers.ts). */
     swatch?: string;
   }
 
-  let { pressed, label, onToggle, mark, count, swatch }: Props = $props();
+  let { pressed, label, onToggle, mark, markFill, count, swatch }: Props = $props();
 </script>
 
 <button type="button" class="toggle" aria-pressed={pressed} onclick={onToggle}>
   {#if swatch}
     <span class="swatch" style="--swatch: {swatch}" aria-hidden="true"></span>
   {:else if mark}
-    <span class="mark" aria-hidden="true">{mark}</span>
+    <span class="mark" style={markFill ? `--mark-fill: ${markFill}` : undefined} aria-hidden="true">{mark}</span>
   {/if}
 
   <!-- One line, ellipsised: a 248px cell. The full label is still the
@@ -85,6 +87,9 @@
     height: var(--space-400);
     border: 0.75px solid currentColor;
     border-radius: var(--radius-sm);
+    /* The category's group colour (categoryFill, $lib/categories.ts), else
+       the plain surface. Same fill as the category's points on the map. */
+    background: var(--mark-fill, var(--color-surface));
     font-family: var(--font-mono-icon);
     font-style: italic;
     font-weight: var(--font-weight-regular);
@@ -114,6 +119,12 @@
   }
 
   /* Off: outlined, at 35% (LayerRow's off state, and Figma's). */
+  /* Off: no fill, exactly as the mark was before colour-coding (Andrew,
+     2026-11-05). The group colour shows only while the category is on. */
+  .toggle[aria-pressed='false'] .mark {
+    background: none;
+  }
+
   .toggle[aria-pressed='false'] .swatch {
     background: none;
     opacity: 0.35;

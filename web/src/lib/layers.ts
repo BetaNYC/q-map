@@ -1,3 +1,5 @@
+import { LAYER_SWATCH } from '$lib/map/palette';
+
 /**
  * Map layer vocabulary.
  *
@@ -23,28 +25,17 @@ export interface MapLayer {
 }
 
 /**
- * The legend swatch, read off the Figma LayerRow instances.
+ * The legend swatch for a layer's row in the Layers tab.
  *
- * Four of them, and they are exactly the four available `context` layers that
- * have discrete geometry — two PMTiles and two GeoJSON. That is not a
- * coincidence: a single flat swatch is the right key for a polygon layer drawn
- * in one colour.
+ * Six of them since 2026-11-05: the two stormwater layers in their own colour,
+ * and the four graded coastal layers (tidal, surge, FEMA, evacuation zones)
+ * by their darkest class - a flat placeholder until Andrew's legend replaces
+ * it. The values live in $lib/map/palette.ts beside the map paint they key.
  *
- * The other three available context layers (hvi_choropleth, chem_businesses,
- * pivi_choropleth) are `delivery: inline` choropleths, drawn as a graduated
- * fill joined to cdta.geojson. A 16px flat swatch is the wrong legend for a
- * ramp, and no ramp legend is designed — so they are not listed yet rather than
- * given an invented colour. See web/README.md.
+ * The three `delivery: inline` choropleths (hvi_choropleth, chem_businesses,
+ * pivi_choropleth) are still not listed: they are graduated fills joined to
+ * cdta.geojson with no styling or legend yet. See web/README.md.
  */
-const LAYER_SWATCH: Record<string, string> = {
-  // blue/200, not blue/300, since 2026-10-08: see STORMWATER_OPACITY in
-  // $lib/map/overlays.ts. Must match the map's fill.
-  stormwater_limited_1_77: '#cedef0',
-  stormwater_moderate_2_13: '#3f6bb9',
-  hurricane_evac_zones: '#ebaa7d',
-  surge_current: '#d8b663'
-};
-
 export function swatchFor(layer: MapLayer): string | null {
   return LAYER_SWATCH[layer.layer_id] ?? null;
 }

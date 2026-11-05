@@ -1,0 +1,20 @@
+Read me
+"Queens resource review. 531 resources across 14 districts, as on the map on 2026-11-04 (commit 2b74711)."
+
+WHAT TO JUDGE
+[RUBRIC - Andrew to write: what makes a resource belong on this map.]
+
+HOW TO FILL IN THE REVIEW TAB
+"decision: Keep, Remove, Change category, Fix details or Unsure. Leave it blank if you have not looked at the row."
+new_category: only with Change category. Pick from the list.
+"name: if a name is wrong, correct it in place. The map will use your spelling. (Library branch names come from QPL, so a correction there is passed to them.)"
+"note: why you removed it, what is wrong with its details, or anything else. A note is always welcome."
+"Other details (address, phone, website): choose Fix details and write the correction in note. Those are checked by hand before they change."
+link: opens the resource on the live map.
+"priority: 1 = already flagged for review, 2 = nonprofit and community listings, 3 = city facilities, 4 = library branches. Work through them in that order if time is short."
+"The same organisation can appear more than once, once per category it is listed under. Judge each row on its category."
+"Sort and filter freely, but do not edit resource_id. It is how your decisions are matched back."
+
+"LIBRARY BRANCHES (source: Queens Library Branches) come from Queens Public Library's own list. Mark problems with them, and we will take them to QPL."
+
+"MISSING TAB: add anything that should be on the map and is not, one per row. Name and address are the minimum."

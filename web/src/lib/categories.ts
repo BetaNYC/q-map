@@ -1,3 +1,4 @@
+import { CATEGORY_GROUP_FILL } from './map/palette';
 import type { ResourceCategory } from './types';
 
 /**
@@ -61,4 +62,45 @@ export function assertInitialsDistinct(categories: ResourceCategory[], context: 
 
     seen.set(mark, category.slug);
   }
+}
+
+/**
+ * The fill of a category's mark: its colour group's ($lib/map/palette.ts). A
+ * category with no known group draws on the plain surface, as every mark did
+ * before 2026-11-05, rather than in a colour that would claim a group.
+ */
+export function categoryFill(category: Pick<ResourceCategory, 'group'> | undefined): string | null {
+  return (category && CATEGORY_GROUP_FILL[category.group]) ?? null;
+}
+
+/** The colour groups in legend order: Emergency, Basic needs, Health and care,
+ *  Community and services. */
+export const CATEGORY_GROUP_ORDER: readonly string[] = Object.keys(CATEGORY_GROUP_FILL);
+
+export interface CategoryGroup<C extends ResourceCategory = ResourceCategory> {
+  group: string;
+  label: string;
+  fill: string | null;
+  categories: C[];
+}
+
+/**
+ * A district's categories under their colour groups (legend option A,
+ * 2026-11-05), groups in legend order and categories in the order given
+ * (the payload's, which is by count). Only groups the district holds appear.
+ * A category whose group is unknown is not dropped: it lands in a trailing
+ * group of its own, drawn plain, so it can still be switched on.
+ */
+export function groupCategories<C extends ResourceCategory>(categories: readonly C[]): CategoryGroup<C>[] {
+  const groups = new Map<string, CategoryGroup<C>>();
+  for (const c of categories) {
+    const known = c.group in CATEGORY_GROUP_FILL;
+    const key = known ? c.group : '';
+    if (!groups.has(key)) {
+      groups.set(key, { group: key, label: known ? c.group_label : 'Other', fill: known ? CATEGORY_GROUP_FILL[key] : null, categories: [] });
+    }
+    groups.get(key)!.categories.push(c);
+  }
+  const rank = (g: string) => (g === '' ? Infinity : CATEGORY_GROUP_ORDER.indexOf(g));
+  return [...groups.values()].sort((a, b) => rank(a.group) - rank(b.group));
 }

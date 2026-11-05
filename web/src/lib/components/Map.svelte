@@ -4,7 +4,9 @@
   import 'maplibre-gl/dist/maplibre-gl.css';
   import { dataUrl } from '$lib/data';
   import {
+    BASEMAP_ROADS_BEFORE,
     BASEMAP_STYLE,
+    fadeInBasemapLayers,
     INITIAL_CENTER,
     INITIAL_ZOOM,
     MAX_BOUNDS,
@@ -15,7 +17,7 @@
   import { registerMapProtocols } from '$lib/map/protocols';
   import { configureMapWorker } from '$lib/map/worker';
   import type { MapDistrict } from '$lib/mapView';
-  import { categoryInitial } from '$lib/categories';
+  import { categoryFill, categoryInitial } from '$lib/categories';
   import { recallCamera, rememberCamera } from '$lib/map/camera';
   import { pointSizePx } from '$lib/map/pointScale';
   import type { ResourceCategory } from '$lib/types';
@@ -51,7 +53,9 @@
     overviewBbox?: MapDistrict['bbox'];
     /** `layer_id`s currently on, from `?layers=`. */
     visibleLayers: string[];
-    /** Category slugs currently on, from `?categories=`. null means all. */
+    /** Category slugs currently on, from `?categories=` or the page's default
+     *  (`defaultCategories`, $lib/mapView.ts). null means all; no page passes
+     *  it since 2026-11-04. */
     visibleCategories: string[] | null;
     /** Fired when a resource point is tapped — the page writes `?resource=`. */
     onSelectResource?: (resourceId: string) => void;
@@ -136,6 +140,10 @@
     instance.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
 
     instance.on('load', () => {
+      // Roads and buildings fade in over a zoom level rather than snapping on.
+      // First, so it touches only the basemap's own layers.
+      fadeInBasemapLayers(instance, MIN_ZOOM);
+
       // cdta.geojson carries `cdta2020` and `slug` only; everything else joins
       // client-side. promoteId makes cdta2020 the feature id so setFeatureState
       // can push attributes later without a per-feature lookup (§9).
@@ -181,14 +189,21 @@
       });
 
       // Overlays go in BEFORE the district outline so the outline stays legible
-      // on top of a translucent flood polygon.
+      // on top of a flood polygon. 'under-roads' overlays go further down,
+      // beneath the basemap's roads and labels ($lib/map/basemap.ts); if that
+      // anchor has gone from the style they fall back to the top.
+      const underRoads = instance.getLayer(BASEMAP_ROADS_BEFORE) ? BASEMAP_ROADS_BEFORE : undefined;
+      if (!underRoads) {
+        console.warn(`Basemap has no "${BASEMAP_ROADS_BEFORE}" layer; graded overlays will draw over the roads.`);
+      }
       for (const spec of Object.values(specs)) {
         instance.addSource(spec.sourceId, spec.source);
+        const beforeId = spec.position === 'under-roads' ? underRoads : undefined;
         for (const layer of spec.layers) {
           // Added hidden. The $effect below is the single place that decides
           // what is on, so the initial state and a later toggle take the same
           // code path.
-          instance.addLayer({ ...layer, layout: { visibility: 'none' } });
+          instance.addLayer({ ...layer, layout: { visibility: 'none' } }, beforeId);
         }
       }
 
@@ -464,9 +479,23 @@
   );
 
   const marks = $derived(new Map((categories ?? []).map((c) => [c.slug, categoryInitial(c)])));
+  const fills = $derived(new Map((categories ?? []).map((c) => [c.slug, categoryFill(c)])));
 
   function markFor(category: string): string {
     return marks.get(category) ?? category.charAt(0);
+  }
+
+  /**
+   * A mark takes its category's group colour (2026-11-05; the worked example
+   * the panel's marks follow).
+   * Set as a custom property, not a background, so the selected state's own
+   * background rule still wins without !important. Unset until the
+   * district's categories arrive: the plain surface, as before.
+   */
+  function paintMark(mark: HTMLElement, category: string) {
+    const fill = fills.get(category);
+    if (fill) mark.style.setProperty('--mark-fill', fill);
+    else mark.style.removeProperty('--mark-fill');
   }
 
   $effect(() => {
@@ -496,6 +525,7 @@
           const mark = document.createElement('span');
           mark.className = 'point-marker-mark';
           mark.textContent = markFor(category);
+          paintMark(mark, category);
           el.append(mark);
           el.addEventListener('click', (e) => {
             // Not on to the map's own click: a district under the point would
@@ -524,12 +554,16 @@
   $effect(() => {
     void pointsVersion;
     void marks;
-    for (const p of points) p.mark.textContent = markFor(p.category);
+    void fills;
+    for (const p of points) {
+      p.mark.textContent = markFor(p.category);
+      paintMark(p.mark, p.category);
+    }
   });
 
   /**
    * Apply `?categories=` to the points: hidden, not removed, so a toggle never
-   * re-downloads them. null is every category.
+   * re-downloads them. null is every category (no page sends it now).
    */
   $effect(() => {
     void pointsVersion;
@@ -659,7 +693,9 @@
     box-sizing: border-box;
     width: var(--point-size, 20px);
     height: var(--point-size, 20px);
-    background: var(--color-surface);
+    /* The category's group colour ($lib/map/palette.ts, set by paintMark),
+       else the plain surface. */
+    background: var(--mark-fill, var(--color-surface));
     border: 0.75px solid var(--color-text-primary);
     /* radius/sm, the panel's and toolbar's category marks (Andrew,
        2026-10-20). Figma's PointMarker is square-cornered. */
@@ -683,7 +719,9 @@
   }
 
   /* Hover, from the pointer on the point or on its row in the resource list
-     (Andrew, 2026-10-21): the list row's hover fill, grey/100. */
+     (Andrew, 2026-10-21): the list row's hover fill, grey/100. It replaces
+     the group colour while hovered - kept on purpose when the marks gained
+     colour (Andrew, 2026-11-05). */
   .map :global(.point-marker:hover .point-marker-mark),
   .map :global(.point-marker.is-hovered .point-marker-mark) {
     background: var(--color-surface-muted);

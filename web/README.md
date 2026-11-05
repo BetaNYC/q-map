@@ -422,7 +422,10 @@ contract claims to read field lists off real outputs, so either it was
 generated against an uncommitted state or that table is partly authored.
 
 The button therefore carries `?layers=` and `?hazard=` only, and the map opens
-on its default of every category showing. This also makes the handoff's open
+on its default categories. That default was every category until 2026-11-04;
+it is now the categories marked `default_on` in the district payload
+(Emergency services and Food assistance - see METHODOLOGY.md, *Two resource
+categories on by default*). It is global, not per hazard. This also makes the handoff's open
 question 1 — "children-and-youth is in no hazard's `default_resource_categories`"
 — moot until the field exists.
 
@@ -897,6 +900,16 @@ is a pipeline change, so it is flagged rather than done.
 `src/lib/map/basemap.ts` is the single constant either way.
 
 ### Overlays
+
+> **Superseded 2026-11-05.** There are now six overlays, coloured from
+> `src/lib/map/palette.ts` (the "H1" palette). The four graded coastal
+> layers (evacuation zones, FEMA, surge, tidal) draw opaque *under* the
+> basemap's roads; stormwater draws above, with an off-white outline on
+> moderate. Basemap roads and buildings fade in over one zoom level
+> (`fadeInBasemapLayers`, `src/lib/map/basemap.ts`). The reasoning and
+> measurements are in `METHODOLOGY.md`, *The flood-layer palette, and
+> stormwater tiles merged* and *Step 5: the flood layers as built*. The text
+> below records the original four.
 
 Four, the same four `listableLayers()` returns — the available `context` layers
 with discrete geometry. Colours match the LayerRow swatches, so the key in the

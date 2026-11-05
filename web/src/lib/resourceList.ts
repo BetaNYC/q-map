@@ -1,4 +1,4 @@
-import { categoryInitial } from './categories';
+import { categoryFill, categoryInitial } from './categories';
 import { isSameOrganisation } from './resources';
 import type { Resource, ResourceCategory } from './types';
 
@@ -14,6 +14,8 @@ export interface ListGroup {
   category: ResourceCategory;
   /** The category's mark, the same letter as its points on the map. */
   mark: string;
+  /** The mark's group colour, as on the map; null draws it plain. */
+  fill: string | null;
   rows: Resource[];
 }
 
@@ -46,7 +48,7 @@ export function groupResources(
     const rows = byCategory.get(category.slug);
     if (!rows) return [];
     rows.sort((a, b) => collator.compare(displayName(a.name), displayName(b.name)));
-    return [{ category, mark: categoryInitial(category), rows }];
+    return [{ category, mark: categoryInitial(category), fill: categoryFill(category), rows }];
   });
 }
 

@@ -94,6 +94,21 @@ copy_layer <- function(src, dest_dir) {
   dst
 }
 
+# Remove any .pmtiles in `dir` the DAG did not just write, and return the
+# paths it did. copy_layer() only ever adds files, so when the two stormwater
+# tile files became one (2026-11-05) the old pair would have stayed in
+# data/processed/ - committed, deployed and 9 MB - with nothing pointing at
+# them. The same reason write_hazard_overlays() prunes.
+prune_layer_tiles <- function(paths, dir) {
+  present <- list.files(dir, pattern = "\\.pmtiles$", full.names = TRUE)
+  stale <- setdiff(normalizePath(present), normalizePath(paths))
+  if (length(stale) > 0) {
+    file.remove(stale)
+    message("Removed stale layer tiles: ", paste(basename(stale), collapse = ", "))
+  }
+  paths
+}
+
 validate_layer_tiles <- function(paths, registry) {
   for (p in paths) {
     if (!file.exists(p)) stop("Layer tile missing: ", p)
@@ -120,6 +135,105 @@ validate_layer_tiles <- function(paths, registry) {
   if (length(missing) > 0) {
     stop("Registry marks these pmtiles layers available but no tile exists: ",
          paste(missing, collapse = ", "))
+  }
+  TRUE
+}
+
+# --- FEMA flood zones -------------------------------------------------------
+#
+# The FEMA National Flood Hazard Layer (NFHL), flood hazard areas (MapServer
+# layer 28), for the display layer `fema_flood_zones`. Display only: nothing
+# ranks or scores on it.
+#
+# WHICH MAP. NYC's EFFECTIVE flood insurance rate map, dated 2007-09-05 on
+# every panel (DFIRM 360497, checked 2026-11-05), plus the Letters of Map
+# Revision since. NOT the 2015 Preliminary FIRM the city's building code
+# uses. Anything that labels this layer must say "2007", or a reader takes a
+# 19-year-old map as current. See METHODOLOGY.md.
+#
+# TIER 2. FEMA's service reset the connection five times in one Queens fetch
+# (2026-11-05). scripts/10_mirror_fema.R fetches it once, with retries, and
+# publishes two assets in the data-v* release:
+#
+#   fema_nfhl_queens.geojson   the raw download, checked here in the DAG
+#   fema_flood_zones.pmtiles   the map layer, copied through like stormwater
+#
+# The script and this check share NFHL_ZONE_CLASSES below, so the tiles
+# cannot classify a zone the check does not know.
+
+# Every (FLD_ZONE, ZONE_SUBTY) pair the Queens download carries, and the
+# display class it becomes. NA means dropped: unshaded X is "minimal flood
+# hazard" (most of the borough), and open water is not land anyone lives on.
+#
+#   VE      1% annual chance, coastal high hazard (wave action over 3 ft)
+#   AE      1% annual chance. A (no base flood elevation, 2 features) and the
+#           AE floodway (7) are folded in: both are inside the 1% floodplain
+#           and neither is a coastal distinction a resident needs.
+#   0.2PCT  0.2% annual chance ("500-year"), FEMA's shaded X
+#
+# The pairs are listed exactly so validate_nfhl() can compare them both ways
+# (d26's validate_nfhl idiom). A zone type FEMA adds in a future re-mirror -
+# AO, AH, a new subtype - fails the check instead of silently vanishing from
+# the map.
+NFHL_ZONE_CLASSES <- tibble::tribble(
+  ~FLD_ZONE,    ~ZONE_SUBTY,                          ~zone,
+  "VE",         NA,                                   "VE",
+  "AE",         NA,                                   "AE",
+  "AE",         "FLOODWAY",                           "AE",
+  "A",          NA,                                   "AE",
+  "X",          "0.2 PCT ANNUAL CHANCE FLOOD HAZARD", "0.2PCT",
+  "X",          "AREA OF MINIMAL FLOOD HAZARD",       NA,
+  "OPEN WATER", NA,                                   NA
+)
+
+# The display order, most to least severe. The legend and the paint
+# expression read the same order.
+NFHL_ZONES <- c("VE", "AE", "0.2PCT")
+
+# NYC's DFIRM. The download's bounding box also catches Nassau County
+# (36059C), which the mirror drops before tiling.
+NFHL_NYC_DFIRM <- "360497"
+
+# Add the display class. Empty-string subtypes are read as NA first: ArcGIS
+# serves a missing ZONE_SUBTY as either, depending on the format.
+classify_nfhl <- function(x) {
+  x |>
+    dplyr::mutate(ZONE_SUBTY = dplyr::na_if(trimws(ZONE_SUBTY), "")) |>
+    dplyr::left_join(NFHL_ZONE_CLASSES, by = c("FLD_ZONE", "ZONE_SUBTY"))
+}
+
+validate_nfhl <- function(x) {
+  required <- c("DFIRM_ID", "FLD_ZONE", "ZONE_SUBTY")
+  missing <- setdiff(required, names(x))
+  if (length(missing) > 0) {
+    stop("NFHL mirror: missing column(s) ", paste(missing, collapse = ", "))
+  }
+
+  # Two-way: a pair in the data with no class, or a class that no longer
+  # occurs. The second direction is the one that notices FEMA restructuring
+  # the layer.
+  observed <- x |>
+    sf::st_drop_geometry() |>
+    dplyr::mutate(ZONE_SUBTY = dplyr::na_if(trimws(ZONE_SUBTY), "")) |>
+    dplyr::distinct(FLD_ZONE, ZONE_SUBTY)
+  assert_keys_match(observed, dplyr::select(NFHL_ZONE_CLASSES, -zone),
+                    by = c("FLD_ZONE", "ZONE_SUBTY"),
+                    label_x = "fema_nfhl_queens.geojson",
+                    label_y = "NFHL_ZONE_CLASSES")
+
+  if (!NFHL_NYC_DFIRM %in% x$DFIRM_ID) {
+    stop("NFHL mirror: no features from NYC's DFIRM ", NFHL_NYC_DFIRM,
+         ". The bounding box or the service has changed.")
+  }
+
+  # Every display class must be present in NYC's part, or the legend shows a
+  # class the map never draws.
+  nyc <- classify_nfhl(sf::st_drop_geometry(x)) |>
+    dplyr::filter(DFIRM_ID == NFHL_NYC_DFIRM, !is.na(zone))
+  absent <- setdiff(NFHL_ZONES, nyc$zone)
+  if (length(absent) > 0) {
+    stop("NFHL mirror: no NYC features in class(es) ",
+         paste(absent, collapse = ", "))
   }
   TRUE
 }

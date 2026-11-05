@@ -1,0 +1,12 @@
+category,default_on,group
+benefits-and-legal,FALSE,basic-needs
+children-and-youth,FALSE,community-and-services
+disability-and-access,FALSE,health-and-care
+emergency-services,TRUE,emergency
+food-assistance,TRUE,basic-needs
+government-offices,FALSE,community-and-services
+health-care,FALSE,health-and-care
+housing-and-shelter,FALSE,basic-needs
+immigration-and-language,FALSE,community-and-services
+libraries-and-community,FALSE,community-and-services
+older-adults,FALSE,health-and-care

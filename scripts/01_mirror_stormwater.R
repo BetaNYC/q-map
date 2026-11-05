@@ -140,41 +140,67 @@ if (nchar(Sys.which("tippecanoe")) == 0) {
   message("\ntippecanoe not found - skipping tile generation. ",
           "Install it and re-run to produce data/prepared/*.pmtiles")
 } else {
-  for (nm in names(LAYERS)) {
-    src <- file.path(OUT, paste0("stormwater_", nm, ".geojson"))
-    dst <- file.path(OUT, paste0("stormwater_", nm, ".pmtiles"))
-
-    x <- st_read(src, quiet = TRUE) |>
+  # ONE LAYER, TWO SCENARIOS (Andrew, 2026-11-05). The map shows stormwater
+  # as a single layer - "Stormwater flooding" - with its two rain scenarios
+  # as values of one attribute, keyed by the layer's legend:
+  #
+  #   rain = "limited"    1.77 in/hr
+  #   rain = "moderate"   2.13 in/hr
+  #
+  # Both go into one stormwater.pmtiles (source-layer `stormwater`), as FEMA's
+  # zones go into one file with `zone`. The map draws them as separate style
+  # layers filtered on `rain`, so limited (the pale core) stays on top of
+  # moderate and its outline whatever the feature order in the tiles.
+  #
+  # WITHIN each scenario the two Flooding_C categories are still unioned into
+  # one extent (2026-11-05, data-v6): outlined, every boundary between a
+  # category-1 and a category-2 polygon drew as a white line inside the flood
+  # shape at street zoom. The DAG's flood percentages read the GeoJSON mirror
+  # above, which keeps Flooding_C; only the display tiles lose it.
+  RAIN <- c(limited_1_77 = "limited", moderate_2_13 = "moderate")
+  parts <- lapply(names(LAYERS), function(nm) {
+    st_read(file.path(OUT, paste0("stormwater_", nm, ".geojson")), quiet = TRUE) |>
       st_make_valid() |>
-      st_cast("POLYGON") |>      # see above - not cosmetic
+      st_union() |>
+      st_make_valid() |>
+      st_sf(geometry = _) |>
+      mutate(rain = unname(RAIN[nm])) |>
+      st_cast("MULTIPOLYGON") |>
+      # `rain` is constant within each scenario, so st_cast's "repeating
+      # attributes" warning is expected.
+      (\(g) suppressWarnings(st_cast(g, "POLYGON")))() |>      # see above - not cosmetic
       st_transform(4326)
+  })
+  x <- bind_rows(parts)
+  if (!setequal(unique(x$rain), RAIN)) stop("stormwater tiles: rain values are ", paste(unique(x$rain), collapse = ", "))
 
-    tmp <- tempfile(fileext = ".geojson")
-    st_write(x, tmp, driver = "GeoJSON", quiet = TRUE)
+  dst <- file.path(OUT, "stormwater.pmtiles")
+  tmp <- tempfile(fileext = ".geojson")
+  st_write(x, tmp, driver = "GeoJSON", quiet = TRUE)
 
-    if (file.exists(dst)) file.remove(dst)
-    status <- system2("tippecanoe", c(
-      "-o", shQuote(dst),
-      "-Z", TILE_MIN_ZOOM, "-z", TILE_MAX_ZOOM,
-      "-l", shQuote(paste0("stormwater_", nm)),
-      # -n sets the `name` in the PMTiles metadata block. Without it tippecanoe
-      # stores the input path, so the shipped tiles announced themselves as
-      # "data/prepared/stormwater_moderate_2_13.pmtiles" - a local build path
-      # leaking into a published artifact. The layer_id is what any consumer
-      # reading the metadata should see.
-      "-n", shQuote(paste0("stormwater_", nm)),
-      # Flood extents are the data, not decoration. Dropping features or
-      # shrinking tiny polygons would remove real flooded blocks.
-      "--no-feature-limit", "--no-tile-size-limit",
-      "--no-tiny-polygon-reduction",
-      shQuote(tmp)
-    ), stdout = FALSE, stderr = FALSE)
+  if (file.exists(dst)) file.remove(dst)
+  status <- system2("tippecanoe", c(
+    "-o", shQuote(dst),
+    "-Z", TILE_MIN_ZOOM, "-z", TILE_MAX_ZOOM,
+    "-l", "stormwater",
+    # -n sets the `name` in the PMTiles metadata block. Without it tippecanoe
+    # stores the input path - a local build path leaking into a published
+    # artifact. The layer_id is what any consumer reading the metadata sees.
+    "-n", "stormwater",
+    # Flood extents are the data, not decoration. Dropping features or
+    # shrinking tiny polygons would remove real flooded blocks.
+    "--no-feature-limit", "--no-tile-size-limit",
+    "--no-tiny-polygon-reduction",
+    shQuote(tmp)
+  ), stdout = FALSE, stderr = FALSE)
 
-    if (status != 0 || !file.exists(dst)) {
-      stop("tippecanoe failed for ", nm)
-    }
-    message(sprintf("%-16s %5.1f MB geojson -> %5.2f MB pmtiles  (%d parts)",
-                    nm, file.info(src)$size / 1024^2,
-                    file.info(dst)$size / 1024^2, nrow(x)))
-  }
+  if (status != 0 || !file.exists(dst)) stop("tippecanoe failed for stormwater")
+  message(sprintf("stormwater.pmtiles: %.2f MB  (%s)", file.info(dst)$size / 1024^2,
+                  paste(sprintf("%s %d parts", names(table(x$rain)), table(x$rain)), collapse = ", ")))
+
+  # The per-scenario tiles this script used to write (data-v6 and before).
+  # Removed so they cannot be re-published by a release cut from this folder.
+  old <- file.path(OUT, paste0("stormwater_", names(LAYERS), ".pmtiles"))
+  removed <- old[file.exists(old)]
+  if (length(removed)) { file.remove(removed); message("removed ", paste(basename(removed), collapse = ", ")) }
 }

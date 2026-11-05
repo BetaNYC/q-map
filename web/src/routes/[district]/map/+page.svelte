@@ -5,7 +5,11 @@
   import { page } from '$app/state';
   import BottomSheet from '$lib/components/BottomSheet.svelte';
   import PageHeader from '$lib/components/PageHeader.svelte';
+  import CategoryGroupHeader from '$lib/components/CategoryGroupHeader.svelte';
+  import LayerRamp from '$lib/components/LayerRamp.svelte';
   import LayerRow from '$lib/components/LayerRow.svelte';
+  import { groupCategories } from '$lib/categories';
+  import { RAMP_KEYS } from '$lib/map/palette';
   import Map from '$lib/components/Map.svelte';
   import TabBar from '$lib/components/TabBar.svelte';
   import Popup from '$lib/components/Popup.svelte';
@@ -30,20 +34,26 @@
    * $derived re-runs against the real URL, so a shared ?categories= link
    * resolves on hydration and on any later client-side navigation.
    *
-   * null and [] are different: null is "no parameter, show the default", [] is
-   * "a parameter was given and nothing in it was recognised". §5 says absent
-   * means default, and that unknown ids are dropped rather than fatal.
+   * An absent parameter is the default; an empty one (`?categories=`) is an
+   * explicit empty selection, and unknown ids are dropped rather than fatal
+   * (§5).
    */
   const allCategories = $derived(data.district.resource_categories.map((c) => c.slug));
 
-  /** The categories showing. null -> all of them, the default. Parsing and
-   *  writing are shared with the docked desktop map: $lib/mapState.ts. */
+  /** The page's default: the default-on categories (Emergency services and
+   *  Food assistance, since 2026-11-04 - it was every category). Set in
+   *  +page.ts from the pipeline's `default_on`. */
+  const defaults = $derived(data.map.categories ?? allCategories);
+
+  /** The categories showing, never null. Parsing and writing are shared with
+   *  the docked desktop map: $lib/mapState.ts. */
   const selected = $derived(
-    parseSelection(browser ? page.url.searchParams.get('categories') : null, allCategories)
+    parseSelection(browser ? page.url.searchParams.get('categories') : null, allCategories) ??
+      defaults
   );
 
   function isOn(slug: string): boolean {
-    return selected === null || selected.includes(slug);
+    return selected.includes(slug);
   }
 
   /**
@@ -56,12 +66,12 @@
    * stay where it is and keep focus — a toggle that moves the page or drops
    * focus to the body is unusable with a keyboard or a screen reader.
    *
-   * Switching everything back on removes the parameter (the default is all),
-   * rather than listing all twelve.
+   * Returning to the default selection removes the parameter, so the shortest
+   * link stays the one that means "this page's default".
    */
   function toggle(slug: string) {
-    const next = toggleSelection(selected ?? allCategories, slug, allCategories);
-    const url = withSelection(page.url, 'categories', next, null, allCategories);
+    const next = toggleSelection(selected, slug, allCategories);
+    const url = withSelection(page.url, 'categories', next, defaults, allCategories);
     goto(url, { replaceState: true, noScroll: true, keepFocus: true });
   }
 
@@ -213,7 +223,7 @@
 
   /** The map's state, carried on the popup's detail link (mapStateQuery). */
   const detailQuery = $derived(
-    mapStateQuery({ categories: selected ?? allCategories, layers: selectedLayers, hazard: hazard?.slug ?? null })
+    mapStateQuery({ categories: selected, layers: selectedLayers, hazard: hazard?.slug ?? null })
   );
 
   /* ---- Desktop: forward to the page beside the map -------------------- */
@@ -226,9 +236,11 @@
    * one, carrying `?layers=`, `?categories=` and `?resource=` so the same map
    * and popup open.
    *
-   * One translation: this page's category default is every category, the
-   * district page's is none. So an absent `?categories=` is written out as
-   * the full list, keeping what the link meant.
+   * An absent `?categories=` is passed on as absent. Until 2026-11-05 it was
+   * written out as every category, because this page defaulted to all of them
+   * and the district page to none; both now open on the default-on categories
+   * ($lib/mapView.ts, defaultCategories), so absence means the same on both.
+   * Writing out "all" had silently undone that default on desktop.
    *
    * In the browser only, with `replaceState`, so Back skips this page. The
    * prerendered page shows for a moment first; BottomSheet's static desktop
@@ -241,9 +253,6 @@
     const params = new URLSearchParams(page.url.search);
     const hazardSlug = params.get('hazard');
     params.delete('hazard');
-    if (!params.has('categories')) {
-      params.set('categories', data.district.resource_categories.map((c) => c.slug).join(','));
-    }
     const toHazard = hazardSlug && data.district.hazards.some((h) => h.slug === hazardSlug);
     const path = toHazard ? `/${data.district.slug}/${hazardSlug}` : `/${data.district.slug}`;
     goto(`${base}${path}?${params}`, { replaceState: true });
@@ -394,13 +403,20 @@
             <!-- All twelve stay listed whatever the selection (§7.3) —
                  filtering the LIST would strand someone who arrived from a
                  CategoryRow link with no way to turn anything else on. -->
-            <ul class="rows">
-              {#each data.district.resource_categories as category (category.slug)}
-                <li>
-                  <ResourceRow {category} pressed={isOn(category.slug)} onToggle={toggle} />
-                </li>
-              {/each}
-            </ul>
+            <!-- Under their colour groups (legend option A, 2026-11-05): each
+                 header's swatch keys the marks below it. -->
+            {#each groupCategories(data.district.resource_categories) as group (group.group)}
+              <section class="category-group" aria-labelledby="sheet-group-{group.group || 'other'}">
+                <CategoryGroupHeader id="sheet-group-{group.group || 'other'}" label={group.label} fill={group.fill} level={2} />
+                <ul class="rows">
+                  {#each group.categories as category (category.slug)}
+                    <li>
+                      <ResourceRow {category} pressed={isOn(category.slug)} onToggle={toggle} />
+                    </li>
+                  {/each}
+                </ul>
+              </section>
+            {/each}
           {:else}
             <ul class="rows">
               {#each layers as layer (layer.layer_id)}
@@ -410,6 +426,9 @@
                     pressed={selectedLayers.includes(layer.layer_id)}
                     onToggle={toggleLayer}
                   />
+                  {#if RAMP_KEYS[layer.layer_id] && selectedLayers.includes(layer.layer_id)}
+                    <div class="ramp"><LayerRamp layerId={layer.layer_id} /></div>
+                  {/if}
                 </li>
               {/each}
             </ul>
@@ -464,6 +483,19 @@
     list-style: none;
     margin: 0;
     padding: 0;
+  }
+
+  /* 12px above each group header, as the Figma frame (299:146). */
+  .category-group {
+    padding-top: var(--space-300);
+  }
+
+  /* A graded layer's key, under its row while it is on: indented to the
+     label (LayerRow's 16px swatch + 10px gap), drawn 8px into the row's own
+     bottom padding, 12px below. Row and key come to 76px, as in Figma. */
+  .ramp {
+    margin-top: calc(var(--space-200) * -1);
+    padding: 0 0 var(--space-300) calc(var(--space-400) + 10px);
   }
 
   /* In line with the rows' text, which sits 12px inside each row. */

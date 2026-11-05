@@ -1,5 +1,5 @@
 import { dataUrl } from '$lib/data';
-import type { MapView } from '$lib/mapView';
+import { defaultCategories, type MapView } from '$lib/mapView';
 import type { DistrictPayload } from '$lib/types';
 import type { PageLoad } from './$types';
 
@@ -37,11 +37,17 @@ export const load: PageLoad = async ({ fetch, params, data }) => {
   // build time. Passed through rather than re-fetched: it is already in the
   // prerendered payload.
   /**
-   * The docked map's view as prerendered: the district with §5's defaults,
-   * every category and no overlays. The root layout applies the URL's
-   * `?layers=` and `?categories=` on top, in the browser.
+   * The docked map's view as prerendered: the district, no overlays, and the
+   * default-on categories. §5 said every category; public feedback
+   * (2026-11-04) narrowed it to Emergency services and Food assistance, set
+   * per category in data/registry/resource_categories.csv. The root layout
+   * applies the URL's `?layers=` and `?categories=` on top, in the browser.
    */
-  const map: MapView = { district: params.district, layers: [], categories: null };
+  const map: MapView = {
+    district: params.district,
+    layers: [],
+    categories: defaultCategories(district.resource_categories)
+  };
 
   return { district, entry: data.entry, map };
 };

@@ -210,7 +210,8 @@ export interface HazardContent {
  * DATA_CONTRACT.md §3, `resource_categories[]` — what THIS district holds.
  *
  * Not to be confused with `default_resource_categories` on a hazard payload,
- * which is a flat list of slugs saying what the map opens with.
+ * which the contract once described and the pipeline never emitted. What a
+ * map opens with is `default_on` below.
  */
 export interface ResourceCategory {
   /** Matches `resources[].category` and the map layer's `category` property. */
@@ -218,6 +219,14 @@ export interface ResourceCategory {
   label: string;
   /** Resources of this category located in this district. Spans 1 to 261. */
   count: number;
+  /** On when a map opens with no `?categories=`. At least one is true in
+   *  every district (pipeline-asserted). See `defaultCategories`. */
+  default_on: boolean;
+  /** The colour group of the category's mark: `emergency`, `basic-needs`,
+   *  `health-and-care` or `community-and-services`. See `categoryFill`. */
+  group: string;
+  /** The group's label for the legend, e.g. "Basic needs". */
+  group_label: string;
 }
 
 /**
