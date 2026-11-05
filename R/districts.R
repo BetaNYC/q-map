@@ -138,7 +138,10 @@ build_district_payloads <- function(crosswalk, hazards, measures, chp, lep,
           # On when a map opens with no ?categories= - from
           # data/registry/resource_categories.csv. isTRUE() is belt and
           # braces: category_registry_checks already rejects a missing row.
-          default_on = isTRUE(rc$default_on[k])
+          default_on = isTRUE(rc$default_on[k]),
+          # The colour group of the category's mark, and its legend label.
+          group = rc$group[k],
+          group_label = unname(CATEGORY_GROUPS[rc$group[k]])
         ))
       },
 

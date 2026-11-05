@@ -347,6 +347,8 @@ field_table(language_records, list(
 field_table(cat_entries, list(
   slug = "The category key. Matches `resources[].category` and the map layer's `category` property.",
   count = "Resources of this category located in this district.",
+  group = "The colour group of the category's lettered mark: `emergency`, `basic-needs`, `health-and-care` or `community-and-services`. The letter identifies the category; the group sets its fill. Set in `data/registry/resource_categories.csv`.",
+  group_label = "The group's display label, for the legend: Emergency, Basic needs, Health and care, Community and services.",
   default_on = "Whether this category's points are on when a map opens with no `?categories=`. The default selection is the slugs with `default_on: true`; on a resource page, add that resource's own category so its point shows. Set in `data/registry/resource_categories.csv`. At least one category is on in every district (asserted)."
 )),
 "",
@@ -501,11 +503,14 @@ vapply(Sys.glob(file.path(PROCESSED, "layers/*.pmtiles")), function(p) {
           m$minzoom, m$maxzoom)
 }, character(1), USE.NAMES = FALSE),
 "",
-paste("Stormwater: **no attributes**. Each file is one flood extent - the",
-      "DEP's nuisance (>= 4 in, < 1 ft) and deep (>= 1 ft) categories merged -",
-      "so it is styled with a single paint. Merged 2026-11-05 so an outline",
-      "draws only the outer edge; before, every boundary between the two",
-      "categories drew as a line inside the shape."),
+paste("Stormwater: one layer, both rain scenarios. `rain` is the styling",
+      "attribute and takes 2 values: `limited` (1.77 in/hr) and `moderate`",
+      "(2.13 in/hr). Each scenario is one flood extent - the DEP's nuisance",
+      "(>= 4 in, < 1 ft) and deep (>= 1 ft) categories merged, so an outline",
+      "draws only the outer edge. Draw `moderate` first and `limited` on top",
+      "(two style layers filtered on `rain`): limited is the smaller, more",
+      "frequent core inside it. Replaces the per-scenario files",
+      "`stormwater_limited_1_77` and `stormwater_moderate_2_13` (2026-11-05)."),
 "",
 paste0("FEMA: `zone` is the styling attribute and takes ",
        length(FEMA_ZONE_DOMAIN), " values: ",

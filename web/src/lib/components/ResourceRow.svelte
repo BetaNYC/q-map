@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { categoryInitial } from '$lib/categories';
+  import { categoryFill, categoryInitial } from '$lib/categories';
   import type { ResourceCategory } from '$lib/types';
 
   /**
@@ -52,10 +52,11 @@
   let { category, pressed, onToggle }: Props = $props();
 
   const mark = $derived(categoryInitial(category));
+  const fill = $derived(categoryFill(category));
 </script>
 
 <button type="button" class="row" aria-pressed={pressed} onclick={() => onToggle(category.slug)}>
-  <span class="mark" aria-hidden="true">{mark}</span>
+  <span class="mark" style={fill ? `--mark-fill: ${fill}` : undefined} aria-hidden="true">{mark}</span>
 
   <span class="label">{category.label}</span>
 
@@ -121,6 +122,9 @@
 
     border: 0.75px solid currentColor;
     border-radius: var(--radius-sm);
+    /* The category's group colour (categoryFill, $lib/categories.ts), else
+       the plain surface. Same fill as the category's points on the map. */
+    background: var(--mark-fill, var(--color-surface));
 
     font-family: var(--font-mono-icon);
     font-style: italic;
@@ -134,6 +138,12 @@
        their x-height. g and f keep their descenders. Same rule in
        MapToggle, ResourceRow, ResourceList and Map.svelte's point. */
     padding-bottom: 0.1em;
+  }
+
+  /* Off: no fill, exactly as the mark was before colour-coding (Andrew,
+     2026-11-05). The group colour shows only while the category is on. */
+  .row[aria-pressed='false'] .mark {
+    background: none;
   }
 
   .label {

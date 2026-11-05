@@ -94,6 +94,21 @@ copy_layer <- function(src, dest_dir) {
   dst
 }
 
+# Remove any .pmtiles in `dir` the DAG did not just write, and return the
+# paths it did. copy_layer() only ever adds files, so when the two stormwater
+# tile files became one (2026-11-05) the old pair would have stayed in
+# data/processed/ - committed, deployed and 9 MB - with nothing pointing at
+# them. The same reason write_hazard_overlays() prunes.
+prune_layer_tiles <- function(paths, dir) {
+  present <- list.files(dir, pattern = "\\.pmtiles$", full.names = TRUE)
+  stale <- setdiff(normalizePath(present), normalizePath(paths))
+  if (length(stale) > 0) {
+    file.remove(stale)
+    message("Removed stale layer tiles: ", paste(basename(stale), collapse = ", "))
+  }
+  paths
+}
+
 validate_layer_tiles <- function(paths, registry) {
   for (p in paths) {
     if (!file.exists(p)) stop("Layer tile missing: ", p)

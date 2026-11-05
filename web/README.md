@@ -901,6 +901,16 @@ is a pipeline change, so it is flagged rather than done.
 
 ### Overlays
 
+> **Superseded 2026-11-05.** There are now six overlays, coloured from
+> `src/lib/map/palette.ts` (the "H1" palette). The four graded coastal
+> layers (evacuation zones, FEMA, surge, tidal) draw opaque *under* the
+> basemap's roads; stormwater draws above, with an off-white outline on
+> moderate. Basemap roads and buildings fade in over one zoom level
+> (`fadeInBasemapLayers`, `src/lib/map/basemap.ts`). The reasoning and
+> measurements are in `METHODOLOGY.md`, *The flood-layer palette, and
+> stormwater tiles merged* and *Step 5: the flood layers as built*. The text
+> below records the original four.
+
 Four, the same four `listableLayers()` returns — the available `context` layers
 with discrete geometry. Colours match the LayerRow swatches, so the key in the
 sheet is the colour on the map. Hardcoded in `overlays.ts` rather than read

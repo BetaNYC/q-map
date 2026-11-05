@@ -14,8 +14,7 @@ describe('overlaySpecs', () => {
       'fema_flood_zones',
       'surge_current',
       'tidal_2020s',
-      'stormwater_moderate_2_13',
-      'stormwater_limited_1_77'
+      'stormwater'
     ]);
   });
 
@@ -24,38 +23,28 @@ describe('overlaySpecs', () => {
     for (const id of ['hurricane_evac_zones', 'fema_flood_zones', 'surge_current', 'tidal_2020s']) {
       expect(position(id)).toBe('under-roads');
     }
-    for (const id of ['stormwater_moderate_2_13', 'stormwater_limited_1_77']) {
-      expect(position(id)).toBe('top');
-    }
+    expect(position('stormwater')).toBe('top');
   });
 });
 
 describe('stormwater', () => {
-  it('styles each layer with one paint, not by Flooding_C', () => {
-    for (const id of ['stormwater_moderate_2_13', 'stormwater_limited_1_77']) {
-      expect(JSON.stringify(layersOf(id))).not.toContain('Flooding_C');
-    }
+  it('is one tiled source, both rain scenarios, by source-layer', () => {
+    const spec = overlaySpecs().stormwater;
+    expect((spec.source as { url: string }).url).toMatch(/^pmtiles:\/\/.*layers\/stormwater\.pmtiles/);
+    expect(layersOf('stormwater').every((l) => l['source-layer'] === 'stormwater')).toBe(true);
+    expect(JSON.stringify(layersOf('stormwater'))).not.toContain('Flooding_C');
   });
 
-  it('draws limited rain pale and nearly solid over a darker moderate', () => {
-    expect(layersOf('stormwater_moderate_2_13')[0].paint).toEqual({
-      'fill-color': '#3f6bb9',
-      'fill-opacity': 0.65,
-      'fill-outline-color': 'rgba(0, 0, 0, 0)'
-    });
-    expect(layersOf('stormwater_limited_1_77')[0].paint).toEqual({ 'fill-color': '#cedef0', 'fill-opacity': 0.9 });
-  });
-
-  it('outlines moderate in off-white, between its fill and the limited core', () => {
-    const [fill, outline] = layersOf('stormwater_moderate_2_13');
-    expect(fill.type).toBe('fill');
-    expect(outline).toMatchObject({
-      type: 'line',
-      'source-layer': 'stormwater_moderate_2_13',
-      paint: { 'line-color': '#fefcfa', 'line-width': 1 }
-    });
-    // Limited has no outline: a casing there swallowed the thin shapes (2026-10-08).
-    expect(layersOf('stormwater_limited_1_77')).toHaveLength(1);
+  it('draws moderate, then its off-white outline, then the pale limited core on top', () => {
+    const layers = layersOf('stormwater') as Array<{ id: string; type: string; filter: unknown; paint: Paint }>;
+    expect(layers.map((l) => [l.type, l.filter])).toEqual([
+      ['fill', ['==', ['get', 'rain'], 'moderate']],
+      ['line', ['==', ['get', 'rain'], 'moderate']],
+      ['fill', ['==', ['get', 'rain'], 'limited']]
+    ]);
+    expect(layers[0].paint).toEqual({ 'fill-color': '#3f6bb9', 'fill-opacity': 0.65, 'fill-outline-color': 'rgba(0, 0, 0, 0)' });
+    expect(layers[1].paint).toEqual({ 'line-color': '#fefcfa', 'line-width': 1 });
+    expect(layers[2].paint).toEqual({ 'fill-color': '#cedef0', 'fill-opacity': 0.9 });
   });
 });
 
@@ -95,5 +84,21 @@ describe('graded layers', () => {
 describe('the Layers tab key', () => {
   it('has a swatch for exactly the layers the map can draw', () => {
     expect(Object.keys(LAYER_SWATCH).sort()).toEqual(Object.keys(overlaySpecs()).sort());
+  });
+});
+
+describe('category mark fills', () => {
+  it('fills each of the four groups with its colour, and nothing else', async () => {
+    const { CATEGORY_GROUP_FILL } = await import('./palette');
+    expect(CATEGORY_GROUP_FILL).toEqual({
+      emergency: '#f08703',
+      'basic-needs': '#99dd58',
+      'health-and-care': '#8eb0d0',
+      'community-and-services': '#ffe8ba'
+    });
+    const { categoryFill } = await import('$lib/categories');
+    expect(categoryFill({ group: 'basic-needs' })).toBe('#99dd58');
+    // An unknown group draws plain rather than claiming a group's colour.
+    expect(categoryFill({ group: 'not-a-group' })).toBeNull();
   });
 });

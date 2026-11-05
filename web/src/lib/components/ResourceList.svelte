@@ -109,7 +109,7 @@
   {#each groups as group (group.category.slug)}
     <section aria-labelledby="{idBase}-{group.category.slug}">
       <svelte:element this={`h${headingLevel}`} class="heading" id="{idBase}-{group.category.slug}">
-        <span class="mark" aria-hidden="true">{group.mark}</span>
+        <span class="mark" style={group.fill ? `--mark-fill: ${group.fill}` : undefined} aria-hidden="true">{group.mark}</span>
         <span class="label">{group.category.label}</span>
         <span class="count">
           {group.rows.length}
@@ -185,6 +185,9 @@
     height: var(--space-400);
     border: 0.75px solid currentColor;
     border-radius: var(--radius-sm);
+    /* The category's group colour (categoryFill, $lib/categories.ts), else
+       the plain surface. Same fill as the category's points on the map. */
+    background: var(--mark-fill, var(--color-surface));
     font-family: var(--font-mono-icon);
     font-style: italic;
     font-weight: var(--font-weight-regular);

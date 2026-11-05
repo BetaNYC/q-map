@@ -10,7 +10,9 @@ const cat = (slug: string, default_on: boolean): ResourceCategory => ({
   slug,
   label: slug,
   count: 1,
-  default_on
+  default_on,
+  group: 'community-and-services',
+  group_label: 'Community and services'
 });
 const district = [
   cat('emergency-services', true),

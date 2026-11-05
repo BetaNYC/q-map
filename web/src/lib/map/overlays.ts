@@ -1,4 +1,4 @@
-import type { LayerSpecification, SourceSpecification } from 'maplibre-gl';
+import type { ExpressionSpecification, LayerSpecification, SourceSpecification } from 'maplibre-gl';
 import { dataUrl } from '$lib/data';
 import { EVAC, EVAC_OPACITY, FEMA, STORMWATER, SURGE, TIDAL, rampExpression, type Ramp } from './palette';
 
@@ -9,7 +9,7 @@ import { EVAC, EVAC_OPACITY, FEMA, STORMWATER, SURGE, TIDAL, rampExpression, typ
  * hazard's `map_layers`, and in `data/registry/map_layers.csv`. One vocabulary
  * end to end, so a layer turned on by a shared link is the layer that draws.
  *
- * Only the six with a legend swatch are here, which is the same six
+ * Only the five with a legend swatch are here, which is the same five
  * `listableLayers()` returns: the available `context` layers with discrete
  * geometry. The three `delivery: inline` choropleths join to cdta.geojson and
  * need a graduated fill and a ramp legend that is not designed; the three
@@ -41,65 +41,60 @@ export interface OverlaySpec {
 }
 
 /**
- * The two stormwater layers, told apart by lightness (Andrew, 2026-10-08).
+ * Stormwater: ONE layer since 2026-11-05 (Andrew), its two rain scenarios as
+ * the `rain` attribute of stormwater.pmtiles, keyed by the layer's legend.
+ * Still drawn as before, told apart by lightness (Andrew, 2026-10-08):
  *
- * Moderate rain is the heavier storm and the wider extent: dark (blue/600) and
- * fairly solid, drawn first. Limited rain, a lighter storm, floods a thin core
- * inside it: pale (blue/200) and nearly opaque, drawn on top. Darker reads as
- * more severe, which is the heavier storm. About 1.9:1 between core and
- * surround, at every zoom. A casing on the LIMITED layer was tried and dropped
- * on 2026-10-08: at district zoom it swallowed the thin shapes into white
+ *   moderate  2.13 in/hr, the heavier storm and the wider extent: blue/600 at
+ *             65%, with a 1px off-white outline (STORMWATER in palette.ts)
+ *   limited   1.77 in/hr, the thin core inside it: blue/200 at 90%, on top
+ *
+ * Three style layers on one source, filtered on `rain`, so the order holds
+ * whatever the feature order in the tiles: moderate fill, its outline, then
+ * the limited fill over both. A casing on LIMITED was tried and dropped on
+ * 2026-10-08: at district zoom it swallowed the thin shapes into white
  * speckle.
  *
- * Both sit on 'top', above the roads, because they must read over the graded
- * layers beneath (Andrew, 2026-11-05).
- *
- * MODERATE HAS AN OFF-WHITE OUTLINE since 2026-11-05 - see STORMWATER in
- * palette.ts for why. It is a separate line layer between the moderate fill
- * and the limited fill, so the limited core covers it where the two meet.
- * fill-outline-color stays transparent: MapLibre's built-in outline is a
- * fixed hairline in the fill's own colour, which is not what this is.
+ * On 'top', above the roads, because it must read over the graded layers.
  */
-function stormwater(layerId: 'stormwater_limited_1_77' | 'stormwater_moderate_2_13'): OverlaySpec {
-  const which = layerId === 'stormwater_moderate_2_13' ? STORMWATER.moderate : STORMWATER.limited;
-  const sourceId = `overlay-${layerId}`;
-  const layers: LayerSpecification[] = [
-    {
-      id: `${sourceId}-fill`,
-      type: 'fill',
-      source: sourceId,
-      // DATA_CONTRACT §8: the source-layer name matches the file name.
-      'source-layer': layerId,
-      // One style for the whole layer (Andrew, 2026-10-08). The tiles carry no
-      // attributes since data-v6: the DEP's two depth categories are merged
-      // before tiling.
-      paint: {
-        'fill-color': which.color,
-        'fill-opacity': which.opacity,
-        ...(layerId === 'stormwater_moderate_2_13' ? { 'fill-outline-color': 'rgba(0, 0, 0, 0)' } : {})
-      }
-    }
-  ];
-  if (layerId === 'stormwater_moderate_2_13') {
-    layers.push({
-      id: `${sourceId}-outline`,
-      type: 'line',
-      source: sourceId,
-      'source-layer': layerId,
-      paint: { 'line-color': STORMWATER.outline.color, 'line-width': STORMWATER.outline.width }
-    });
-  }
+function stormwater(): OverlaySpec {
+  const sourceId = 'overlay-stormwater';
+  const rain = (value: 'limited' | 'moderate'): ExpressionSpecification => ['==', ['get', 'rain'], value];
+  const base = { source: sourceId, 'source-layer': 'stormwater' } as const;
   return {
     sourceId,
     position: 'top',
     source: {
       type: 'vector',
       // The pmtiles:// prefix is what the registered protocol intercepts.
-      // dataUrl() supplies the base path and the cache-busting version, so the
-      // archive resolves the same way every other payload does.
-      url: `pmtiles://${dataUrl(`layers/${layerId}.pmtiles`)}`
+      // dataUrl() supplies the base path and the cache-busting version.
+      url: `pmtiles://${dataUrl('layers/stormwater.pmtiles')}`
     },
-    layers
+    layers: [
+      {
+        id: `${sourceId}-moderate`,
+        type: 'fill',
+        ...base,
+        filter: rain('moderate'),
+        // fill-outline-color transparent: MapLibre's built-in outline is a
+        // hairline in the fill's own colour, not the off-white outline below.
+        paint: { 'fill-color': STORMWATER.moderate.color, 'fill-opacity': STORMWATER.moderate.opacity, 'fill-outline-color': 'rgba(0, 0, 0, 0)' }
+      },
+      {
+        id: `${sourceId}-moderate-outline`,
+        type: 'line',
+        ...base,
+        filter: rain('moderate'),
+        paint: { 'line-color': STORMWATER.outline.color, 'line-width': STORMWATER.outline.width }
+      },
+      {
+        id: `${sourceId}-limited`,
+        type: 'fill',
+        ...base,
+        filter: rain('limited'),
+        paint: { 'fill-color': STORMWATER.limited.color, 'fill-opacity': STORMWATER.limited.opacity }
+      }
+    ]
   };
 }
 
@@ -160,7 +155,7 @@ function graded(
  *
  *   under the roads   evacuation zones, FEMA, surge, tidal - the broadest
  *                     extent lowest, the smallest (27 tracts) highest
- *   above the roads   stormwater moderate, its outline, stormwater limited
+ *   above the roads   stormwater (moderate, its outline, limited)
  *
  * The Layers tab lists them in the reverse of this (registry order, which
  * matches the stacking top first - Andrew, 2026-11-05).
@@ -171,7 +166,6 @@ export function overlaySpecs(): Record<string, OverlaySpec> {
     fema_flood_zones: graded('fema_flood_zones', FEMA, { tiles: true }),
     surge_current: graded('surge_current', SURGE),
     tidal_2020s: graded('tidal_2020s', TIDAL),
-    stormwater_moderate_2_13: stormwater('stormwater_moderate_2_13'),
-    stormwater_limited_1_77: stormwater('stormwater_limited_1_77')
+    stormwater: stormwater()
   };
 }

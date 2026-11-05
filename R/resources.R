@@ -761,6 +761,23 @@ resource_categories_per_district <- function(res_cdta, cx, registry) {
 # `?categories=` (public feedback, 2026-11-04: Emergency services and Food
 # assistance). Every map reads it - the district map page and the docked map
 # beside district, hazard and resource pages.
+#
+# `group`: the colour group of the category's lettered mark (public feedback,
+# 2026-11-05: "some colour-coding of resources"). The letter still identifies
+# the category; the fill says what kind of help it is. Four groups, because
+# four colours is what stays distinct: the chosen set (D26's palette, nudged)
+# keeps every pair >= 18.3 OKLab dE for normal vision and 9.7 under
+# protan/deutan simulation. Eleven colours could not be told apart (worst pair
+# 5-8). The fills are the frontend's ($lib/map/palette.ts); the grouping is
+# data, so it is validated here.
+
+# The group vocabulary and its display labels, in legend order.
+CATEGORY_GROUPS <- c(
+  "emergency"              = "Emergency",
+  "basic-needs"            = "Basic needs",
+  "health-and-care"        = "Health and care",
+  "community-and-services" = "Community and services"
+)
 
 # Categories that exist in the crosswalk but never reach a payload. `exclude`
 # drops the record; `unassigned` is a staging value for FRANC records awaiting
@@ -770,20 +787,35 @@ CATEGORY_NON_DISPLAY <- c("exclude", "unassigned")
 read_category_registry <- function(path) {
   readr::read_csv(path, show_col_types = FALSE, col_types = readr::cols(
     category = readr::col_character(),
-    default_on = readr::col_logical()
+    default_on = readr::col_logical(),
+    group = readr::col_character()
   ))
 }
 
 # `per_district` is resource_categories_per_district()'s output and
 # `queens_cdtas` the shipped districts; both are needed for the last check.
 validate_category_registry <- function(registry, cx, per_district, queens_cdtas) {
-  if (!identical(names(registry), c("category", "default_on"))) {
+  if (!identical(names(registry), c("category", "default_on", "group"))) {
     stop("resource_categories registry: columns must be exactly ",
-         "category, default_on - got ", paste(names(registry), collapse = ", "))
+         "category, default_on, group - got ", paste(names(registry), collapse = ", "))
   }
   # col_logical() reads anything but TRUE/FALSE (a "yes", a blank) as NA, so
   # a typo would silently mean "off".
-  assert_no_na(registry, c("category", "default_on"))
+  assert_no_na(registry, c("category", "default_on", "group"))
+
+  # Both ways: a mistyped group would draw an uncoloured mark, and a group no
+  # category uses would sit in the legend with nothing on the map.
+  bad_group <- setdiff(registry$group, names(CATEGORY_GROUPS))
+  if (length(bad_group) > 0) {
+    stop("resource_categories registry: unknown group(s) ",
+         paste(bad_group, collapse = ", "), ". Groups are ",
+         paste(names(CATEGORY_GROUPS), collapse = ", "), " (CATEGORY_GROUPS).")
+  }
+  unused <- setdiff(names(CATEGORY_GROUPS), registry$group)
+  if (length(unused) > 0) {
+    stop("CATEGORY_GROUPS has group(s) no category uses: ",
+         paste(unused, collapse = ", "))
+  }
   assert_unique(registry, "category")
 
   # Two-way against the crosswalk's vocabulary. One way would catch a typo

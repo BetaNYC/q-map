@@ -61,7 +61,9 @@ export const PRIMITIVE = {
 export interface Ramp {
   /** The feature property the colour is read from (DATA_CONTRACT.md §8). */
   property: string;
-  classes: ReadonlyArray<{ value: number | string; color: string }>;
+  /** `opacity` per class only where classes differ (stormwater's two rain
+   *  scenarios); otherwise the layer's opacity applies to every class. */
+  classes: ReadonlyArray<{ value: number | string; color: string; opacity?: number }>;
 }
 
 /**
@@ -147,6 +149,20 @@ export const STORMWATER = {
 } as const;
 
 /**
+ * Stormwater as one layer with its two rain scenarios as classes (Andrew,
+ * 2026-11-05): `rain` in stormwater.pmtiles. Lowest to highest - limited
+ * (1.77 in/hr, the lighter storm) then moderate (2.13 in/hr) - each at the
+ * opacity the map draws it.
+ */
+export const STORMWATER_RAMP: Ramp = {
+  property: 'rain',
+  classes: [
+    { value: 'limited', color: STORMWATER.limited.color, opacity: STORMWATER.limited.opacity },
+    { value: 'moderate', color: STORMWATER.moderate.color, opacity: STORMWATER.moderate.opacity }
+  ]
+};
+
+/**
  * A MapLibre `match` expression for a ramp. A value outside the ramp draws
  * transparent rather than in a fallback colour: an unexpected index must not
  * pass for a real class on the map. The pipeline asserts the domain, so this
@@ -173,10 +189,61 @@ export const darkest = (ramp: Ramp): string => ramp.classes[ramp.classes.length 
  * paint reads the same constants, so the key cannot drift from the map.
  */
 export const LAYER_SWATCH: Record<string, string> = {
-  stormwater_limited_1_77: STORMWATER.limited.color,
-  stormwater_moderate_2_13: STORMWATER.moderate.color,
+  // The heavier storm's blue, which is most of the layer's extent.
+  stormwater: STORMWATER.moderate.color,
   tidal_2020s: darkest(TIDAL),
   surge_current: darkest(SURGE),
   fema_flood_zones: darkest(FEMA),
   hurricane_evac_zones: darkest(EVAC)
+};
+
+/**
+ * The fill of a resource category's lettered mark, by the category's colour
+ * group (`group` in the district payload; data/registry/resource_categories.csv).
+ * Andrew, 2026-11-05, from public feedback asking for colour-coding.
+ *
+ * "D3": the D26 GI web map's palette (#fd9a52 #fee6bf #9fb1c6 #b3de69 of
+ * its six), nudged - every colour moved less than 6 OKLab dE and 6 degrees of
+ * hue - so the four groups clear both targets: closest pair 18.3 dE for
+ * normal vision, 9.7 under protan/deutan simulation. As D26 had them they
+ * scored 15.0 / 6.3. Lime and cream are swapped from D26's order so Food
+ * assistance, on by default, is clearly coloured (lime) and cream - only
+ * 7.9 dE from the plain off-white mark - goes to the broadest group.
+ *
+ * The letter still names the category; the fill says what kind of help it
+ * is. Black letter >= 9:1 on every fill.
+ *
+ * NOT FIGMA PRIMITIVES. These four are their own colours, to be added to
+ * Figma (Andrew); the names below are the proposed variable names.
+ */
+export const CATEGORY_GROUP_FILL: Record<string, string> = {
+  emergency: '#f08703', // category/emergency - orange
+  'basic-needs': '#99dd58', // category/basic-needs - lime
+  'health-and-care': '#8eb0d0', // category/health-and-care - slate blue
+  'community-and-services': '#ffe8ba' // category/community-and-services - cream
+};
+
+/**
+ * The legend's key for each graded layer (legend option A, Andrew,
+ * 2026-11-05; Figma `LayerRamp`, node 299:187). Shown under a layer's toggle
+ * while the layer is on. Classes lowest to highest, as the map draws them.
+ *
+ *   `ends`      one label at each end of the strip
+ *   `perClass`  one label under each class (FEMA's three zones)
+ *
+ * Evacuation zones draw at EVAC_OPACITY on the map, so their key does too.
+ * Stormwater's two scenarios each carry their own map opacity.
+ */
+export interface RampKey {
+  ramp: Ramp;
+  opacity: number;
+  labels: { ends: [string, string] } | { perClass: string[] };
+}
+
+export const RAMP_KEYS: Record<string, RampKey> = {
+  stormwater: { ramp: STORMWATER_RAMP, opacity: 1, labels: { perClass: ['Limited rain', 'Moderate rain'] } },
+  surge_current: { ramp: SURGE, opacity: 1, labels: { ends: ['Less vulnerable', 'More vulnerable'] } },
+  tidal_2020s: { ramp: TIDAL, opacity: 1, labels: { ends: ['Less vulnerable', 'More vulnerable'] } },
+  fema_flood_zones: { ramp: FEMA, opacity: 1, labels: { perClass: ['0.2%', '1%', '1% + waves'] } },
+  hurricane_evac_zones: { ramp: EVAC, opacity: EVAC_OPACITY, labels: { ends: ['Zone 6', 'Zone 1, evacuates first'] } }
 };

@@ -590,10 +590,9 @@ list(
   # Vector tiles built by scripts/01_mirror_stormwater.R and published in the
   # data-v* release. The DAG copies them through; it never runs tippecanoe.
 
-  tar_target(stormwater_moderate_tiles_src,
-             "data/prepared/stormwater_moderate_2_13.pmtiles", format = "file"),
-  tar_target(stormwater_limited_tiles_src,
-             "data/prepared/stormwater_limited_1_77.pmtiles", format = "file"),
+  # Both rain scenarios in one file, styled on `rain` (2026-11-05, data-v7).
+  tar_target(stormwater_tiles_src,
+             "data/prepared/stormwater.pmtiles", format = "file"),
 
   # FEMA flood zones, NYC's 2007 effective map. Tiled by
   # scripts/10_mirror_fema.R; the raw download is mirrored beside the tiles so
@@ -608,9 +607,11 @@ list(
 
   tar_target(
     layer_tile_paths,
-    c(copy_layer(stormwater_moderate_tiles_src, "data/processed/layers"),
-      copy_layer(stormwater_limited_tiles_src, "data/processed/layers"),
-      copy_layer(fema_flood_zones_tiles_src, "data/processed/layers")),
+    prune_layer_tiles(
+      c(copy_layer(stormwater_tiles_src, "data/processed/layers"),
+        copy_layer(fema_flood_zones_tiles_src, "data/processed/layers")),
+      "data/processed/layers"
+    ),
     format = "file"
   ),
 

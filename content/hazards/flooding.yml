@@ -225,11 +225,11 @@ parts:
 # "Nine hazard categories".
 #
 # These are the layers the map OPENS with, not every flood layer: one rain,
-# one coastal (Andrew, 2026-11-05). The graded layers are opaque and hide each
-# other, and no palette separates more than about two at once. Limited
-# stormwater, tidal, FEMA and evacuation zones are one tap away in the Layers
-# tab. See METHODOLOGY.md, "The flood-layer palette, and stormwater tiles
+# one coastal (Andrew, 2026-11-05). Stormwater is one layer with both rain
+# scenarios since the same day. The graded layers are opaque and hide each
+# other, and no palette separates more than about two at once. Tidal, FEMA
+# and evacuation zones are one tap away in the Layers tab. See METHODOLOGY.md, "The flood-layer palette, and stormwater tiles
 # merged".
 map_layers:
-  - stormwater_moderate_2_13
+  - stormwater
   - surge_current

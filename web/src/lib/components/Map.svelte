@@ -17,7 +17,7 @@
   import { registerMapProtocols } from '$lib/map/protocols';
   import { configureMapWorker } from '$lib/map/worker';
   import type { MapDistrict } from '$lib/mapView';
-  import { categoryInitial } from '$lib/categories';
+  import { categoryFill, categoryInitial } from '$lib/categories';
   import { recallCamera, rememberCamera } from '$lib/map/camera';
   import { pointSizePx } from '$lib/map/pointScale';
   import type { ResourceCategory } from '$lib/types';
@@ -479,9 +479,23 @@
   );
 
   const marks = $derived(new Map((categories ?? []).map((c) => [c.slug, categoryInitial(c)])));
+  const fills = $derived(new Map((categories ?? []).map((c) => [c.slug, categoryFill(c)])));
 
   function markFor(category: string): string {
     return marks.get(category) ?? category.charAt(0);
+  }
+
+  /**
+   * A mark takes its category's group colour (2026-11-05; the worked example
+   * the panel's marks follow).
+   * Set as a custom property, not a background, so the selected state's own
+   * background rule still wins without !important. Unset until the
+   * district's categories arrive: the plain surface, as before.
+   */
+  function paintMark(mark: HTMLElement, category: string) {
+    const fill = fills.get(category);
+    if (fill) mark.style.setProperty('--mark-fill', fill);
+    else mark.style.removeProperty('--mark-fill');
   }
 
   $effect(() => {
@@ -511,6 +525,7 @@
           const mark = document.createElement('span');
           mark.className = 'point-marker-mark';
           mark.textContent = markFor(category);
+          paintMark(mark, category);
           el.append(mark);
           el.addEventListener('click', (e) => {
             // Not on to the map's own click: a district under the point would
@@ -539,7 +554,11 @@
   $effect(() => {
     void pointsVersion;
     void marks;
-    for (const p of points) p.mark.textContent = markFor(p.category);
+    void fills;
+    for (const p of points) {
+      p.mark.textContent = markFor(p.category);
+      paintMark(p.mark, p.category);
+    }
   });
 
   /**
@@ -674,7 +693,9 @@
     box-sizing: border-box;
     width: var(--point-size, 20px);
     height: var(--point-size, 20px);
-    background: var(--color-surface);
+    /* The category's group colour ($lib/map/palette.ts, set by paintMark),
+       else the plain surface. */
+    background: var(--mark-fill, var(--color-surface));
     border: 0.75px solid var(--color-text-primary);
     /* radius/sm, the panel's and toolbar's category marks (Andrew,
        2026-10-20). Figma's PointMarker is square-cornered. */
@@ -698,7 +719,9 @@
   }
 
   /* Hover, from the pointer on the point or on its row in the resource list
-     (Andrew, 2026-10-21): the list row's hover fill, grey/100. */
+     (Andrew, 2026-10-21): the list row's hover fill, grey/100. It replaces
+     the group colour while hovered - kept on purpose when the marks gained
+     colour (Andrew, 2026-11-05). */
   .map :global(.point-marker:hover .point-marker-mark),
   .map :global(.point-marker.is-hovered .point-marker-mark) {
     background: var(--color-surface-muted);
