@@ -4,7 +4,9 @@
   import 'maplibre-gl/dist/maplibre-gl.css';
   import { dataUrl } from '$lib/data';
   import {
+    BASEMAP_ROADS_BEFORE,
     BASEMAP_STYLE,
+    fadeInBasemapLayers,
     INITIAL_CENTER,
     INITIAL_ZOOM,
     MAX_BOUNDS,
@@ -138,6 +140,10 @@
     instance.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
 
     instance.on('load', () => {
+      // Roads and buildings fade in over a zoom level rather than snapping on.
+      // First, so it touches only the basemap's own layers.
+      fadeInBasemapLayers(instance, MIN_ZOOM);
+
       // cdta.geojson carries `cdta2020` and `slug` only; everything else joins
       // client-side. promoteId makes cdta2020 the feature id so setFeatureState
       // can push attributes later without a per-feature lookup (§9).
@@ -183,14 +189,21 @@
       });
 
       // Overlays go in BEFORE the district outline so the outline stays legible
-      // on top of a translucent flood polygon.
+      // on top of a flood polygon. 'under-roads' overlays go further down,
+      // beneath the basemap's roads and labels ($lib/map/basemap.ts); if that
+      // anchor has gone from the style they fall back to the top.
+      const underRoads = instance.getLayer(BASEMAP_ROADS_BEFORE) ? BASEMAP_ROADS_BEFORE : undefined;
+      if (!underRoads) {
+        console.warn(`Basemap has no "${BASEMAP_ROADS_BEFORE}" layer; graded overlays will draw over the roads.`);
+      }
       for (const spec of Object.values(specs)) {
         instance.addSource(spec.sourceId, spec.source);
+        const beforeId = spec.position === 'under-roads' ? underRoads : undefined;
         for (const layer of spec.layers) {
           // Added hidden. The $effect below is the single place that decides
           // what is on, so the initial state and a later toggle take the same
           // code path.
-          instance.addLayer({ ...layer, layout: { visibility: 'none' } });
+          instance.addLayer({ ...layer, layout: { visibility: 'none' } }, beforeId);
         }
       }
 

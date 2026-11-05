@@ -4,7 +4,7 @@
   import { goto } from '$app/navigation';
   import { base } from '$app/paths';
   import { dataUrl } from '$lib/data';
-  import { BASEMAP_STYLE } from '$lib/map/basemap';
+  import { BASEMAP_STYLE, fadeInBasemapLayers } from '$lib/map/basemap';
   import { configureMapWorker } from '$lib/map/worker';
   import type { DistrictIndexEntry } from '$lib/types';
   import CdtaCard from './CdtaCard.svelte';
@@ -155,6 +155,10 @@
       // Not zoomable out past the Queens view it opened on.
       const baseZoom = map.getZoom();
       map.setMinZoom(baseZoom);
+
+      // Roads and buildings fade in rather than snap on, as on the district
+      // map ($lib/map/basemap.ts). From the opening zoom, the lowest reachable.
+      fadeInBasemapLayers(map, baseZoom);
 
       const scaleLabels = () => {
         const px = Math.min(LABEL.maxPx, LABEL.basePx * LABEL.growth ** (map.getZoom() - baseZoom));
