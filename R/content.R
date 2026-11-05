@@ -923,6 +923,30 @@ validate_hazard_overlays <- function(overlays, content, district_slugs) {
            " is authored with `", base_key, "`. Override `", base_key,
            "` instead.")
     }
+
+    # Every key must be one the merge uses. merge_hazard_overlay() takes only
+    # HAZARD_OVERLAY_KEYS and drops the rest without a word, so a typo such as
+    # `section:` would leave the district on the base guidance with a green
+    # build. Dot-prefixed keys are the reader's own bookkeeping (.file).
+    ov_keys <- grep("^\\.", names(overlays[[key]]), value = TRUE, invert = TRUE)
+    unknown <- setdiff(ov_keys, HAZARD_OVERLAY_KEYS)
+    if (length(unknown) > 0) {
+      stop("Overlay ", key, " sets ", paste0("`", unknown, "`", collapse = ", "),
+           ", which an override cannot replace. Allowed: ",
+           paste(HAZARD_OVERLAY_KEYS, collapse = ", "), ".")
+    }
+
+    # The same section and part schema the base files are held to. Until
+    # 2026-11-04 overrides were checked only for their links: none had shipped
+    # since #29, and the first one back (utility-interruption/q14) would
+    # otherwise have gone out with its structure unvalidated.
+    where <- paste0(overlays[[key]]$.file %||% key, " (override)")
+    if (!is.null(overlays[[key]]$sections)) {
+      validate_section_list(overlays[[key]]$sections, where)
+    }
+    if (!is.null(overlays[[key]]$parts)) {
+      validate_parts(overlays[[key]]$parts, where)
+    }
   }
   TRUE
 }

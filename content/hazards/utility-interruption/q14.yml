@@ -1,0 +1,102 @@
+# The Rockaways — utility interruption override.
+#
+# WHY THIS DISTRICT DIFFERS
+#
+# Q14 is the one Queens district with two electric utilities:
+#
+#   Rockaway peninsula   PSEG Long Island (LIPA territory)
+#   Broad Channel        Con Edison
+#
+# Broad Channel is a separate part of the same district (the island in Jamaica
+# Bay, kept with the peninsula by R/boundaries.R), and it is NOT PSEG
+# territory. Checked 2026-11-04: Con Edison's own release of 2026-07-02 lists
+# Broad Channel among the Queens neighbourhoods it serves, and its February
+# 2026 outage there was restored by Con Edison crews. So this page carries
+# both providers and each item says which part of the district it covers.
+# The other thirteen districts are Con Edison only and read the base file.
+#
+# HOW AN OVERRIDE WORKS
+#
+# Overrides replace whole top-level keys (R/content.R, merge_hazard_overlay).
+# Setting `sections` here replaces ALL of the base file's sections, so every
+# section is restated below, including the ones that are the same as the base.
+#
+#   core-actions   identical to the base
+#   preparedness   PSEG for the peninsula, Con Edison for Broad Channel
+#   response       PSEG and Con Edison as above; the four citywide items after
+#                  them are identical to the base
+#
+# KEEP IN STEP WITH THE BASE. An edit to core-actions or to the four citywide
+# response items in content/hazards/utility-interruption.yml must be made here
+# too, or the Rockaways page silently keeps the old wording.
+#
+# PSEG comes before Con Edison in each section: it serves most of the
+# district's residents.
+
+sections:
+  - id: core-actions
+    title: Core actions
+    items:
+      - label: Keep flashlights, charged batteries, and written contacts ready
+        note: true
+        body: If you use powered medical equipment, make a backup plan.
+      - label: Report lost power to your electric utility
+        note: true
+        body: >
+          Keep fridge doors closed. Never run a generator indoors or use a
+          stove for heat.
+      - label: >
+          If essential medical equipment stops or you are in immediate
+          danger, call 911
+        note: true
+
+  - id: preparedness
+    title: Get Ready
+    items:
+      - label: Register powered medical equipment on the Rockaway peninsula
+        link_label: PSEG Long Island Critical Care
+        url: https://www.psegliny.com/outages/stormprepandrestoration/criticalcareprogram
+        body: >
+          Advance outreach and preparation for customers using life-support
+          equipment. Keep a backup plan.
+      - label: Register powered medical equipment in Broad Channel
+        link_label: Con Edison
+        url: https://www.coned.com/en/accounts-billing/payment-plans-assistance/special-services
+        body: >
+          Life-support equipment and special customer protections.
+          Registration does not guarantee uninterrupted power or immediate
+          restoration.
+
+  - id: response
+    title: When Something Happens
+    items:
+      - label: Report or track a power outage on the Rockaway peninsula
+        link_label: PSEG Long Island
+        url: https://www.psegliny.com/outages
+        body: >
+          Electricity on the Rockaway peninsula. Report online, text OUT to
+          773454, or call 800-490-0075.
+      - label: Report or track a Broad Channel power outage
+        link_label: Con Edison
+        url: https://www.coned.com/en/services-and-outages/report-track-service-issue
+        body: Electricity in Broad Channel. Report online or call 800-752-6633.
+      - label: Stay safe when utilities stop working
+        link_label: NYC Emergency Management
+        url: https://www.nyc.gov/site/em/ready/utility-disruptions.page
+        body: Electricity, gas, water, and telephone disruptions.
+      - label: Check food safety after a power outage
+        link_label: NYC Health
+        url: https://www.nyc.gov/site/doh/health/emergency-preparedness/emergencies-power-outage.page
+        body: Food, medication, and other health precautions when power is lost.
+      - label: Find an air-conditioned place nearby
+        link_label: NYC Cool Options
+        url: https://finder.nyc.gov/coolingcenters/locations
+        body: >
+          Cooling centers and other places to cool down. Check activation,
+          hours, accessibility, and any entry costs.
+      - label: Request help for someone living outside
+        link_label: NYC311
+        url: https://portal.311.nyc.gov/article/?kanumber=KA-01037
+        body: >
+          Homeless outreach and Code Blue information. Call 911 for immediate
+          medical danger.
