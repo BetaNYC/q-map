@@ -595,10 +595,22 @@ list(
   tar_target(stormwater_limited_tiles_src,
              "data/prepared/stormwater_limited_1_77.pmtiles", format = "file"),
 
+  # FEMA flood zones, NYC's 2007 effective map. Tiled by
+  # scripts/10_mirror_fema.R; the raw download is mirrored beside the tiles so
+  # the zone classes are checked here, in the DAG, on every run. See
+  # R/flooding.R.
+  tar_target(fema_flood_zones_tiles_src,
+             "data/prepared/fema_flood_zones.pmtiles", format = "file"),
+  tar_target(fema_nfhl_path, "data/prepared/fema_nfhl_queens.geojson",
+             format = "file"),
+  tar_target(fema_nfhl, sf::read_sf(fema_nfhl_path)),
+  tar_target(fema_nfhl_checks, validate_nfhl(fema_nfhl)),
+
   tar_target(
     layer_tile_paths,
     c(copy_layer(stormwater_moderate_tiles_src, "data/processed/layers"),
-      copy_layer(stormwater_limited_tiles_src, "data/processed/layers")),
+      copy_layer(stormwater_limited_tiles_src, "data/processed/layers"),
+      copy_layer(fema_flood_zones_tiles_src, "data/processed/layers")),
     format = "file"
   ),
 
@@ -616,6 +628,8 @@ list(
                                  "data/processed/layers/hurricane_evac_zones.geojson"),
       layer_surge_current(fvi, queens_shape,
                           "data/processed/layers/surge_current.geojson"),
+      layer_tidal_2020s(fvi, queens_shape,
+                        "data/processed/layers/tidal_2020s.geojson"),
       layer_evacuation_centers(evac_centers, queens_shape,
                                "data/processed/layers/evacuation_centers.geojson"),
       layer_cooling_centers(cool_options, queens_shape,

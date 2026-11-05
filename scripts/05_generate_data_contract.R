@@ -169,6 +169,14 @@ FLOODING_C_DOMAIN <- c(
   "2" = "Deep and contiguous flooding (>= 1 ft)"
 )
 
+# fema_flood_zones' `zone`, most to least severe. NFHL_ZONE_CLASSES in
+# R/flooding.R is what produces it; the order is the legend's.
+FEMA_ZONE_DOMAIN <- c(
+  "VE" = "1% annual chance, coastal high hazard (waves over 3 ft)",
+  "AE" = "1% annual chance (\"100-year\"); includes FEMA's A and AE floodway",
+  "0.2PCT" = "0.2% annual chance (\"500-year\")"
+)
+
 # --- read the real outputs ---------------------------------------------------
 
 # Read EVERYTHING. The generator's whole value is that it cannot describe an
@@ -281,7 +289,7 @@ file_row(file.path(PROCESSED, "hazards/*.json"), "Authored hazard guidance, city
 file_row(file.path(PROCESSED, "districts/q*/hazards/*.json"), "District-specific hazard overrides. Rare."),
 file_row(file.path(PROCESSED, "pages/*.json"), "Standalone content pages (General Resources), rendered at /<slug>."),
 file_row(file.path(PROCESSED, "conditions.json"), "Citywide respiratory illness. Chip on 01, and the infectious-disease hazard page."),
-file_row(file.path(PROCESSED, "layers/*.pmtiles"), "Vector tiles for the stormwater overlays. PMTiles v3, MVT, EPSG:4326."),
+file_row(file.path(PROCESSED, "layers/*.pmtiles"), "Vector tiles for the stormwater and FEMA flood-zone overlays. PMTiles v3, MVT, EPSG:4326."),
 file_row(file.path(PROCESSED, "layers/*.geojson"), "Map overlays small enough not to need tiling. RFC 7946."),
 file_row(file.path(PROCESSED, "layers/resources/*.geojson"), "Resource points for the district map, minimal properties."),
 "",
@@ -493,12 +501,27 @@ vapply(Sys.glob(file.path(PROCESSED, "layers/*.pmtiles")), function(p) {
           paste0("`", m$fields, "`", collapse = ", "), m$minzoom, m$maxzoom)
 }, character(1), USE.NAMES = FALSE),
 "",
-paste0("`Flooding_C` is the styling attribute and takes ",
+paste0("Stormwater: `Flooding_C` is the styling attribute and takes ",
        length(FLOODING_C_DOMAIN), " values: ",
        paste(sprintf("`%s` %s", names(FLOODING_C_DOMAIN), FLOODING_C_DOMAIN),
              collapse = "; "), "."),
 "",
+paste0("FEMA: `zone` is the styling attribute and takes ",
+       length(FEMA_ZONE_DOMAIN), " values: ",
+       paste(sprintf("`%s` %s", names(FEMA_ZONE_DOMAIN), FEMA_ZONE_DOMAIN),
+             collapse = "; "),
+       ". Areas outside all three (FEMA's unshaded X) are absent, not zoned. ",
+       "**This is NYC's effective map, dated 2007-09-05** - any label or ",
+       "legend must say 2007. It is not the 2015 Preliminary FIRM."),
+"",
 "### GeoJSON sources",
+"",
+paste("`surge_current` (`ss_cur`) and `tidal_2020s` (`tid_20s`) are the Flood",
+      "Vulnerability Index for present-day storm surge and 2020s tidal",
+      "flooding: an integer 1-5, **ranked among exposed tracts only**, so 1 is",
+      "the least vulnerable exposed tract, not \"low risk\". A tract absent",
+      "from the file is not exposed. `hurricane_evac_zones`' `zone` is 1-6;",
+      "zone 1 evacuates first."),
 "",
 "| File | Features | Size | Properties |",
 "|---|---|---|---|",

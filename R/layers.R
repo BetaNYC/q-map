@@ -92,6 +92,24 @@ layer_surge_current <- function(fvi, qn, path) {
     write_layer_geojson(path, keep = LAYER_SIMPLIFY_KEEP, clip = qn)
 }
 
+# Tidal flooding in the 2020s, from the Flood Vulnerability Index's tid_20s.
+#
+# The same reading as surge: NULL is "not exposed", the value is a 1-5 index
+# among exposed tracts only, and the layer is the exposed set. 31 features in
+# Queens, 42 KB (2026-11-05) - 27 Queens tracts in Q01, Q02, Q07, Q10, Q11,
+# Q13 and Q14, plus slivers of neighbouring tracts the Queens clip keeps.
+#
+# The 2020s, not a later decade: the FVI has no present-day tidal column, and
+# the 2020s is the nearest to now, as the coastal-storm ranking uses present
+# surge rather than a projection. Display only - it ranks nothing. See
+# METHODOLOGY.md, *Tidal flooding on the map*.
+layer_tidal_2020s <- function(fvi, qn, path) {
+  fvi |>
+    dplyr::filter(!is.na(tid_20s)) |>
+    dplyr::transmute(geoid, tid_20s = as.integer(tid_20s)) |>
+    write_layer_geojson(path, keep = LAYER_SIMPLIFY_KEEP, clip = qn)
+}
+
 # --- resource layers --------------------------------------------------------
 
 # Hurricane evacuation centres. `accessible` is carried because it is the one
