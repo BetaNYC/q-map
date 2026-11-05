@@ -134,7 +134,11 @@ build_district_payloads <- function(crosswalk, hazards, measures, chp, lep,
         lapply(seq_len(nrow(rc)), function(k) list(
           slug = rc$canonical_category[k],
           label = rc$canonical_label[k],
-          count = as.integer(rc$count[k])
+          count = as.integer(rc$count[k]),
+          # On when a map opens with no ?categories= - from
+          # data/registry/resource_categories.csv. isTRUE() is belt and
+          # braces: category_registry_checks already rejects a missing row.
+          default_on = isTRUE(rc$default_on[k])
         ))
       },
 

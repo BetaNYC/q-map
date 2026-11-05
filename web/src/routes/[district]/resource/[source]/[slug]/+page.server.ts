@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { error } from '@sveltejs/kit';
 import { dataUrl } from '$lib/data';
-import type { MapView } from '$lib/mapView';
+import { defaultCategories, type MapView } from '$lib/mapView';
 import { hasDetail } from '$lib/resources';
 import type { DistrictIndexEntry, DistrictPayload, Resource } from '$lib/types';
 import type { EntryGenerator, PageServerLoad } from './$types';
@@ -158,14 +158,17 @@ export const load: PageServerLoad = async ({ fetch, params }) => {
 
   /**
    * The docked map on this page: the district, with the resource's own point
-   * drawn selected (PointMarker Selected=True) whenever its category is on -
-   * which it is when the page was opened from the popup, as the link carries
-   * the map's categories.
+   * drawn selected (PointMarker Selected=True) whenever its category is on.
+   *
+   * Opened from the popup, the link carries the map's categories. Opened any
+   * other way, the default-on categories PLUS the resource's own (Andrew,
+   * 2026-11-05), so a Health care resource still shows its point beside the
+   * page about it.
    */
   const map: MapView = {
     district: params.district,
     layers: [],
-    categories: [],
+    categories: defaultCategories(district.resource_categories, [resource.category]),
     selected: resource.resource_id
   };
 

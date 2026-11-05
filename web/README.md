@@ -422,7 +422,10 @@ contract claims to read field lists off real outputs, so either it was
 generated against an uncommitted state or that table is partly authored.
 
 The button therefore carries `?layers=` and `?hazard=` only, and the map opens
-on its default of every category showing. This also makes the handoff's open
+on its default categories. That default was every category until 2026-11-04;
+it is now the categories marked `default_on` in the district payload
+(Emergency services and Food assistance - see METHODOLOGY.md, *Two resource
+categories on by default*). It is global, not per hazard. This also makes the handoff's open
 question 1 — "children-and-youth is in no hazard's `default_resource_categories`"
 — moot until the field exists.
 

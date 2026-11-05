@@ -51,7 +51,9 @@
     overviewBbox?: MapDistrict['bbox'];
     /** `layer_id`s currently on, from `?layers=`. */
     visibleLayers: string[];
-    /** Category slugs currently on, from `?categories=`. null means all. */
+    /** Category slugs currently on, from `?categories=` or the page's default
+     *  (`defaultCategories`, $lib/mapView.ts). null means all; no page passes
+     *  it since 2026-11-04. */
     visibleCategories: string[] | null;
     /** Fired when a resource point is tapped — the page writes `?resource=`. */
     onSelectResource?: (resourceId: string) => void;
@@ -529,7 +531,7 @@
 
   /**
    * Apply `?categories=` to the points: hidden, not removed, so a toggle never
-   * re-downloads them. null is every category.
+   * re-downloads them. null is every category (no page sends it now).
    */
   $effect(() => {
     void pointsVersion;

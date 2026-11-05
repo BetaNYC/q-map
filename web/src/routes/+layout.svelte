@@ -152,7 +152,8 @@
    * toolbar can switch points on anywhere, so a click on one has to work
    * anywhere. The join is the map page's: resources/<slug>.json, fetched in
    * the browser, once a popup is asked for or the list has rows to show.
-   * With no category on (the district page's default) it is not fetched.
+   * With no category on it is not fetched. Since 2026-11-04 every district
+   * page opens with the default-on categories, so it loads on each.
    */
   const resourceParam = $derived(browser ? page.url.searchParams.get('resource') : null);
 

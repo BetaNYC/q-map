@@ -447,9 +447,24 @@ list(
                           resource_categories)
   ),
 
+  # One row per canonical category: properties of the category itself, today
+  # only `default_on` (which categories a map opens with). See R/resources.R.
+  tar_target(category_registry_path, "data/registry/resource_categories.csv",
+             format = "file"),
+  tar_target(category_registry, read_category_registry(category_registry_path)),
+
   tar_target(
     district_resource_categories,
-    resource_categories_per_district(resources_cdta, resource_categories)
+    resource_categories_per_district(resources_cdta, resource_categories,
+                                     category_registry)
+  ),
+
+  tar_target(
+    category_registry_checks,
+    validate_category_registry(
+      category_registry, resource_categories, district_resource_categories,
+      queens_cdtas = filter(cdta_crosswalk, boro_code == 4)$cdta2020
+    )
   ),
 
   tar_target(

@@ -731,7 +731,10 @@ resources_to_cdta <- function(res, cdta) {
 # screens show conflicting category lists because they render different
 # districts, and both are right - hardcoding either would look broken in 13 of
 # 14 districts.
-resource_categories_per_district <- function(res_cdta, cx) {
+#
+# `default_on` comes from data/registry/resource_categories.csv: whether the
+# category's points are on when a map opens with no `?categories=`.
+resource_categories_per_district <- function(res_cdta, cx, registry) {
   labels <- cx |>
     filter(canonical_category != "exclude") |>
     distinct(canonical_category, canonical_label)
@@ -740,7 +743,82 @@ resource_categories_per_district <- function(res_cdta, cx) {
     filter(!is.na(cdta2020)) |>
     count(cdta2020, canonical_category, name = "count") |>
     left_join(labels, by = "canonical_category") |>
+    left_join(registry, by = c("canonical_category" = "category")) |>
     arrange(cdta2020, desc(count))
+}
+
+# --- category registry --------------------------------------------------------
+#
+# data/registry/resource_categories.csv: one row per canonical category, for
+# properties of the category itself rather than of a source mapping.
+#
+# WHY NOT A COLUMN ON THE CROSSWALK. data/crosswalk/resource_categories.csv
+# has a row per SOURCE category, several per canonical one, so a per-category
+# flag there would be repeated across rows and need an agreement check, as
+# canonical_label already does. Here it is stated once.
+#
+# `default_on`: the categories whose points are on when a map opens with no
+# `?categories=` (public feedback, 2026-11-04: Emergency services and Food
+# assistance). Every map reads it - the district map page and the docked map
+# beside district, hazard and resource pages.
+
+# Categories that exist in the crosswalk but never reach a payload. `exclude`
+# drops the record; `unassigned` is a staging value for FRANC records awaiting
+# per-record review (see the crosswalk's notes).
+CATEGORY_NON_DISPLAY <- c("exclude", "unassigned")
+
+read_category_registry <- function(path) {
+  readr::read_csv(path, show_col_types = FALSE, col_types = readr::cols(
+    category = readr::col_character(),
+    default_on = readr::col_logical()
+  ))
+}
+
+# `per_district` is resource_categories_per_district()'s output and
+# `queens_cdtas` the shipped districts; both are needed for the last check.
+validate_category_registry <- function(registry, cx, per_district, queens_cdtas) {
+  if (!identical(names(registry), c("category", "default_on"))) {
+    stop("resource_categories registry: columns must be exactly ",
+         "category, default_on - got ", paste(names(registry), collapse = ", "))
+  }
+  # col_logical() reads anything but TRUE/FALSE (a "yes", a blank) as NA, so
+  # a typo would silently mean "off".
+  assert_no_na(registry, c("category", "default_on"))
+  assert_unique(registry, "category")
+
+  # Two-way against the crosswalk's vocabulary. One way would catch a typo
+  # here; the other catches a category added or renamed in the crosswalk and
+  # never given a row, which would ship with default_on null.
+  vocabulary <- cx |>
+    filter(!canonical_category %in% CATEGORY_NON_DISPLAY) |>
+    distinct(category = canonical_category)
+  assert_keys_match(registry, vocabulary, by = "category",
+                    label_x = "registry/resource_categories.csv",
+                    label_y = "crosswalk/resource_categories.csv")
+
+  # And against what ships. A category reaching a district payload without a
+  # registry row would carry default_on NA - unassigned leaking through is the
+  # likely way.
+  unknown <- setdiff(per_district$canonical_category, registry$category)
+  if (length(unknown) > 0) {
+    stop("A district payload carries category(ies) with no registry row: ",
+         paste(unknown, collapse = ", "))
+  }
+
+  # A map that opens empty looks broken, not deliberate. Every shipped
+  # district must hold at least one default-on category. Today Emergency
+  # services is in all 14; Food assistance in 7.
+  covered <- per_district |>
+    filter(cdta2020 %in% queens_cdtas, default_on) |>
+    distinct(cdta2020)
+  empty <- setdiff(queens_cdtas, covered$cdta2020)
+  if (length(empty) > 0) {
+    stop("No default-on category has resources in: ",
+         paste(empty, collapse = ", "),
+         ". Its map would open with no points. Turn another category on in ",
+         "data/registry/resource_categories.csv, or accept it and relax this check.")
+  }
+  TRUE
 }
 
 # Per-district resource lists, detail inlined - the 02/05/06 screen payload.

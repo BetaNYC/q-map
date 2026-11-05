@@ -1,4 +1,4 @@
-import type { DistrictIndexEntry } from '$lib/types';
+import type { DistrictIndexEntry, ResourceCategory } from '$lib/types';
 
 /**
  * WORKED EXAMPLE — the desktop map's contract with the page beside it.
@@ -47,6 +47,29 @@ export interface MapView {
 
 /** Every Queens district outlined, nothing else on. */
 export const QUEENS_VIEW: MapView = { district: null, layers: [], categories: [] };
+
+/**
+ * The categories a district's map opens with: those the pipeline marks
+ * `default_on` (data/registry/resource_categories.csv - Emergency services and
+ * Food assistance since 2026-11-04, from public feedback). Every map with a
+ * district uses it: the map page and the docked map beside the district,
+ * hazard and resource pages.
+ *
+ * `include` adds slugs on top - a resource page passes its resource's own
+ * category, so the point the page is about is always drawn. A slug the
+ * district does not hold is ignored rather than kept, so the list stays a
+ * subset of the district's categories and the "equal to the default" test in
+ * $lib/mapState.ts holds.
+ *
+ * Order is the district's category order, which is the panel's row order.
+ */
+export function defaultCategories(
+  categories: readonly ResourceCategory[],
+  include: readonly string[] = []
+): string[] {
+  const extra = new Set(include);
+  return categories.filter((c) => c.default_on || extra.has(c.slug)).map((c) => c.slug);
+}
 
 /** What the map needs to know about a district. A DistrictIndexEntry is one. */
 export type MapDistrict = Pick<

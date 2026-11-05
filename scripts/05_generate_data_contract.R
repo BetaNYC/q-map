@@ -339,7 +339,8 @@ field_table(language_records, list(
 "",
 field_table(cat_entries, list(
   slug = "The category key. Matches `resources[].category` and the map layer's `category` property.",
-  count = "Resources of this category located in this district."
+  count = "Resources of this category located in this district.",
+  default_on = "Whether this category's points are on when a map opens with no `?categories=`. The default selection is the slugs with `default_on: true`; on a resource page, add that resource's own category so its point shows. Set in `data/registry/resource_categories.csv`. At least one category is on in every district (asserted)."
 )),
 "",
 "### `gaps_displayed[]`",

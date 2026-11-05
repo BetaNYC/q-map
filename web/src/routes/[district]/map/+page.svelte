@@ -30,20 +30,26 @@
    * $derived re-runs against the real URL, so a shared ?categories= link
    * resolves on hydration and on any later client-side navigation.
    *
-   * null and [] are different: null is "no parameter, show the default", [] is
-   * "a parameter was given and nothing in it was recognised". §5 says absent
-   * means default, and that unknown ids are dropped rather than fatal.
+   * An absent parameter is the default; an empty one (`?categories=`) is an
+   * explicit empty selection, and unknown ids are dropped rather than fatal
+   * (§5).
    */
   const allCategories = $derived(data.district.resource_categories.map((c) => c.slug));
 
-  /** The categories showing. null -> all of them, the default. Parsing and
-   *  writing are shared with the docked desktop map: $lib/mapState.ts. */
+  /** The page's default: the default-on categories (Emergency services and
+   *  Food assistance, since 2026-11-04 - it was every category). Set in
+   *  +page.ts from the pipeline's `default_on`. */
+  const defaults = $derived(data.map.categories ?? allCategories);
+
+  /** The categories showing, never null. Parsing and writing are shared with
+   *  the docked desktop map: $lib/mapState.ts. */
   const selected = $derived(
-    parseSelection(browser ? page.url.searchParams.get('categories') : null, allCategories)
+    parseSelection(browser ? page.url.searchParams.get('categories') : null, allCategories) ??
+      defaults
   );
 
   function isOn(slug: string): boolean {
-    return selected === null || selected.includes(slug);
+    return selected.includes(slug);
   }
 
   /**
@@ -56,12 +62,12 @@
    * stay where it is and keep focus — a toggle that moves the page or drops
    * focus to the body is unusable with a keyboard or a screen reader.
    *
-   * Switching everything back on removes the parameter (the default is all),
-   * rather than listing all twelve.
+   * Returning to the default selection removes the parameter, so the shortest
+   * link stays the one that means "this page's default".
    */
   function toggle(slug: string) {
-    const next = toggleSelection(selected ?? allCategories, slug, allCategories);
-    const url = withSelection(page.url, 'categories', next, null, allCategories);
+    const next = toggleSelection(selected, slug, allCategories);
+    const url = withSelection(page.url, 'categories', next, defaults, allCategories);
     goto(url, { replaceState: true, noScroll: true, keepFocus: true });
   }
 
@@ -213,7 +219,7 @@
 
   /** The map's state, carried on the popup's detail link (mapStateQuery). */
   const detailQuery = $derived(
-    mapStateQuery({ categories: selected ?? allCategories, layers: selectedLayers, hazard: hazard?.slug ?? null })
+    mapStateQuery({ categories: selected, layers: selectedLayers, hazard: hazard?.slug ?? null })
   );
 
   /* ---- Desktop: forward to the page beside the map -------------------- */
