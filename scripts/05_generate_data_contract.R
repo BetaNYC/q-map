@@ -162,13 +162,12 @@ pmtiles_meta <- function(path) {
   )
 }
 
-# The set of values a tiled attribute actually takes, read off the source so
-# the legend can be written against real categories rather than guessed ones.
-FLOODING_C_DOMAIN <- c(
-  "1" = "Nuisance flooding (>= 4 in and < 1 ft)",
-  "2" = "Deep and contiguous flooding (>= 1 ft)"
-)
-
+# The set of values a tiled attribute actually takes, so the legend can be
+# written against real categories rather than guessed ones.
+#
+# The stormwater tiles carry no attributes since 2026-11-05: the two
+# Flooding_C depth categories are unioned before tiling (scripts/
+# 01_mirror_stormwater.R). Flooding_C survives in the GeoJSON mirror only.
 # fema_flood_zones' `zone`, most to least severe. NFHL_ZONE_CLASSES in
 # R/flooding.R is what produces it; the order is the legend's.
 FEMA_ZONE_DOMAIN <- c(
@@ -498,13 +497,15 @@ paste("`data/registry/map_layers.csv` is the catalogue and the vocabulary for",
 vapply(Sys.glob(file.path(PROCESSED, "layers/*.pmtiles")), function(p) {
   m <- pmtiles_meta(p)
   sprintf("| `layers/%s` | `%s` | %s | z%d-%d |", m$file, m$source_layer,
-          paste0("`", m$fields, "`", collapse = ", "), m$minzoom, m$maxzoom)
+          if (length(m$fields)) paste0("`", m$fields, "`", collapse = ", ") else "none",
+          m$minzoom, m$maxzoom)
 }, character(1), USE.NAMES = FALSE),
 "",
-paste0("Stormwater: `Flooding_C` is the styling attribute and takes ",
-       length(FLOODING_C_DOMAIN), " values: ",
-       paste(sprintf("`%s` %s", names(FLOODING_C_DOMAIN), FLOODING_C_DOMAIN),
-             collapse = "; "), "."),
+paste("Stormwater: **no attributes**. Each file is one flood extent - the",
+      "DEP's nuisance (>= 4 in, < 1 ft) and deep (>= 1 ft) categories merged -",
+      "so it is styled with a single paint. Merged 2026-11-05 so an outline",
+      "draws only the outer edge; before, every boundary between the two",
+      "categories drew as a line inside the shape."),
 "",
 paste0("FEMA: `zone` is the styling attribute and takes ",
        length(FEMA_ZONE_DOMAIN), " values: ",

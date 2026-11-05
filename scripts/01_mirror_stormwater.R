@@ -144,8 +144,23 @@ if (nchar(Sys.which("tippecanoe")) == 0) {
     src <- file.path(OUT, paste0("stormwater_", nm, ".geojson"))
     dst <- file.path(OUT, paste0("stormwater_", nm, ".pmtiles"))
 
+    # ONE CLASS IN THE TILES (2026-11-05). The two Flooding_C categories are
+    # unioned into a single extent before tiling, and the tiles carry no
+    # attributes. Nothing has styled on Flooding_C since 2026-10-08, and the
+    # moderate layer now has an off-white outline so it stays visible above
+    # the coloured surge, tidal, FEMA and evacuation fills. Outlined, every
+    # boundary between a category-1 and a category-2 polygon drew as a white
+    # line inside the flood shape at street zoom - the seams that got the
+    # stroke removed on 2026-10-08. Dissolving removes those boundaries.
+    #
+    # The DAG's flood percentages read the GeoJSON mirror above, which keeps
+    # Flooding_C; only the display tiles lose it.
     x <- st_read(src, quiet = TRUE) |>
       st_make_valid() |>
+      st_union() |>
+      st_make_valid() |>
+      st_sf(geometry = _) |>
+      st_cast("MULTIPOLYGON") |>
       st_cast("POLYGON") |>      # see above - not cosmetic
       st_transform(4326)
 

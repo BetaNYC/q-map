@@ -79,9 +79,10 @@ function stormwater(layerId: 'stormwater_limited_1_77' | 'stormwater_moderate_2_
         // DATA_CONTRACT §8: the source-layer name matches the file name.
         'source-layer': layerId,
         // One style for the whole layer (Andrew, 2026-10-08). The source's
-        // Flooding_C attribute separates nuisance flooding (1: >= 4in, < 1ft)
+        // Flooding_C attribute separated nuisance flooding (1: >= 4in, < 1ft)
         // from deep and contiguous (2: >= 1ft); that was drawn 20% stronger,
-        // and is no longer distinguished. The attribute stays in the tiles.
+        // and is no longer distinguished. Since 2026-11-05 the tiles no
+        // longer carry it: the two categories are merged before tiling.
         paint: {
           'fill-color': FILL[layerId],
           'fill-opacity': STORMWATER_OPACITY[layerId],
