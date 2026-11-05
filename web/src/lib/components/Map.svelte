@@ -18,6 +18,7 @@
   import { configureMapWorker } from '$lib/map/worker';
   import type { MapDistrict } from '$lib/mapView';
   import { categoryFill, categoryInitial } from '$lib/categories';
+  import { placeLabels } from '$lib/map/labels';
   import { recallCamera, rememberCamera } from '$lib/map/camera';
   import { pointSizePx } from '$lib/map/pointScale';
   import type { ResourceCategory } from '$lib/types';
@@ -354,9 +355,10 @@
   /**
    * DistrictPicker's labels, carried over: HTML markers at each district's
    * `point_on_surface` (not a centroid; QN14's falls in Jamaica Bay), the
-   * largest district placed first, any label that would overlap a placed one
-   * hidden. Its district is still clickable, and the entry page's list names
-   * it.
+   * smallest district placed first. Every name always shows (Andrew,
+   * 2026-11-05): a label that would overlap one already placed wraps and
+   * moves the least distance that clears it, never hidden
+   * ($lib/map/labels.ts).
    *
    * SIZE BY MAP SCALE, NOT BY OPENING VIEW. The picker sizes labels 7px at its
    * opening zoom, x1.35 per level in, capped at 12px. Its opening zoom is
@@ -390,20 +392,7 @@
   }
 
   function layoutLabels() {
-    for (const m of labels) m.getElement().style.display = '';
-    requestAnimationFrame(() => {
-      const placed: DOMRect[] = [];
-      const PAD = 1;
-      for (const marker of labels) {
-        const el = marker.getElement();
-        const r = el.getBoundingClientRect();
-        const clash = placed.some(
-          (q) => r.left < q.right + PAD && r.right > q.left - PAD && r.top < q.bottom + PAD && r.bottom > q.top - PAD
-        );
-        if (clash) el.style.display = 'none';
-        else placed.push(r);
-      }
-    });
+    placeLabels(labels);
   }
 
   $effect(() => {
@@ -416,7 +405,8 @@
     if (!show) return;
 
     const area = (d: MapDistrict) => (d.bbox[2] - d.bbox[0]) * (d.bbox[3] - d.bbox[1]);
-    for (const d of [...list].sort((a, b) => area(b) - area(a))) {
+    // Smallest district first: its label has the least room to move.
+    for (const d of [...list].sort((a, b) => area(a) - area(b))) {
       const el = document.createElement('span');
       el.className = 'district-label';
       el.textContent = d.display_name;
@@ -664,11 +654,15 @@
     line-height: var(--line-height-tight);
     color: var(--color-text-primary);
     text-align: center;
-    white-space: nowrap;
     pointer-events: none;
     -webkit-text-stroke: 0.4em #fefcfa;
     paint-order: stroke fill;
     text-shadow: 0 0 2px #fefcfa;
+    /* Wrap at hyphens into a compact block, as the picker's labels. */
+    display: block;
+    max-width: 11em;
+    white-space: normal;
+    text-wrap: balance;
   }
 
   /* PointMarker (Figma 261:1276): the panel's category mark on the map, at

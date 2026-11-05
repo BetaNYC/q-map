@@ -1,8 +1,7 @@
 <script lang="ts">
-  import CategoryGroupHeader from '$lib/components/CategoryGroupHeader.svelte';
   import LayerRamp from '$lib/components/LayerRamp.svelte';
   import MapToggle from '$lib/components/MapToggle.svelte';
-  import { categoryFill, categoryInitial, groupCategories } from '$lib/categories';
+  import { categoryFill, categoryInitial } from '$lib/categories';
   import { RAMP_KEYS } from '$lib/map/palette';
   import { swatchFor, type MapLayer } from '$lib/layers';
   import type { ResourceCategory } from '$lib/types';
@@ -14,10 +13,12 @@
    *
    * It is also the map's legend (option A, Andrew, 2026-11-05):
    *
-   *   Resources   one column per colour group, headed by the group's swatch
-   *               and name (CategoryGroupHeader), so a mark's colour is keyed
-   *               where its toggle is. (Briefly one row per group on
-   *               2026-11-05; Andrew returned it to columns the same day.)
+   *   Resources   the categories in payload order (by count), each mark in
+   *               its group colour. No group labels (Andrew, 2026-11-05):
+   *               grouped columns and then grouped rows were both tried the
+   *               same day and dropped, as they broke the toolbar's grid.
+   *               CategoryGroupHeader and groupCategories() are kept for a
+   *               legend elsewhere.
    *   Layers      each toggle's swatch is the layer's fill; a graded layer
    *               that is on shows its LayerRamp under the toggle. The space
    *               for every graded layer's ramp is held whether the layer is
@@ -32,8 +33,7 @@
    * shared, Back walks the toggles, and the next page resets them.
    *
    * Grid: as many 220px+ columns as fit, 4 at 1440 (Figma's 248px cells) and
-   * 2 at 1024. The resource groups take one column each, so at 1024 they wrap
-   * two to a row.
+   * 2 at 1024.
    */
 
   interface Props {
@@ -51,33 +51,25 @@
   let { categories, categoriesOn, layers, layersOn, onToggleCategory, onToggleLayer }: Props =
     $props();
 
-  const groups = $derived(groupCategories(categories));
 </script>
 
 <div class="toolbar">
   <section class="group" aria-labelledby="toolbar-resources">
     <h2 id="toolbar-resources" class="heading">Resources</h2>
-    <div class="grid">
-      {#each groups as group (group.group)}
-        <section class="column" aria-labelledby="toolbar-group-{group.group || 'other'}">
-          <CategoryGroupHeader id="toolbar-group-{group.group || 'other'}" label={group.label} fill={group.fill} />
-          <ul class="list">
-            {#each group.categories as category (category.slug)}
-              <li>
-                <MapToggle
-                  pressed={categoriesOn.includes(category.slug)}
-                  label={category.label}
-                  mark={categoryInitial(category)}
-                  markFill={categoryFill(category)}
-                  count={category.count}
-                  onToggle={() => onToggleCategory(category.slug)}
-                />
-              </li>
-            {/each}
-          </ul>
-        </section>
+    <ul class="grid">
+      {#each categories as category (category.slug)}
+        <li>
+          <MapToggle
+            pressed={categoriesOn.includes(category.slug)}
+            label={category.label}
+            mark={categoryInitial(category)}
+            markFill={categoryFill(category)}
+            count={category.count}
+            onToggle={() => onToggleCategory(category.slug)}
+          />
+        </li>
       {/each}
-    </div>
+    </ul>
   </section>
 
   <section class="group" aria-labelledby="toolbar-layers">
@@ -139,22 +131,12 @@
     list-style: none;
   }
 
-  .grid li,
-  .column {
+  .grid li {
     min-width: 0;
   }
 
   .grid {
     align-items: start;
-  }
-
-  .list {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-100);
-    margin: 0;
-    padding: 0;
-    list-style: none;
   }
 
   .ramp {
