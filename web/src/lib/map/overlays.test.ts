@@ -91,13 +91,13 @@ describe('category mark fills', () => {
   it('fills each of the four groups with its colour, and nothing else', async () => {
     const { CATEGORY_GROUP_FILL } = await import('./palette');
     expect(CATEGORY_GROUP_FILL).toEqual({
-      emergency: '#f08703',
-      'basic-needs': '#99dd58',
-      'health-and-care': '#8eb0d0',
-      'community-and-services': '#ffe8ba'
+      emergency: '#e5b28a',
+      'basic-needs': '#b1d09a',
+      'health-and-care': '#94c3ef',
+      'community-and-services': '#f7daa1'
     });
     const { categoryFill } = await import('$lib/categories');
-    expect(categoryFill({ group: 'basic-needs' })).toBe('#99dd58');
+    expect(categoryFill({ group: 'basic-needs' })).toBe('#b1d09a');
     // An unknown group draws plain rather than claiming a group's colour.
     expect(categoryFill({ group: 'not-a-group' })).toBeNull();
   });

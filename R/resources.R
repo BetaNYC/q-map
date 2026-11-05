@@ -765,11 +765,10 @@ resource_categories_per_district <- function(res_cdta, cx, registry) {
 # `group`: the colour group of the category's lettered mark (public feedback,
 # 2026-11-05: "some colour-coding of resources"). The letter still identifies
 # the category; the fill says what kind of help it is. Four groups, because
-# four colours is what stays distinct: the chosen set (D26's palette, nudged)
-# keeps every pair >= 18.3 OKLab dE for normal vision and 9.7 under
-# protan/deutan simulation. Eleven colours could not be told apart (worst pair
-# 5-8). The fills are the frontend's ($lib/map/palette.ts); the grouping is
-# data, so it is validated here.
+# four colours because eleven could not be told apart (worst pair 5-8). The
+# fills are muted (2026-11-05, "M1 soft"), so colour is a hint and the letter
+# the identity. The fills are the frontend's ($lib/map/palette.ts); the
+# grouping is data, so it is validated here.
 
 # The group vocabulary and its display labels, in legend order.
 CATEGORY_GROUPS <- c(

@@ -202,25 +202,29 @@ export const LAYER_SWATCH: Record<string, string> = {
  * group (`group` in the district payload; data/registry/resource_categories.csv).
  * Andrew, 2026-11-05, from public feedback asking for colour-coding.
  *
- * "D3": the D26 GI web map's palette (#fd9a52 #fee6bf #9fb1c6 #b3de69 of
- * its six), nudged - every colour moved less than 6 OKLab dE and 6 degrees of
- * hue - so the four groups clear both targets: closest pair 18.3 dE for
- * normal vision, 9.7 under protan/deutan simulation. As D26 had them they
- * scored 15.0 / 6.3. Lime and cream are swapped from D26's order so Food
- * assistance, on by default, is clearly coloured (lime) and cream - only
- * 7.9 dE from the plain off-white mark - goes to the broadest group.
+ * "M1 soft": the hues of the D26 GI web map's palette (orange, lime, slate
+ * blue, cream - "D3", chosen earlier the same day), muted to OKLCH chroma
+ * 0.08. At full strength (chroma up to 0.18) they looked garish beside the
+ * two ranked-hazard chips (severity/extreme and severe fills, chroma
+ * 0.03-0.04); Andrew picked this from three muted levels rendered in the page
+ * (after briefly applying the quieter M2, chroma 0.06).
  *
- * The letter still names the category; the fill says what kind of help it
- * is. Black letter >= 9:1 on every fill.
+ * The cost, accepted: the four groups are harder to tell apart - closest pair
+ * 9.7 OKLab dE for normal vision and 2.4 under protan/deutan, against D3's
+ * 18.3 / 9.7. Colour is a hint here, not the key: the letter names every
+ * category, and the group labels were dropped from the toolbar. Emergency's
+ * muted orange sits 4.6 dE from the rank-2 hazard chip.
  *
- * NOT FIGMA PRIMITIVES. These four are their own colours, to be added to
- * Figma (Andrew); the names below are the proposed variable names.
+ * Black letter >= 10:1 on every fill.
+ *
+ * NOT FIGMA RAMP PRIMITIVES. Figma carries them as `color/category/*` in the
+ * primitives collection.
  */
 export const CATEGORY_GROUP_FILL: Record<string, string> = {
-  emergency: '#f08703', // category/emergency - orange
-  'basic-needs': '#99dd58', // category/basic-needs - lime
-  'health-and-care': '#8eb0d0', // category/health-and-care - slate blue
-  'community-and-services': '#ffe8ba' // category/community-and-services - cream
+  emergency: '#e5b28a', // color/category/emergency - muted orange
+  'basic-needs': '#b1d09a', // color/category/basic-needs - muted lime
+  'health-and-care': '#94c3ef', // color/category/health-and-care - muted slate blue
+  'community-and-services': '#f7daa1' // color/category/community-and-services - muted cream
 };
 
 /**

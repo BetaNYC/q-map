@@ -5,6 +5,7 @@
   import { base } from '$app/paths';
   import { dataUrl } from '$lib/data';
   import { BASEMAP_STYLE, fadeInBasemapLayers } from '$lib/map/basemap';
+  import { placeLabels } from '$lib/map/labels';
   import { configureMapWorker } from '$lib/map/worker';
   import type { DistrictIndexEntry } from '$lib/types';
   import CdtaCard from './CdtaCard.svelte';
@@ -34,7 +35,9 @@
    *
    * LABELS ARE HTML MARKERS, NOT A SYMBOL LAYER: a symbol layer needs fonts
    * from a glyph CDN, and every other label in the app is AUTHENTIC Sans Pro.
-   * The cost is doing collision detection by hand — now on every zoom. Labels
+   * The cost is doing collision detection by hand — now on every zoom. Every
+   * name always shows (Andrew, 2026-11-05): a clashing label wraps and moves
+   * rather than hiding ($lib/map/labels.ts). Labels
    * also grow as the map zooms in (LABEL below), so more names fit and they
    * become readable as the districts get larger.
    *
@@ -129,27 +132,9 @@
 
     const markers: maplibregl.Marker[] = [];
 
-    /**
-     * Show as many labels as fit at this zoom: largest district first, so when
-     * two compete the one with more room survives; a clashing label is hidden,
-     * not removed — its district is still tappable, and the card names it.
-     */
-    const layoutLabels = () => {
-      for (const m of markers) m.getElement().style.display = '';
-      requestAnimationFrame(() => {
-        const placed: DOMRect[] = [];
-        const PAD = 1;
-        for (const marker of markers) {
-          const el = marker.getElement();
-          const r = el.getBoundingClientRect();
-          const clash = placed.some(
-            (q) => r.left < q.right + PAD && r.right > q.left - PAD && r.top < q.bottom + PAD && r.bottom > q.top - PAD
-          );
-          if (clash) el.style.display = 'none';
-          else placed.push(r);
-        }
-      });
-    };
+    /** Every label shows: largest district placed first, a clashing one
+     *  moved the least distance that clears it, never hidden. */
+    const layoutLabels = () => placeLabels(markers);
 
     map.on('load', () => {
       // Not zoomable out past the Queens view it opened on.
@@ -211,9 +196,11 @@
       map.on('mouseenter', 'queens-fill', () => (map.getCanvas().style.cursor = 'pointer'));
       map.on('mouseleave', 'queens-fill', () => (map.getCanvas().style.cursor = ''));
 
+      // Smallest district first: its label has the least room to move
+      // ($lib/map/labels.ts).
       const byArea = [...queens].sort((a, b) => {
         const area = (d: DistrictIndexEntry) => (d.bbox[2] - d.bbox[0]) * (d.bbox[3] - d.bbox[1]);
-        return area(b) - area(a);
+        return area(a) - area(b);
       });
       for (const d of byArea) {
         const el = document.createElement('span');
@@ -311,13 +298,22 @@
     line-height: var(--line-height-tight);
     color: var(--color-text-primary);
     text-align: center;
-    white-space: nowrap;
     pointer-events: none;
     /* A halo: the labels sit over fills, boundaries and streets. */
     -webkit-text-stroke: 0.4em #fefcfa;
     paint-order: stroke fill;
     text-shadow:
       0 0 2px #fefcfa;
+  }
+
+  /* Long names wrap at their hyphens into a compact block, so all fourteen fit
+     without hiding any ($lib/map/labels.ts). 11em holds the longest single
+     part, "Rockaway"-length words never break mid-word. */
+  .picker :global(.picker-label) {
+    display: block;
+    max-width: 11em;
+    white-space: normal;
+    text-wrap: balance;
   }
 </style>
  

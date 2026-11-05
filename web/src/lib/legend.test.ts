@@ -18,13 +18,13 @@ describe('groupCategories', () => {
     ]);
     expect(groups.map((g) => g.group)).toEqual(['emergency', 'basic-needs', 'community-and-services']);
     expect(groups[1].categories.map((c) => c.slug)).toEqual(['food', 'housing']);
-    expect(groups[1]).toMatchObject({ label: 'Basic needs', fill: '#99dd58' });
+    expect(groups[1]).toMatchObject({ label: 'Basic needs', fill: '#b1d09a' });
   });
 
   it('keeps a category with an unknown group, last and uncoloured', () => {
     const groups = groupCategories([cat('mystery', 'not-a-group'), cat('emergency', 'emergency')]);
     expect(groups.map((g) => [g.group, g.label, g.fill])).toEqual([
-      ['emergency', 'emergency', '#f08703'],
+      ['emergency', 'emergency', '#e5b28a'],
       ['', 'Other', null]
     ]);
   });

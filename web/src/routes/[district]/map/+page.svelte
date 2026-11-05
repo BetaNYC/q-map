@@ -5,10 +5,8 @@
   import { page } from '$app/state';
   import BottomSheet from '$lib/components/BottomSheet.svelte';
   import PageHeader from '$lib/components/PageHeader.svelte';
-  import CategoryGroupHeader from '$lib/components/CategoryGroupHeader.svelte';
   import LayerRamp from '$lib/components/LayerRamp.svelte';
   import LayerRow from '$lib/components/LayerRow.svelte';
-  import { groupCategories } from '$lib/categories';
   import { RAMP_KEYS } from '$lib/map/palette';
   import Map from '$lib/components/Map.svelte';
   import TabBar from '$lib/components/TabBar.svelte';
@@ -403,20 +401,15 @@
             <!-- All twelve stay listed whatever the selection (§7.3) —
                  filtering the LIST would strand someone who arrived from a
                  CategoryRow link with no way to turn anything else on. -->
-            <!-- Under their colour groups (legend option A, 2026-11-05): each
-                 header's swatch keys the marks below it. -->
-            {#each groupCategories(data.district.resource_categories) as group (group.group)}
-              <section class="category-group" aria-labelledby="sheet-group-{group.group || 'other'}">
-                <CategoryGroupHeader id="sheet-group-{group.group || 'other'}" label={group.label} fill={group.fill} level={2} />
-                <ul class="rows">
-                  {#each group.categories as category (category.slug)}
-                    <li>
-                      <ResourceRow {category} pressed={isOn(category.slug)} onToggle={toggle} />
-                    </li>
-                  {/each}
-                </ul>
-              </section>
-            {/each}
+            <!-- Payload order, no group labels (Andrew, 2026-11-05): grouping
+                 was tried and dropped the same day. -->
+            <ul class="rows">
+              {#each data.district.resource_categories as category (category.slug)}
+                <li>
+                  <ResourceRow {category} pressed={isOn(category.slug)} onToggle={toggle} />
+                </li>
+              {/each}
+            </ul>
           {:else}
             <ul class="rows">
               {#each layers as layer (layer.layer_id)}
@@ -483,11 +476,6 @@
     list-style: none;
     margin: 0;
     padding: 0;
-  }
-
-  /* 12px above each group header, as the Figma frame (299:146). */
-  .category-group {
-    padding-top: var(--space-300);
   }
 
   /* A graded layer's key, under its row while it is on: indented to the
