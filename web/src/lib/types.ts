@@ -222,7 +222,7 @@ export interface ResourceCategory {
   /** On when a map opens with no `?categories=`. At least one is true in
    *  every district (pipeline-asserted). See `defaultCategories`. */
   default_on: boolean;
-  /** The colour group of the category's mark: `emergency`, `basic-needs`,
+  /** The colour group of the category's mark: `emergency`, `cooling`, `basic-needs`,
    *  `health-and-care` or `community-and-services`. See `categoryFill`. */
   group: string;
   /** The group's label for the legend, e.g. "Basic needs". */

@@ -1,7 +1,7 @@
 category,default_on,group
 benefits-and-legal,FALSE,basic-needs
 children-and-youth,FALSE,community-and-services
-cooling-options,FALSE,emergency
+cooling-options,FALSE,cooling
 disability-and-access,FALSE,health-and-care
 emergency-services,TRUE,emergency
 food-assistance,TRUE,basic-needs

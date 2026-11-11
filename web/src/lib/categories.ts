@@ -76,7 +76,7 @@ export function categoryFill(category: Pick<ResourceCategory, 'group'> | undefin
   return (category && CATEGORY_GROUP_FILL[category.group]) ?? null;
 }
 
-/** The colour groups in legend order: Emergency, Basic needs, Health and care,
+/** The colour groups in legend order: Emergency, Cooling, Basic needs, Health and care,
  *  Community and services. */
 export const CATEGORY_GROUP_ORDER: readonly string[] = Object.keys(CATEGORY_GROUP_FILL);
 
