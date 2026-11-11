@@ -26,7 +26,7 @@
 </script>
 
 <svelte:head>
-  <title>Queens Readiness Resources</title>
+  <title>Queens Resource Map</title>
   <meta
     name="description"
     content="Emergency preparedness for the 14 Queens community districts: hazards, local resources and where the gaps are."
@@ -51,9 +51,8 @@
   <AlertBanner />
 
   <p class="about">
-    Queens has resources to help you prepare and find support. Explore the hazards your neighborhood faces and local resources you can access to prepare, respond, or recover. 
-    You can start small and make a plan that fits your household, or find help now if something is happening. <br><br>
-    Queens Readiness Resources is a tool created by the NYC Preparedness and Recovery Institute (<a href="https://pandemicresponse.columbia.edu/" rel="noopener noreferrer">PRI</a>) in collaboration with <a href="https://beta.nyc" rel="noopener noreferrer">BetaNYC</a>. 
+    Queens has resources to help you prepare and find support. Explore the hazards your neighborhood faces and local resources you can access to prepare, respond, or recover. <br><br>
+    Queens Resource Map is a tool created by the NYC Preparedness and Recovery Institute (<a href="https://pandemicresponse.columbia.edu/" rel="noopener noreferrer">PRI</a>) in collaboration with <a href="https://beta.nyc" rel="noopener noreferrer">BetaNYC</a>. 
     It is designed to provide a dynamic, community-informed platform connecting residents and community-based organizations to critical resources before, during, and after emergencies. <br><br>
     Want to share feedback or get a resource added? Please complete <a href="https://forms.gle/itJupzxdb6mhG7dr9" rel="noopener noreferrer">this form.</a>
   </p>

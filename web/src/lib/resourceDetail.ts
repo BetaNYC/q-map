@@ -143,7 +143,7 @@ export function listingNote(r: Resource): string {
     franc: 'the FRANC resource map',
     qpl: 'Queens Public Library',
     cool: 'NYC Emergency Management',
-    manual: 'the Queens Readiness Resources team'
+    manual: 'the Queens Resource Map team'
   };
   const source = sources[r.source];
   const call = r.phone ? ' Call to confirm details.' : '';
