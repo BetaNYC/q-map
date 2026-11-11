@@ -22,7 +22,9 @@ permissions:
 
 jobs:
   archive:
-    runs-on: ubuntu-latest
+    # Pinned, and the cache keyed on the release, for the reason given on the
+    # same lines in pipeline.yml. Keep the two in step.
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
 
@@ -42,11 +44,15 @@ jobs:
           curl -fsSL https://raw.githubusercontent.com/nbafrank/uvr/main/install.sh | sh
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
+      - name: Read the Ubuntu release
+        id: os
+        run: echo "version=$(. /etc/os-release && echo "$VERSION_ID")" >> "$GITHUB_OUTPUT"
+
       - name: Cache the uvr library
         uses: actions/cache@v4
         with:
           path: .uvr/library
-          key: uvr-${{ runner.os }}-${{ hashFiles('uvr.lock') }}
+          key: uvr-${{ runner.os }}-${{ steps.os.outputs.version }}-${{ hashFiles('uvr.lock') }}
 
       # No --frozen; see the note on the same step in pipeline.yml. This job is
       # the one that cannot afford a spurious failure: a missed Saturday leaves
