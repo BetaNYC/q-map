@@ -317,7 +317,8 @@ list(
       model_slugs = c(HAZARD_PRIORITY, HAZARD_PINNED),
       registry_ids = map_layer_registry$layer_id,
       available_ids = map_layer_registry$layer_id[
-        map_layer_registry$status == "available"]
+        map_layer_registry$status == "available"],
+      category_ids = category_registry$category
     ) &&
       # The model and the content describe the same nine hazards by the same
       # labels, and the model's scored parts exist as authored parts.

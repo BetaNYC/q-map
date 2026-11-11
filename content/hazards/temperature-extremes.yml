@@ -204,3 +204,8 @@ parts:
               Rockaways.
 
 map_layers: []
+
+# Switched on alongside the district's default categories when the map opens
+# from this page. Slugs from data/registry/resource_categories.csv.
+map_categories:
+  - cooling-options

@@ -69,14 +69,15 @@ export const load: PageLoad = async ({ fetch, params }) => {
    * own overlays on. The same `map_layers` the mobile map button writes into
    * `?layers=`, the override's where one applies (q14's coastal storm opens
    * with its evacuation zones and surge layers), and the default-on
-   * categories' points, as every district map since 2026-11-04. The map
+   * categories' points plus the hazard's own `map_categories` (Cooling
+   * options on Temperature Extremes). The map
    * button itself is hidden on desktop (Andrew, 2026-10-07), so this is the
    * only way the layers appear there.
    */
   const map: MapView = {
     district: params.district,
     layers: content.map_layers ?? [],
-    categories: defaultCategories(district.resource_categories)
+    categories: defaultCategories(district.resource_categories, content.map_categories)
   };
 
   return { district, hazard, content, conditions, isOverridden, map };

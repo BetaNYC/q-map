@@ -29,15 +29,15 @@
    * one applies, which is how q14's coastal storm opens with the evacuation
    * zones and surge layers that no other district gets.
    *
-   * `?categories=` IS NOT CARRIED, because the field it would come from does
-   * not exist. `DATA_CONTRACT.md` §6 documents `default_resource_categories`
-   * on all 8 hazard files; it is absent from all 8, from the YAML source, and
-   * from every committed version of the outputs. See web/README.md. Without
-   * it the map opens on its default, which is every category showing.
+   * `?categories=` only when the hazard switches categories on
+   * (`map_categories`). The URL replaces the default rather than adding to
+   * it, so it carries the full list from +page.ts. Other hazards leave it out
+   * and the map opens on the district's default_on categories.
    */
   const mapHref = $derived.by(() => {
     const params = new URLSearchParams();
     if (content.map_layers?.length) params.set('layers', content.map_layers.join(','));
+    if (content.map_categories?.length) params.set('categories', (data.map.categories ?? []).join(','));
     params.set('hazard', content.slug);
     return `${base}/${district.slug}/map?${params}`;
   });

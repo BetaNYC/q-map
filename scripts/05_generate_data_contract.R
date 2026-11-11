@@ -252,6 +252,7 @@ NOTES_HAZARD <- list(
   sections = "**Always an array.** Empty exactly when `parts` is not. Ids come from a closed vocabulary; none is required.",
   parts = "**Always an array.** Empty exactly when `sections` is not. Sub-hazards, each a complete set of sections - see `parts[]`.",
   map_layers = "Layer ids from `data/registry/map_layers.csv`. **Always an array**, even with one element.",
+  map_categories = "Resource category slugs this hazard's map switches on, **in addition to** the district's `default_on` categories (temperature-extremes: `cooling-options`). A slug the district does not hold is skipped. **Always an array**, usually empty.",
   jra_category = "The NYC JRA hazard this maps to. **Absent on `air-quality`**, which the JRA does not list. Flooding (flooding + coastal storm) and Infectious Disease Outbreak (pandemic + outbreak) each cover two JRA hazards and name one."
 )
 
