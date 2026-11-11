@@ -21,7 +21,7 @@ HAZARD_CONTENT_DIR <- "content/hazards"
 # Everything that varies only numerically should use templating against the
 # district payload instead (PIPELINE_DESIGN.md section 3: "emit facts, let the
 # frontend write the sentence"), not an overlay.
-HAZARD_OVERLAY_KEYS <- c("summary", "sections", "parts", "map_layers", "resource_categories")
+HAZARD_OVERLAY_KEYS <- c("summary", "sections", "parts", "map_layers", "map_categories")
 
 # Parts: a hazard made of named sub-hazards.
 #
@@ -205,7 +205,7 @@ hazard_sections_authored <- function(sections) {
 # --- validation -------------------------------------------------------------
 
 validate_hazard_content <- function(content, model_slugs, registry_ids = character(),
-                                    available_ids = NULL) {
+                                    available_ids = NULL, category_ids = NULL) {
   if (anyNA(names(content))) {
     stop("Hazard content: a file has no `slug`: ",
          paste(vapply(content[is.na(names(content))],
@@ -299,6 +299,19 @@ validate_hazard_content <- function(content, model_slugs, registry_ids = charact
         stop(where, ": map_layer '", lyr, "' is in the registry but its status ",
              "is not `available`, so no artifact exists and the map renders ",
              "empty. Ship the layer first, or drop it from the content file.")
+      }
+    }
+
+    # Resource categories the hazard's map switches on, on top of the
+    # district's default_on ones. A misspelt slug would just never show, so it
+    # fails here instead. Same single-string guard as map_layers above.
+    for (cat in y$map_categories %||% list()) {
+      if (length(cat) != 1 || !is.character(unlist(cat))) {
+        stop(where, ": a `map_categories` entry is not a single category slug.")
+      }
+      if (!is.null(category_ids) && !cat %in% category_ids) {
+        stop(where, ": map_category '", cat, "' is not in ",
+             "data/registry/resource_categories.csv")
       }
     }
   }
@@ -707,7 +720,7 @@ validate_hazard_links <- function(content, overlays = list(),
 # map layer emitted `"map_layers": "hvi_choropleth"` while every other hazard
 # emitted `[]`. A frontend iterating that field works on seven hazards and
 # breaks on the eighth. I() marks a value AsIs, which auto_unbox leaves alone.
-HAZARD_ARRAY_FIELDS <- c("sections", "parts", "items", "map_layers")
+HAZARD_ARRAY_FIELDS <- c("sections", "parts", "items", "map_layers", "map_categories")
 
 force_arrays <- function(x, fields = HAZARD_ARRAY_FIELDS) {
   if (is.list(x)) {
@@ -749,6 +762,8 @@ normalise_sections <- function(sections) {
 # on the common case - the reasoning normalise_sections() gives for `items`.
 normalise_hazard <- function(y) {
   y$sections <- normalise_sections(y$sections)
+  # Optional in the YAML, always an array in the JSON: [] on most hazards.
+  y$map_categories <- y$map_categories %||% list()
   y$parts <- lapply(y$parts %||% list(), function(p) {
     p$sections <- normalise_sections(p$sections)
     p
@@ -787,6 +802,9 @@ validate_hazard_output <- function(paths) {
     j <- jsonlite::fromJSON(p, simplifyVector = FALSE)
     if (!is.null(j$map_layers) && !is.list(j$map_layers)) {
       stop(basename(p), ": map_layers is not a JSON array")
+    }
+    if (!is.list(j$map_categories)) {
+      stop(basename(p), ": map_categories is not a JSON array")
     }
     is_array <- function(x) is.list(x) && is.null(names(x))
     check_sections <- function(sections, at) {

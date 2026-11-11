@@ -202,16 +202,17 @@ export interface HazardContent {
   /** Always present. Empty exactly when `sections` is not. Render these when
    *  non-empty, otherwise `sections`. */
   parts: HazardPart[];
-  default_resource_categories: string[];
   map_layers: string[];
+  /** Category slugs the hazard's map switches on, on top of the district's
+   *  `default_on` ones. Always present, usually empty. See `defaultCategories`. */
+  map_categories: string[];
 }
 
 /**
  * DATA_CONTRACT.md §3, `resource_categories[]` — what THIS district holds.
  *
- * Not to be confused with `default_resource_categories` on a hazard payload,
- * which the contract once described and the pipeline never emitted. What a
- * map opens with is `default_on` below.
+ * What a map opens with is `default_on` below, plus a hazard's
+ * `map_categories` when it opens from that hazard's page.
  */
 export interface ResourceCategory {
   /** Matches `resources[].category` and the map layer's `category` property. */

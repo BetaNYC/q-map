@@ -410,24 +410,15 @@ its label, with an `id` anchor (`/q14/flooding#coastal-storm`). That layout
 is a stopgap pending Andrew's design; see the comment in
 `[district]/[hazard]/+page.svelte` for what is open.
 
-#### `default_resource_categories` does not exist
+#### Hazard categories: `map_categories`
 
-`DATA_CONTRACT.md` §6 documents it on **all 8** hazard files, with an example
-of `array[5]`, and §5 has the resource-map button carry it as `?categories=`.
-
-It is absent from all 9 emitted files, absent from every `content/hazards/*.yml`,
-absent from `R/` and `scripts/`, and absent from **every committed version of
-`data/processed/hazards/`** — checked back through four pipeline commits. The
-contract claims to read field lists off real outputs, so either it was
-generated against an uncommitted state or that table is partly authored.
-
-The button therefore carries `?layers=` and `?hazard=` only, and the map opens
-on its default categories. That default was every category until 2026-11-04;
-it is now the categories marked `default_on` in the district payload
-(Emergency services and Food assistance - see METHODOLOGY.md, *Two resource
-categories on by default*). It is global, not per hazard. This also makes the handoff's open
-question 1 — "children-and-youth is in no hazard's `default_resource_categories`"
-— moot until the field exists.
+`DATA_CONTRACT.md` once documented `default_resource_categories` on every
+hazard file; the pipeline never emitted it. Since 2026-11-11 the field that
+does exist is `map_categories`: category slugs a hazard's map switches on on
+top of the district's `default_on` ones. Only Temperature Extremes sets one
+(`cooling-options`). The hazard page passes them to the docked map through
+`defaultCategories(..., content.map_categories)`, and the mobile map button
+writes the full list into `?categories=`.
 
 #### The 2026-09-25 revision
 
