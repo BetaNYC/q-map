@@ -1,6 +1,6 @@
 # R/cool_options.R
 #
-# NYC OEM Cool Options as resources, under their own category: Cooling options.
+# NYC Emergency Management Cool Options as resources, under their own category: Cooling options.
 #
 # The second resource source, after R/qpl.R, that does NOT go through
 # data/canonical/resources.csv, and for the same reason: it is the agency's own
@@ -65,12 +65,14 @@ build_cool_option_resources <- function(cool_options, cx) {
     canonical_category = mapped$canonical_category,
     subcategory = ifelse(older_only, "Indoor cool option, older adults only",
                          "Indoor cool option"),
+    # paste() would turn a missing ZIP into "NY NA", which paste_na keeps.
     address = paste_na(display_case(trimws(x$Address)), "Queens",
-                       paste("NY", x$ZIP_code)),
+                       ifelse(is.na(x$ZIP_code) | !nzchar(x$ZIP_code),
+                              NA_character_, paste("NY", x$ZIP_code))),
     lon = xy[, 1],
     lat = xy[, 2],
     geocode_boro = "Queens",
-    geocode_match = "NYC OEM Cool Options geometry",
+    geocode_match = "NYC Emergency Management Cool Options geometry",
     in_queens = TRUE,
     serves_queens = TRUE,
     is_coad_member = FALSE,

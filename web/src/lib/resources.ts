@@ -98,7 +98,8 @@ const SOURCE_LABELS: Record<string, string> = {
   facdb: 'DCP Facilities Database',
   qnpd: 'Queens Nonprofit Directory',
   franc: 'FRANC Resource Map',
-  qpl: 'Queens Library Branches'
+  qpl: 'Queens Library Branches',
+  cool: 'NYC Emergency Management Cool Options'
 };
 
 export function sourceLabel(resource: Pick<Resource, 'source'>): string | null {

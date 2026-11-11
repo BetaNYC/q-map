@@ -96,6 +96,11 @@ describe('listingNote', () => {
       'From the Queens Readiness Resources team. Call to confirm details.'
     );
   });
+
+  it('credits a Cool Options site to NYC Emergency Management', () => {
+    const base = record('q14', 'franc:acqc');
+    expect(listingNote({ ...base, source: 'cool', phone: undefined })).toBe('From NYC Emergency Management.');
+  });
 });
 
 describe('phoneHref', () => {

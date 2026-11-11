@@ -628,7 +628,7 @@ validate_canonical_resources <- function(res, cx) {
   }
   # Likewise Cool Options (R/cool_options.R).
   if (any(res$source == "cool")) {
-    stop("resources.csv: cool rows are fetched from NYC OEM Cool Options by ",
+    stop("resources.csv: cool rows are fetched from NYC Emergency Management Cool Options by ",
          "the pipeline and must not be entered here")
   }
 

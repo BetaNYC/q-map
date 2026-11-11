@@ -295,7 +295,7 @@ EVAC_ZONES_ID   <- "epne-qv9x"
 EVAC_CENTERS_ID <- "p5md-weyf"
 SOCRATA <- "https://data.cityofnewyork.us/resource/"
 
-# NYC OEM Cool Options.
+# NYC Emergency Management Cool Options.
 #
 # Cooling CENTERS only open during a declared heat emergency, so "distance to a
 # cooling center" is not a standing condition anyone can measure. Cool Options
