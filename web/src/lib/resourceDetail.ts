@@ -142,6 +142,7 @@ export function listingNote(r: Resource): string {
     qnpd: 'the Queens Nonprofit Directory',
     franc: 'the FRANC resource map',
     qpl: 'Queens Public Library',
+    cool: 'NYC Emergency Management',
     manual: 'the Queens Readiness Resources team'
   };
   const source = sources[r.source];

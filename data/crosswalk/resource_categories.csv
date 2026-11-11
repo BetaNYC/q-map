@@ -64,3 +64,4 @@ franc,source_layer,Elected Officials Offices,government-offices,Government offic
 franc,source_layer,Transportation,emergency-services,Emergency services,FRANC transportation is evacuation and mobility support; the canonical vocabulary has no transportation category
 franc,source_layer,FRANC Members,unassigned,Unassigned,Membership not a category - sets is_coad_member and needs per-record review
 franc,source_layer,Resources,unassigned,Unassigned,Catch-all layer - needs per-record review
+cool,Space_type,Cooling Center,cooling-options,Cooling options,"NYC Emergency Management Cool Options, indoor rooms only (R/cool_options.R), fetched every build. Added 2026-11-11 as its own category, turned on from Temperature Extremes. Library branches appear here and under libraries-and-community."

@@ -295,7 +295,7 @@ EVAC_ZONES_ID   <- "epne-qv9x"
 EVAC_CENTERS_ID <- "p5md-weyf"
 SOCRATA <- "https://data.cityofnewyork.us/resource/"
 
-# NYC OEM Cool Options.
+# NYC Emergency Management Cool Options.
 #
 # Cooling CENTERS only open during a declared heat emergency, so "distance to a
 # cooling center" is not a standing condition anyone can measure. Cool Options
@@ -306,15 +306,28 @@ SOCRATA <- "https://data.cityofnewyork.us/resource/"
 # Finder_status is deliberately ignored. It is live open/closed state, and
 # baking a seasonal snapshot into a standing indicator would make the number
 # wrong for most of the year.
+#
+# The same fetch feeds the Cooling options resource category (2026-11-11,
+# R/cool_options.R), which is why it carries address, phone, OEM's id and
+# the age restriction, and `data_updated`: the layer's dataLastEditDate, the
+# honest `verified_on` for those records.
 get_cool_options <- function(url = COOL_OPTIONS_URL, indoor_only = TRUE) {
   parsed <- httr::parse_url(url)
   parsed$query <- list(
     where = if (indoor_only) "Space_type='Cooling Center'" else "1=1",
-    outFields = "Facility_name,Location_type,Space_type,Borough_name,Accessible",
+    outFields = paste("Facility_name,Location_type,Space_type,Borough_name",
+                      "Accessible,Address,ZIP_code,Phone,NYCEM_ID",
+                      "Age_restriction", sep = ","),
     outSR = 4326, f = "geojson"
   )
   x <- read_sf(httr::build_url(parsed))
   if (nrow(x) == 0) stop("Cool Options returned no features")
+
+  meta <- jsonlite::fromJSON(sub("/query$", "?f=json", url))
+  edited <- meta$editingInfo$dataLastEditDate
+  if (is.null(edited)) stop("Cool Options: layer metadata has no dataLastEditDate")
+  x$data_updated <- as.character(as.Date(as.POSIXct(edited / 1000, origin = "1970-01-01",
+                                                    tz = "America/New_York")))
   x
 }
 

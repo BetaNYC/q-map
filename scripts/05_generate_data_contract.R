@@ -373,7 +373,7 @@ field_table(resource_records, list(
   resource_id = "**Stable across rebuilds.** Permalinks depend on it.",
   category = "Resolves through `data/crosswalk/resource_categories.csv`.",
   is_coad_member = "FRANC membership. A flag, not a category.",
-  source = "`facdb`, `qnpd`, `franc`, `qpl` (Queens Public Library branches, fetched from QPL every build) or `manual` (entered by hand in `data/canonical/resources.csv`). Every source except `facdb` gets a detail page; FacDB records carry no contact or service detail and are popup-only. Do not hardcode a count of either - resources are added and removed by hand.",
+  source = "`facdb`, `qnpd`, `franc`, `qpl` (Queens Public Library branches, fetched from QPL every build), `cool` (NYC Emergency Management indoor Cool Options, category `cooling-options`, fetched every build) or `manual` (entered by hand in `data/canonical/resources.csv`). Every source except `facdb` gets a detail page; FacDB records carry no contact or service detail and are popup-only. Do not hardcode a count of either - resources are added and removed by hand.",
   hours_url = "`qpl` only: the branch's page on queenslibrary.org, where QPL publishes opening hours. Hours are not in the data - link to this.",
   operator = "The organisation running the place, where the name alone does not say - \"Astoria\" over \"Queens Public Library\". Absent on QNPD and FRANC records, where the record is the organisation."
 )),

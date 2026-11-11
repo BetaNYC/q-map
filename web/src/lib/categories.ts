@@ -9,8 +9,10 @@ import type { ResourceCategory } from './types';
  *
  *   Health care          -> "hc"   two letters, not "h"
  *   Housing and shelter  -> "s"    from "shelter", not "housing"
+ *   Cooling options      -> "co"   two letters, not "c"
  *
- * Both are the fix for the same collision — plain first letters gave "h" twice.
+ * The first two fix one collision (plain first letters gave "h" twice); the
+ * third keeps "c" for Children and youth.
  *
  * DERIVE-WITH-OVERRIDES rather than a hardcoded table of twelve. §6 is explicit
  * that the category set is derived per district and has already changed twice,
@@ -20,7 +22,8 @@ import type { ResourceCategory } from './types';
  */
 const INITIAL_OVERRIDE: Record<string, string> = {
   'health-care': 'hc',
-  'housing-and-shelter': 's'
+  'housing-and-shelter': 's',
+  'cooling-options': 'co'
 };
 
 export function categoryInitial(category: ResourceCategory): string {

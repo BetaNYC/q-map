@@ -50,6 +50,7 @@ describe('sourceLabel', () => {
     ['qnpd', 'Queens Nonprofit Directory'],
     ['franc', 'FRANC Resource Map'],
     ['qpl', 'Queens Library Branches'],
+    ['cool', 'NYC Emergency Management Cool Options'],
     ['manual', null],
     ['something-new', null]
   ])('%s -> %s', (source, label) => expect(sourceLabel({ source })).toBe(label));
