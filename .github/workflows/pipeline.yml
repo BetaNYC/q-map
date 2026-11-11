@@ -66,7 +66,12 @@ jobs:
   pipeline:
     needs: changes
     if: github.event_name != 'push' || needs.changes.outputs.data == 'true'
-    runs-on: ubuntu-latest
+    # Pinned, not ubuntu-latest. The R binaries are built for one Ubuntu
+    # release; when -latest moved to 26.04 on 2026-11-11, cached igraph could
+    # not find libxml2.so.2 and the run died at startup. Moving to a new
+    # release is a deliberate change: bump this, check the apt names below.
+    # Keep in step with archive-respiratory.yml. See METHODOLOGY.md.
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
 
@@ -114,11 +119,17 @@ jobs:
           curl -fsSL https://raw.githubusercontent.com/nbafrank/uvr/main/install.sh | sh
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
+      # The Ubuntu release is in the key: a library cached on one release
+      # does not load on another (see runs-on above).
+      - name: Read the Ubuntu release
+        id: os
+        run: echo "version=$(. /etc/os-release && echo "$VERSION_ID")" >> "$GITHUB_OUTPUT"
+
       - name: Cache the uvr library
         uses: actions/cache@v4
         with:
           path: .uvr/library
-          key: uvr-${{ runner.os }}-${{ hashFiles('uvr.lock') }}
+          key: uvr-${{ runner.os }}-${{ steps.os.outputs.version }}-${{ hashFiles('uvr.lock') }}
 
       # PIPELINE_DESIGN.md section 10: do NOT inherit d26's cold cache. Every
       # d26 run is a full rebuild, which is fine at its scale and painful at a
