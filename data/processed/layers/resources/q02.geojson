@@ -34,6 +34,11 @@
 { "type": "Feature", "properties": { "resource_id": "qpl:sunnyside", "name": "Sunnyside", "category": "libraries-and-community", "source": "qpl", "is_coad_member": false }, "geometry": { "type": "Point", "coordinates": [ -73.921678, 40.740814 ] } },
 { "type": "Feature", "properties": { "resource_id": "qpl:hunters-point", "name": "Hunters Point", "category": "libraries-and-community", "source": "qpl", "is_coad_member": false }, "geometry": { "type": "Point", "coordinates": [ -73.957982, 40.745318 ] } },
 { "type": "Feature", "properties": { "resource_id": "qpl:woodside", "name": "Woodside", "category": "libraries-and-community", "source": "qpl", "is_coad_member": false }, "geometry": { "type": "Point", "coordinates": [ -73.909821, 40.745332 ] } },
-{ "type": "Feature", "properties": { "resource_id": "qpl:court-square", "name": "Court Square", "category": "libraries-and-community", "source": "qpl", "is_coad_member": false }, "geometry": { "type": "Point", "coordinates": [ -73.94551, 40.744745 ] } }
+{ "type": "Feature", "properties": { "resource_id": "qpl:court-square", "name": "Court Square", "category": "libraries-and-community", "source": "qpl", "is_coad_member": false }, "geometry": { "type": "Point", "coordinates": [ -73.94551, 40.744745 ] } },
+{ "type": "Feature", "properties": { "resource_id": "cool:cc1036", "name": "Hunters Point Library", "category": "cooling-options", "source": "cool", "is_coad_member": false }, "geometry": { "type": "Point", "coordinates": [ -73.958025, 40.745287 ] } },
+{ "type": "Feature", "properties": { "resource_id": "cool:cc0512", "name": "Sunnyside Library", "category": "cooling-options", "source": "cool", "is_coad_member": false }, "geometry": { "type": "Point", "coordinates": [ -73.921671, 40.740812 ] } },
+{ "type": "Feature", "properties": { "resource_id": "cool:cc0023", "name": "Woodside Library", "category": "cooling-options", "source": "cool", "is_coad_member": false }, "geometry": { "type": "Point", "coordinates": [ -73.909799, 40.745349 ] } },
+{ "type": "Feature", "properties": { "resource_id": "cool:cc1305", "name": "Woodside on the Move", "category": "cooling-options", "source": "cool", "is_coad_member": false }, "geometry": { "type": "Point", "coordinates": [ -73.913112, 40.742906 ] } },
+{ "type": "Feature", "properties": { "resource_id": "cool:cc0513", "name": "Sunnyside Community Services OAC", "category": "cooling-options", "source": "cool", "is_coad_member": false }, "geometry": { "type": "Point", "coordinates": [ -73.925616, 40.745104 ] } }
 ]
 }

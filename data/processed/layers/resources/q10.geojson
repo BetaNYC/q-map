@@ -15,6 +15,11 @@
 { "type": "Feature", "properties": { "resource_id": "qpl:ozone-park", "name": "Ozone Park", "category": "libraries-and-community", "source": "qpl", "is_coad_member": false }, "geometry": { "type": "Point", "coordinates": [ -73.846489, 40.680867 ] } },
 { "type": "Feature", "properties": { "resource_id": "qpl:lefferts", "name": "Lefferts", "category": "libraries-and-community", "source": "qpl", "is_coad_member": false }, "geometry": { "type": "Point", "coordinates": [ -73.824815, 40.686872 ] } },
 { "type": "Feature", "properties": { "resource_id": "qpl:howard-beach", "name": "Howard Beach", "category": "libraries-and-community", "source": "qpl", "is_coad_member": false }, "geometry": { "type": "Point", "coordinates": [ -73.841802, 40.66381 ] } },
-{ "type": "Feature", "properties": { "resource_id": "qpl:south-ozone-park", "name": "South Ozone Park", "category": "libraries-and-community", "source": "qpl", "is_coad_member": false }, "geometry": { "type": "Point", "coordinates": [ -73.809262, 40.674784 ] } }
+{ "type": "Feature", "properties": { "resource_id": "qpl:south-ozone-park", "name": "South Ozone Park", "category": "libraries-and-community", "source": "qpl", "is_coad_member": false }, "geometry": { "type": "Point", "coordinates": [ -73.809262, 40.674784 ] } },
+{ "type": "Feature", "properties": { "resource_id": "cool:cc0074", "name": "South Ozone Park Library", "category": "cooling-options", "source": "cool", "is_coad_member": false }, "geometry": { "type": "Point", "coordinates": [ -73.809263, 40.674784 ] } },
+{ "type": "Feature", "properties": { "resource_id": "cool:cc0389", "name": "Lefferts Library", "category": "cooling-options", "source": "cool", "is_coad_member": false }, "geometry": { "type": "Point", "coordinates": [ -73.82484, 40.68691 ] } },
+{ "type": "Feature", "properties": { "resource_id": "cool:cc0184", "name": "Howard Beach Library", "category": "cooling-options", "source": "cool", "is_coad_member": false }, "geometry": { "type": "Point", "coordinates": [ -73.8418, 40.663813 ] } },
+{ "type": "Feature", "properties": { "resource_id": "cool:cc0183", "name": "Ozone Park Library", "category": "cooling-options", "source": "cool", "is_coad_member": false }, "geometry": { "type": "Point", "coordinates": [ -73.846488, 40.680867 ] } },
+{ "type": "Feature", "properties": { "resource_id": "cool:cc0191", "name": "CCNS Howard Beach OAC", "category": "cooling-options", "source": "cool", "is_coad_member": false }, "geometry": { "type": "Point", "coordinates": [ -73.840228, 40.664966 ] } }
 ]
 }
