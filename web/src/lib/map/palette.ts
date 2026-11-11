@@ -219,9 +219,18 @@ export const LAYER_SWATCH: Record<string, string> = {
  *
  * NOT FIGMA RAMP PRIMITIVES. Figma carries them as `color/category/*` in the
  * primitives collection.
+ *
+ * COOLING (Andrew, 2026-11-11): a fifth group, holding Cooling options alone,
+ * so the category reads as its own thing on a heat map. Ice blue, OKLCH
+ * 0.90 / 0.06 / 210. Health and care is already the muted blue, so this one
+ * is set apart by lightness (0.90 against 0.80) rather than hue, which
+ * survives colour-blindness; at the shared chroma 0.08 it sat 7.5 dE from
+ * health-and-care. At 0.06 it is 11.2 dE away, more than the closest pair
+ * above. Not yet in Figma: add `color/category/cooling`.
  */
 export const CATEGORY_GROUP_FILL: Record<string, string> = {
   emergency: '#e5b28a', // color/category/emergency - muted orange
+  cooling: '#b0eaf4', // color/category/cooling - ice blue (not yet in Figma)
   'basic-needs': '#b1d09a', // color/category/basic-needs - muted lime
   'health-and-care': '#94c3ef', // color/category/health-and-care - muted slate blue
   'community-and-services': '#f7daa1' // color/category/community-and-services - muted cream

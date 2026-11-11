@@ -783,6 +783,7 @@ resource_categories_per_district <- function(res_cdta, cx, registry) {
 # The group vocabulary and its display labels, in legend order.
 CATEGORY_GROUPS <- c(
   "emergency"              = "Emergency",
+  "cooling"                = "Cooling",
   "basic-needs"            = "Basic needs",
   "health-and-care"        = "Health and care",
   "community-and-services" = "Community and services"

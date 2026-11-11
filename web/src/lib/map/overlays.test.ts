@@ -88,10 +88,11 @@ describe('the Layers tab key', () => {
 });
 
 describe('category mark fills', () => {
-  it('fills each of the four groups with its colour, and nothing else', async () => {
+  it('fills each of the five groups with its colour, and nothing else', async () => {
     const { CATEGORY_GROUP_FILL } = await import('./palette');
     expect(CATEGORY_GROUP_FILL).toEqual({
       emergency: '#e5b28a',
+      cooling: '#b0eaf4',
       'basic-needs': '#b1d09a',
       'health-and-care': '#94c3ef',
       'community-and-services': '#f7daa1'
