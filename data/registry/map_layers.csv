@@ -10,6 +10,5 @@ chem_businesses,Chemically intensive businesses,context,polygon,inline,available
 pivi_choropleth,Pandemic influenza vulnerability,context,polygon,inline,available,,DOHMH PIVI feature service,Joins to cdta.geojson by cdta2020
 tree_canopy,Tree canopy,context,raster,cog,deferred,land_cover_processing,NYC 2017 LiDAR Land Cover,121 GB source; needs local crop + reclassify. See PIPELINE_DESIGN.md section 9 item 5
 permeable_surface,Permeable surface,context,raster,cog,deferred,land_cover_processing,NYC 2017 LiDAR Land Cover,Same source and blocker as tree_canopy
-cooling_centers,Indoor cool options,resource,point,geojson,available,,NYC OEM Cool Options,"Year-round indoor Cool Options. NOT emergency cooling centres, which open only in a declared heat emergency - see METHODOLOGY.md"
 evacuation_centers,Hurricane evacuation centers,resource,point,geojson,available,,NYC Open Data p5md-weyf,"60 centres citywide, 15 in Queens, none in the Rockaways. ayer-cga7 is the wrong id - zero columns"
 resources,Community resources,resource,point,geojson,available,,Queens Nonprofit Directory + DCP FacDB + FRANC Resource Map,One layer toggled by canonical_category; source and is_coad_member ship per record as secondary filters. Replaces the former nonprofits/franc_members/libraries rows

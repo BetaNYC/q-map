@@ -434,10 +434,22 @@ list(
 
   # Hand-removed rows (removed_reason filled) stop here. Everything that
   # publishes a resource reads resources_cdta, never canonical_resources.
+  # Cool Options, the same way: OEM's list, read every build through the
+  # cool_options target the heat gaps use. See R/cool_options.R.
+  tar_target(cool_option_resources,
+             build_cool_option_resources(cool_options, resource_categories)),
+
   tar_target(
     resources_cdta,
-    resources_to_cdta(bind_rows(live_resources(canonical_resources), qpl_branches),
+    resources_to_cdta(bind_rows(live_resources(canonical_resources), qpl_branches,
+                                cool_option_resources),
                       cdta_boundaries)
+  ),
+
+  tar_target(
+    cool_option_resources_checks,
+    validate_cool_option_resources(cool_options, cool_option_resources,
+                                   resources_cdta, resource_categories)
   ),
 
   tar_target(
@@ -504,7 +516,11 @@ list(
   tar_target(language_crosswalk, read_language_crosswalk(language_crosswalk_path)),
   tar_target(language_crosswalk_checks, validate_language_crosswalk(language_crosswalk, lep)),
 
-  tar_target(cool_options, get_cool_options()),
+  # tar_cue("always"), as for QPL: since 2026-11-11 this is also the Cooling
+  # options resource list (R/cool_options.R), and CI keeps the targets store
+  # between runs, so a cached fetch would publish last summer's sites. It
+  # re-runs gap 2 when OEM changes the list, which is the right number.
+  tar_target(cool_options, get_cool_options(), cue = tar_cue("always")),
   tar_target(evac_zones, get_evac_zones()),
   tar_target(evac_centers, get_evac_centers()),
   tar_target(solid_waste_facilities, get_hazard_facilities("SOLID WASTE")),
@@ -607,10 +623,10 @@ list(
 
   tar_target(
     layer_tile_paths,
-    prune_layer_tiles(
+    prune_layer_files(
       c(copy_layer(stormwater_tiles_src, "data/processed/layers"),
         copy_layer(fema_flood_zones_tiles_src, "data/processed/layers")),
-      "data/processed/layers"
+      "data/processed/layers", pattern = "\\.pmtiles$"
     ),
     format = "file"
   ),
@@ -622,9 +638,12 @@ list(
   # data-v* round trip to save nothing. See R/layers.R.
   tar_target(queens_shape, queens_outline(cdta_boundaries)),
 
+  # Pruned like the tiles: when a layer is retired (cooling_centers,
+  # 2026-11-11) its file would otherwise stay committed with nothing pointing
+  # at it.
   tar_target(
     layer_geojson_paths,
-    c(
+    prune_layer_files(c(
       layer_hurricane_evac_zones(evac_zones, queens_shape,
                                  "data/processed/layers/hurricane_evac_zones.geojson"),
       layer_surge_current(fvi, queens_shape,
@@ -633,11 +652,9 @@ list(
                         "data/processed/layers/tidal_2020s.geojson"),
       layer_evacuation_centers(evac_centers, queens_shape,
                                "data/processed/layers/evacuation_centers.geojson"),
-      layer_cooling_centers(cool_options, queens_shape,
-                            "data/processed/layers/cooling_centers.geojson"),
       layer_resources(resources_cdta, cdta_crosswalk,
                       "data/processed/layers/resources")
-    ),
+    ), "data/processed/layers", pattern = "\\.geojson$"),
     format = "file"
   ),
 

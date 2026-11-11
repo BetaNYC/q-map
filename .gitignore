@@ -44,3 +44,5 @@ non-profit-directory/
 web/node_modules/
 web/build/
 web/.svelte-kit/
+# roborev snapshots
+/.roborev/

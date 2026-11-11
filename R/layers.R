@@ -12,7 +12,7 @@
 #   surge_current        361 exposed tracts      111 KB simplified
 #   hurricane_evac_zones 6 polygons, Queens      157 KB simplified
 #   evacuation_centers   60 points                12 KB
-#   cooling_centers      476 points              102 KB
+#   cooling_centers      476 points              102 KB  (retired 2026-11-11)
 #   resources          3,905 points              ~350 KB
 #
 # All are smaller than cdta.geojson, which the entry screen already blocks on
@@ -122,16 +122,9 @@ layer_evacuation_centers <- function(evac_centers, qn, path) {
     write_layer_geojson(path, clip = qn)
 }
 
-# Year-round indoor cool options, NOT emergency cooling centres - those open
-# only during a declared heat emergency and cannot be a standing layer. See
-# METHODOLOGY.md.
-layer_cooling_centers <- function(cool_options, qn, path) {
-  cool_options |>
-    dplyr::transmute(name = display_case(Facility_name),
-                     location_type = Location_type,
-                     accessible = Accessible) |>
-    write_layer_geojson(path, clip = qn)
-}
+# cooling_centers was retired 2026-11-11: Cool Options are now resources, in
+# the Cooling options category (R/cool_options.R), and draw as resource
+# points. The frontend never drew this layer.
 
 # Every resource as a map point, with MINIMAL properties.
 #

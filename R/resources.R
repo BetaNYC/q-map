@@ -42,6 +42,10 @@ GEOSEARCH_URL <- "https://geosearch.planninglabs.nyc/v2/search"
 RESOURCE_SEEDED_SOURCES <- c("facdb", "qnpd", "franc")
 # `manual` is entered by hand in the canonical file and has no crosswalk rows.
 RESOURCE_SOURCES <- c(RESOURCE_SEEDED_SOURCES, "manual")
+# Sources the crosswalk maps: the scraped three, plus Cool Options, which is
+# fetched every build (R/cool_options.R) but resolves its category here like
+# the scraped sources do. QPL sets its category in R/qpl.R and has no rows.
+RESOURCE_MAPPED_SOURCES <- c(RESOURCE_SEEDED_SOURCES, "cool")
 
 # FacDB records carry a name, an address and a facility type - no contact,
 # hours or services. Scoped 2026-10-20 to the categories where the location
@@ -69,11 +73,12 @@ validate_resource_categories <- function(cx) {
   }
   assert_no_na(cx, required)
 
-  bad_source <- setdiff(cx$source, RESOURCE_SEEDED_SOURCES)
+  bad_source <- setdiff(cx$source, RESOURCE_MAPPED_SOURCES)
   if (length(bad_source) > 0) {
     stop("resource_categories.csv: unknown source(s) ",
          paste(bad_source, collapse = ", "),
-         " - only scraped sources are mapped; manual rows carry their category")
+         " - only scraped sources and Cool Options are mapped; manual rows ",
+         "carry their category")
   }
 
   # The FacDB scope, stated once in FACDB_CATEGORIES and enforced here: a
@@ -620,6 +625,11 @@ validate_canonical_resources <- function(res, cx) {
   if (any(res$source == "qpl")) {
     stop("resources.csv: qpl rows are fetched from QPL by the pipeline and ",
          "must not be entered here")
+  }
+  # Likewise Cool Options (R/cool_options.R).
+  if (any(res$source == "cool")) {
+    stop("resources.csv: cool rows are fetched from NYC OEM Cool Options by ",
+         "the pipeline and must not be entered here")
   }
 
   bad_source <- setdiff(res$source, RESOURCE_SOURCES)
