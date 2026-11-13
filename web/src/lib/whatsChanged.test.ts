@@ -30,6 +30,12 @@ describe("What's changed page", () => {
     );
   });
 
+  it('gives the page a skip link to <main>', () => {
+    const layout = read('src/routes/+layout.svelte');
+    expect(layout).toMatch(/\{#if noClient\}\s*<a class="skip" href="#main">/);
+    expect(layout).toContain("<main id={noClient ? 'main' : undefined}>");
+  });
+
   it('leaves the docked map out of the no-client route', () => {
     const layout = read('src/routes/+layout.svelte');
     expect(layout).toContain("page.route.id === '/whats-changed'");

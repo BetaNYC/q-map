@@ -2,7 +2,7 @@
 
 This page lists the changes to the Queens Resource Map that a reader would notice: new pages and map layers, new resources, changes to how hazards are ranked, and corrections when we published something wrong. Newest first. The NYC Preparedness and Recovery Institute (PRI) created the map in collaboration with BetaNYC. It is still being built, so changes are frequent.
 
-- **History begins:** 2026-09-23, the day the first version of the map went online. Every change since then is listed.
+- **History begins:** 2026-09-23, the day the first version of the map went online. Since then, the changes a reader would notice are listed.
 - **Data refresh:** hazard and resource data weekly, on Mondays, from City and State sources; emergency alerts from Notify NYC every two minutes while the map is open. Routine refreshes are not listed.
 
 To share feedback or get a resource added, use [the feedback form](https://forms.gle/itJupzxdb6mhG7dr9). To report a bug in the map or ask for a new feature, [open an issue on GitHub](https://github.com/BetaNYC/q-map/issues).
