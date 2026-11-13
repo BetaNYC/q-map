@@ -51,6 +51,13 @@
    */
   const docked = new MediaQuery(DOCKED_QUERY, false);
 
+  /**
+   * Routes that ship with csr = false (the What's changed page). With no client
+   * JS the docked map can never load, so the map pane is left out and the page
+   * gets the full width instead of the 390px sidebar.
+   */
+  const noClient = $derived(page.route.id === '/whats-changed');
+
   const knownLayers = $derived(data.mapLayers.map((l) => l.layer_id));
 
   /** The page's own defaults, before the URL is applied. */
@@ -293,7 +300,7 @@
      unless reset by hand, and on a classic-scrollbar system its 15px bar
      would take width from the 390px column and rewrap every component drawn at
      358px. -->
-<div class="shell">
+<div class="shell" class:no-client={noClient}>
   <div class="page">
     <!-- On every page, above the page itself: full width on a phone, the top of
          the sidebar on desktop. -->
@@ -312,6 +319,7 @@
        landmarks with one name cannot be told apart (axe landmark-unique).
        Hidden (display: none) on phones, which also removes it from the
        accessibility tree there. -->
+  {#if !noClient}
   <section class="map-pane" aria-label="Map and map controls">
     {#if docked.current}
       <div class="map-stage" bind:clientWidth={stageWidth} bind:clientHeight={stageHeight}>
@@ -374,6 +382,7 @@
       {/if}
     {/if}
   </section>
+  {/if}
 </div>
 
 <style>
@@ -392,6 +401,11 @@
          measure and each page's own `.screen` column fills it unchanged. */
       grid-template-columns: 390px minmax(0, 1fr);
       align-items: start;
+    }
+
+    /* No map pane on a csr = false page: the page takes the full width. */
+    .shell.no-client {
+      display: block;
     }
 
     .map-pane {
