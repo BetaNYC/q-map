@@ -7,9 +7,8 @@
     "prepare": "svelte-kit sync",
     "predev": "node scripts/check-data.mjs",
     "dev": "vite dev",
-    "prebuild": "node scripts/check-data.mjs && npm run whats-changed",
+    "prebuild": "node scripts/check-data.mjs",
     "build": "vite build",
-    "whats-changed": "python3 scripts/whats_changed.py render ../WHATS-CHANGED.md --format fragment --no-h1 --out src/lib/whats-changed.html --repo-url https://github.com/BetaNYC/q-map",
     "preview": "vite preview",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "test": "vitest run"
