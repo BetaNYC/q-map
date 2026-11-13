@@ -54,7 +54,8 @@
     Queens has resources to help you prepare and find support. Explore the hazards your neighborhood faces and local resources you can access to prepare, respond, or recover. <br><br>
     Queens Resource Map is a tool created by the NYC Preparedness and Recovery Institute (<a href="https://pandemicresponse.columbia.edu/" rel="noopener noreferrer">PRI</a>) in collaboration with <a href="https://beta.nyc" rel="noopener noreferrer">BetaNYC</a>. 
     It is designed to provide a dynamic, community-informed platform connecting residents and community-based organizations to critical resources before, during, and after emergencies. <br><br>
-    Want to share feedback or get a resource added? Please complete <a href="https://forms.gle/itJupzxdb6mhG7dr9" rel="noopener noreferrer">this form.</a>
+    Want to share feedback or get a resource added? Please complete <a href="https://forms.gle/itJupzxdb6mhG7dr9" rel="noopener noreferrer">this form.</a> <br><br>
+    See <a href="{base}/whats-changed" data-sveltekit-reload>what's changed</a> on the map.
   </p>
 
   <!-- General Resources (/general): steps for any emergency and where to get
