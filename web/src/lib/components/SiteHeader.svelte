@@ -1,5 +1,6 @@
 <script lang="ts">
   import { base } from '$app/paths';
+  import About from './About.svelte';
 
   /**
    * "Queens Resource Map" on every page. Figma: `SiteHeader`, node 229:956.
@@ -31,12 +32,16 @@
   {:else}
     <a class="name" href="{base}/">Queens Resource Map</a>
   {/if}
+  <About />
 </header>
 
 <style>
   .site {
     display: flex;
     align-items: center;
+    /* The name at the left edge, About at the right. */
+    justify-content: space-between;
+    gap: var(--space-300);
     /* min-height, not height: with text enlarged (WCAG 1.4.4) the bar grows
        rather than clipping the name. */
     min-height: var(--site-header-height);
@@ -44,7 +49,13 @@
     /* No vertical padding: the 44px minimum centres the name. An 18px name's
        line box is ~22px, so Figma's 12px padding would make the bar ~47px and
        the phone map page, which subtracts 44, would scroll. */
-    padding-inline: var(--space-600);
+    /* The 390px frame's spacing: name 24px in, About's right edge on the page
+       buttons' (.screen's 16px gutter). Wider than 390px, the extra width is
+       split evenly on both sides, as .screen's `margin-inline: auto` does, so
+       both stay in line with the centred column below. 390px is .screen's
+       max-width; % padding is of the header's container's width. */
+    --frame-margin: max(0px, (100% - 390px) / 2);
+    padding-inline: calc(var(--frame-margin) + var(--space-600)) calc(var(--frame-margin) + var(--gutter));
     background: var(--color-surface);
     border-bottom: 1px solid var(--color-border);
   }
@@ -69,5 +80,15 @@
     line-height: var(--line-height-tight);
     color: var(--color-text-primary);
     text-decoration: none;
+    /* Optical centring, as in LocateButton: the font's line box puts the
+       glyphs off-centre, so trim it to cap height and baseline. */
+    text-box: trim-both cap alphabetic;
+  }
+
+  @supports not (text-box: trim-both cap alphabetic) {
+    .name {
+      position: relative;
+      top: 0.1em;
+    }
   }
 </style>
